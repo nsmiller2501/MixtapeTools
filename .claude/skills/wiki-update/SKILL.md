@@ -53,8 +53,6 @@ If `./references/` already exists, skip a–b. Do not clobber any existing files
 
 If `./CLAUDE.md` does not exist (e.g., the project wasn't scaffolded by `/newproject`), skip this step silently.
 
-This skill no longer manages Obsidian symlinks. If the user wants `references/wiki/` browsable in Obsidian, they should run `/vault-link` from the project root — that registers the whole project as an Obsidian vault.
-
 After this self-bootstrap, the rest of the pre-flight (steps 1–6 below) runs as before.
 
 ### 1. Locate the wiki

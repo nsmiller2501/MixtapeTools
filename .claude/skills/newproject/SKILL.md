@@ -1,6 +1,6 @@
 ---
 name: newproject
-description: Scaffold a new research project with standard directory structure, CLAUDE.md template, and language-agnostic config files (Stata/Python/R). Use this at the start of every new project to ensure consistent organization. To make the project browsable in Obsidian, run `/vault-link` after scaffolding.
+description: Scaffold a new research project with standard directory structure, CLAUDE.md template, and language-agnostic config files (Stata/Python/R). Use this at the start of every new project to ensure consistent organization.
 allowed-tools: Bash(mkdir*), Bash(cp*), Bash(ls*), Write, Read
 argument-hint: [project-name]
 ---
@@ -149,4 +149,3 @@ Remind the user to:
 - Fill in the Project Overview in `CLAUDE.md`
 - Update `code/config.*` files if the project root ever moves
 - Add Python packages to `code/requirements.txt` as needed
-- Run `/vault-link` from inside the project root if you want it browsable in Obsidian

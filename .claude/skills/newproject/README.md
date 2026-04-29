@@ -48,7 +48,7 @@ my-project-name/
 
 If you also use `/wiki-update` to ingest external papers, that skill will lazy-create a `references/` directory the first time you invoke it. See [`/wiki-update`'s README](../wiki-update/README.md) for details.
 
-If you want this project browsable in Obsidian, run `/vault-link` from inside the project root after scaffolding. It will register the project as its own vault (no symlinks).
+If wanting to link your project to Obsidian, simply go to `Obsidian → Manage vaults → Open folder as vault` and select your project folder as a new vault. This allows each project to be cleanly differentiated and you won't have to worry about backlink-collision across projects.
 
 ## Philosophy
 
@@ -80,8 +80,6 @@ The `progress_logs/` directory solves a real problem: Claude Code sessions don't
 One-time edit before the first `/newproject` run:
 
 1. **Edit `templates/project_CLAUDE.md`** — replace `Refer to the user as Noah` with your own name (or remove the line).
-
-(Obsidian integration is no longer handled here. Use `/vault-link` from inside any project root to register it as an Obsidian vault.)
 
 ## Installation
 
