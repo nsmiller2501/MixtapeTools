@@ -46,3 +46,7 @@ The "one question at a time" rule is structural, not stylistic. A list of questi
 
 - **`/blindspot`** — also an interrogation tool, but pointed at empirical *output* (figures, tables) rather than plans. `/grill-me` walks the design tree before work starts; `/blindspot` walks the perception tree after results exist.
 - **`/referee2`** — a structured implementation audit. `/grill-me` is open-ended; `/referee2` runs a fixed five-audit checklist.
+
+## Acknowledgments
+
+The `SKILL.md` is taken verbatim from [Matt Pocock's grill-me skill](https://github.com/mattpocock/skills/tree/main/skills/productivity/grill-me) — full credit for the skill's behavior and design goes to him. The only contribution here is this README, which adds a human-readable explanation of what the skill does, when to use it, and how it relates to the other skills in this collection.

@@ -118,3 +118,7 @@ The fetch cascade is conservative: prefer DOI matches, fall back to fuzzy title 
 
 - **`/newproject`** — creates the directory structure that `/wiki-update` assumes. If you haven't scaffolded a project with `/newproject`, this skill will fail pre-flight.
 - **`/split-pdf`** — the underlying batched-reading method. `/wiki-update` inlines the splitting logic rather than invoking `/split-pdf` directly, because `/split-pdf` has a per-batch user-confirmation gate that would deadlock inside a subagent.
+
+## Acknowledgments
+
+The conceptual foundation for this skill — maintaining a project-specific LLM-readable wiki that grows alongside the research and is consumed by future LLM sessions as compressed institutional memory — is owed to [Andrej Karpathy's LLMwiki concept](https://x.com/karpathy). `/wiki-update` operationalizes that idea for empirical-economics workflows: relevance-gated ingestion of new papers into a structured wiki that the project's `CLAUDE.md` indexes.
