@@ -2,7 +2,7 @@
 name: beautiful_deck
 description: End-to-end beautiful Beamer deck creation. Designs an original Beamer theme tailored to a specific audience, restructures existing content via the Rhetoric of Decks (ethos / pathos / logos), generates figures and tables from R/Python/Stata code first, embeds code blocks in the deck, produces standalone walkthrough scripts, compiles to zero warnings, runs /tikz for visual collision cleanup, and dispatches a graphics-only audit agent for label and coordinate checks. Use when creating a presentation from scratch or restructuring existing content into a new beautiful deck.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task
-argument-hint: [content-path-or-description]
+argument-hint: [audience] [content-path-or-description]
 ---
 
 # Beautiful Deck
@@ -11,7 +11,7 @@ This skill implements Scott's full deck-creation pipeline. It is NOT just a comp
 
 Scott's philosophy: **a deck is a performance medium, not a document**. It must be beautiful, technically rigorous, smoothly paced (MB/MC equivalence across slides), and visually clean at the pixel level. Every element earns its presence. Every title is an assertion. Every figure carries one message.
 
-This skill is the orchestrator. It calls `/tikz` for visual cleanup, references `compiledeck`'s mechanical rules (preambles, palettes, TikZ measurement formulas), and dispatches sub-agents for rhetoric and graphics audits.
+This skill is the orchestrator. It calls `/tikz` for visual cleanup, draws on its own local reference files (preambles, palettes, TikZ measurement formulas, domain patterns) in this skill directory, and dispatches sub-agents for rhetoric and graphics audits.
 
 ---
 
@@ -19,16 +19,13 @@ This skill is the orchestrator. It calls `/tikz` for visual cleanup, references 
 
 You MUST collect answers to these questions before generating a single slide. If the user hasn't provided them in the invocation, ask explicitly. Do not guess.
 
-### Q1: What is the source content?
-- A paper draft (`.tex`, `.pdf`, `.md`)
-- Existing lecture notes
-- An existing deck to be restructured
-- A description and you generate from scratch
-- A paper the user is reading (in which case: have they split-pdf'd it? If yes, read the summaries. If no, ask whether to split-pdf first.)
+### Q1: Who is the audience? (**HARD BLOCK — resolve before any other question**)
 
-### Q2: Who is the audience?
+Audience is the single decision that ripples through every other choice in this skill — the rhetorical balance, the aesthetic direction, the act proportions, the pedagogical pacing all depend on it. Resolve audience first; do not proceed to Q2 (source content), theme design, or anything else until audience is committed.
 
-Pick ONE and commit. Different audiences demand different rhetorical balances (per Aristotle). Cite this table verbatim when confirming with the user:
+**If audience is missing from the invocation, ask immediately.** Use the `AskUserQuestion` tool (if available) to present a structured picker with the 5 canonical buckets as choices plus "Other." If `AskUserQuestion` is not available, ask in plain text and present the 5 canonical buckets as a numbered list. Do not begin theme work, source-content discussion, or anything else until the user has answered.
+
+The 5 canonical buckets (cite this table verbatim when confirming with the user):
 
 | Context | Logos | Ethos | Pathos | Implications for the deck |
 |---|---|---|---|---|
@@ -38,11 +35,41 @@ Pick ONE and commit. Different audiences demand different rhetorical balances (p
 | **Working deck (for coauthors or future-self)** | 60% | 30% | 10% | Document choices, preserve uncertainty, more text allowed, rigor > polish |
 | **External non-academic (policy, media, industry)** | 30% | 25% | 45% | Storytelling, human impact, minimal jargon, visual impact |
 
+**If the user gives free-text audience description (or picks "Other"), map to the closest canonical bucket and confirm with the user before proceeding.** Use this mapping table as a guide:
+
+| Free-text the user might give | Maps to |
+|---|---|
+| "my advisor and one coauthor" | Working deck |
+| "intro economics class" / "undergrad lecture" | Teaching lecture |
+| "general public" / "media interview" | External non-academic |
+| "internal team" / "lab meeting" / "future-self" | Working deck |
+| "policy briefing" / "congressional staff" | External non-academic |
+| "NBER conference" / "AEA session" | Conference presentation |
+| "job market talk" / "research seminar" | Academic seminar |
+
+When confirming the mapping, be explicit: "Mapping your description '<user's free text>' to **<canonical bucket>** — does that match what you have in mind?"
+
+**Sub-specifier for External non-academic.** When the user picks (or maps to) external non-academic, the rhetorical spread within this bucket is wider than within any other bucket. Ask one follow-up before proceeding:
+
+> External non-academic — which sub-context?
+> - **General public / media** (maximum pathos, story-driven, minimum jargon)
+> - **Policy / government / advocacy** (evidence-driven, action-oriented, moderate jargon)
+> - **Industry / corporate** (decision-oriented, ROI framing, domain jargon OK)
+
+Why this bucket only: the other 4 buckets have natural sub-variants (undergrad vs. grad teaching; methods vs. applied seminar) but the rhetorical mix stays largely the same. External is the unique case where the *kind* of pathos shifts, not just the dose.
+
+### Q2: What is the source content?
+- A paper draft (`.tex`, `.pdf`, `.md`)
+- Existing lecture notes
+- An existing deck to be restructured
+- A description and you generate from scratch
+- A paper the user is reading (in which case: have they split-pdf'd it? If yes, read the summaries. If no, ask whether to split-pdf first.)
+
 ### Q3: What is the tone / aesthetic?
 
 Two paths. Pick ONE:
 
-**Path A: Scott's house style (Professional/Academic).** Use the Warm Professional palette from `~/.claude/skills/compiledeck/SKILL.md` (DeepNavy, Teal, WarmOrange, Gold). Scott uses this for outward-facing academic work.
+**Path A: Scott's house style (Professional/Academic).** Use the Warm Professional palette from `~/.claude/skills/beautiful_deck/preamble_warm_professional.tex` (DeepNavy, Teal, WarmOrange, Gold). Scott uses this for outward-facing academic work.
 
 **Path B: Original, audience-specific design.** You design something new — a palette, a frame-title style, a TikZ accent system — tuned to this specific audience. This is the default when Scott says "design for me an original Beamer style." Do NOT reuse a previous deck's theme. You are creating something new.
 
@@ -89,7 +116,7 @@ The goal is: something truly effective for *this* audience, *this* content, and 
 
 ### How to approach it
 
-**If Path A (Scott's house style):** Copy the Warm Professional preamble from `~/.claude/skills/compiledeck/SKILL.md` Step 3 — this IS Scott's house style and is not boilerplate for outward-facing academic work. Proceed to Step 2.
+**If Path A (Scott's house style):** Copy the Warm Professional preamble from `~/.claude/skills/beautiful_deck/preamble_warm_professional.tex` — this IS Scott's house style and is not boilerplate for outward-facing academic work. Proceed to Step 2.
 
 **If Path B (original design — the default when Scott says "design for me an original Beamer style"):** You are designing an original aesthetic. Follow this process:
 
@@ -124,7 +151,7 @@ If bullets appear at all, use a single `\tikz\fill` circle in the core accent, s
 
 ### 1.4 Section dividers
 
-Full-bleed dark background (core accent or a dark neutral), white text, one large label centered. Use `\transitionslide{Title}{Subtitle}` pattern from `compiledeck/SKILL.md`. This creates the "deck breathes" rhythm — a moment of rest between sections.
+Full-bleed dark background (core accent or a dark neutral), white text, one large label centered. Use `\transitionslide{Title}{Subtitle}` pattern defined in `preamble_warm_professional.tex`. This creates the "deck breathes" rhythm — a moment of rest between sections.
 
 ### 1.5 Typography
 
@@ -174,7 +201,7 @@ Every deck has three acts. The proportions depend on audience (see Q2 table).
 
 **Act I — Tension (open + setup).** 2–4 slides.
 - Title slide.
-- Opening hook: a provocative question, a surprising statistic, or a concrete problem the audience recognizes. **NOT** an agenda, **NOT** "Today I'm going to talk about...", **NOT** a definition slide. See `presentations/rhetoric_of_decks.md` Part IV "The Opening" for examples.
+- Opening hook: a provocative question, a surprising statistic, or a concrete problem the audience recognizes. **NOT** an agenda, **NOT** "Today I'm going to talk about...", **NOT** a definition slide. See `rhetoric_of_decks.md` Part IV "The Opening" for examples.
 - The stakes: why does this matter? (This is where pathos lives.)
 - The roadmap (optional — only for teaching decks > 30 slides).
 
@@ -490,7 +517,7 @@ Apply all fixes the skill suggests, then recompile. Go back to Step 5 if any new
 
 Dispatch a sub-agent (via the Task tool) to evaluate the deck against the Rhetoric of Decks principles. Give it the following task prompt:
 
-> You are Referee 2 in rhetoric-review mode. Audit the Beamer deck at `<deck>.tex` and its compiled PDF at `<deck>.pdf` against the principles in `~/mixtapetools/presentations/rhetoric_of_decks.md`. Check specifically:
+> You are Referee 2 in rhetoric-review mode. Audit the Beamer deck at `<deck>.tex` and its compiled PDF at `<deck>.pdf` against the principles in `~/.claude/skills/beautiful_deck/rhetoric_of_decks.md`. Check specifically:
 >
 > 1. **Titles are assertions.** Read the titles in sequence. Do they tell a coherent story? List any title that is a label rather than an assertion, with a suggested rewrite.
 > 2. **One idea per slide.** List any slide with two or more competing ideas.
@@ -578,7 +605,7 @@ Report to the user:
 
 ---
 
-## Reference: The Three Laws (per `presentations/rhetoric_of_decks.md`)
+## Reference: The Three Laws (per `rhetoric_of_decks.md`)
 
 These are the constants that hold across every audience, every aesthetic, every deck. Read them once and internalize:
 
@@ -586,7 +613,7 @@ These are the constants that hold across every audience, every aesthetic, every 
 2. **Cognitive load is the enemy.** One idea per slide. Two max for inseparable contrasts. If you need "also" or "additionally," you need a new slide.
 3. **The slide serves the spoken word.** The slide is the visual anchor for what you say — not what you say. If your slides can be understood without you speaking, you have written a document and called it a presentation.
 
-## Reference: The Aristotelian triad (per `presentations/rhetoric_of_decks.md` Part II)
+## Reference: The Aristotelian triad (per `rhetoric_of_decks.md` Part II)
 
 - **Ethos (credibility).** The audience asks: *Why should I trust this person?* Ethos lives in methodology slides, Devil's Advocate slides, honest scorecards, acknowledgment of limitations. Admitting weakness builds credibility.
 - **Pathos (emotion).** The audience asks: *Why should I care?* Pathos lives in opening hooks, stakes, human impact, aspiration. Pathos without logos is demagoguery.
@@ -598,15 +625,23 @@ The rhetorical balance depends on the audience — see Q2 in Step 0.
 
 ## Full Philosophy Reference
 
-For the complete essay behind these principles:
-- `~/mixtapetools/presentations/rhetoric_of_decks.md` — the condensed operational version
-- `~/mixtapetools/presentations/rhetoric_of_decks_full_essay.md` — the 600-line intellectual genealogy from Aristotle through LLMs
+For the complete essay behind these principles, all in this skill directory:
+- `rhetoric_of_decks.md` — the condensed operational version
+- `rhetoric_of_decks_full_essay.md` — the 600-line intellectual genealogy from Aristotle through LLMs
 
 This skill operationalizes those essays. You don't need to re-read them to execute the workflow — just follow the steps above.
 
+## Local reference files
+
+All in this skill directory (`~/.claude/skills/beautiful_deck/`):
+
+- `preamble_warm_professional.tex` — Scott's house-style Beamer preamble (palette, fonts, footline, `\transitionslide` macro). Copy verbatim for Path A decks.
+- `palette_reference.md` — alternative palettes with selection guidance for Path B (original-design) decks.
+- `domain_patterns.md` — detailed structural patterns by audience (academic seminar, teaching lecture, working deck, etc.).
+- `~/.claude/skills/tikz/tikz_rules.md` — measurement-based collision-prevention rules (lives in the `tikz` skill folder; this skill **depends on `/tikz` being installed**). READ before writing any TikZ figure (Step 4.4).
+
 ## Supporting skills
 
-- `compiledeck` — the mechanical compile loop, preamble templates, palette reference, TikZ rules. `beautiful_deck` references it for these pieces rather than duplicating them.
 - `tikz` — the measurement-based visual collision audit. Invoked at Step 6.
 - `referee2` — the full five-audit protocol. `beautiful_deck` uses its rhetoric-audit logic in Step 7.
 - `split-pdf` — if the source content is a paper the user is reading, split it first and work from the summaries.

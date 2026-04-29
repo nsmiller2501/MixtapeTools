@@ -21,6 +21,30 @@
 9. **Graphics audit (third agent)** — dispatches a second sub-agent focused only on numerical accuracy of figures/tables, label positioning, axis coherence, color consistency, and font sizing.
 10. **Final compile** — recompiles to a clean state and delivers.
 
+## Audience first — the load-bearing decision
+
+The very first thing the skill resolves is **who the audience is**. Audience determines the rhetorical balance, the aesthetic direction, the act proportions, and the pacing — every other decision in the skill depends on it. The skill will not proceed to source-content discussion, theme work, or anything else until audience is committed.
+
+The 5 canonical audience buckets:
+
+| Bucket | What it means |
+|---|---|
+| **Academic seminar** | PhD-level research talk, methods-aware audience |
+| **Teaching lecture** | Undergrad or grad course, clarity-first |
+| **Conference presentation** | 20-min talk, fast punch, headline-result-on-slide-2 |
+| **Working deck** | For coauthors, lab meetings, or future-self; rigor over polish |
+| **External non-academic** | Policy, media, industry — high pathos, minimal jargon |
+
+Provide audience in the invocation when you can. Examples:
+
+```
+/beautiful_deck "academic seminar" path/to/paper.pdf
+/beautiful_deck "teaching lecture" path/to/lecture_notes.md
+/beautiful_deck "external non-academic — policy briefing" "30-min talk on the CBS continuous DiD paper"
+```
+
+If audience is missing the skill will ask immediately (via a structured picker if available) before doing anything else. Free-text audience descriptions ("my advisor and one coauthor") are accepted — the skill maps them to the closest canonical bucket and confirms with you before proceeding. The "external non-academic" bucket has one follow-up sub-specifier (general public / policy / industry) because the rhetorical spread within that bucket is wider than within any other.
+
 ## Why the pedagogical movement matters
 
 The single most important rule in this skill is the ordering:
@@ -76,7 +100,7 @@ If the same compile error persists after 3 different fix attempts, **stop editin
 
 ## The Aristotelian triad
 
-The rhetorical balance changes with audience. The skill's triage step (Q2) commits to a specific balance before any slides are written.
+The rhetorical balance changes with audience. The skill's triage step (Q1) commits to a specific balance before any slides are written.
 
 | Audience | Logos | Ethos | Pathos |
 |---|---|---|---|
@@ -121,17 +145,25 @@ The skill will ask clarifying questions if anything in the triage step is missin
     └── ...
 ```
 
+## Dependencies
+
+**`/beautiful_deck` depends on `/tikz` being installed.** Two specific dependencies:
+
+1. **Step 4.4 (TikZ generation rules)** reads `~/.claude/skills/tikz/tikz_rules.md` for the canonical formula reference (gap calculations, Bézier curve depths, clearance tables). This file lives in the `tikz` skill folder so that both `/beautiful_deck` (generation-time) and `/tikz` (audit-time) read from a single source of truth.
+2. **Step 6 (visual cleanup)** invokes `/tikz` directly to audit residual collisions after the slides are written.
+
+If you install `/beautiful_deck` without `/tikz`, both steps will fail. Always install them as a pair.
+
 ## Related skills
 
-- **`/compiledeck`** — the mechanical compile loop and preamble templates. `/beautiful_deck` calls this for compile mechanics and palette references rather than duplicating them.
-- **`/tikz`** — the measurement-based TikZ collision audit. Invoked during the visual cleanup step.
+- **`/tikz`** — the measurement-based TikZ collision audit. Invoked during the visual cleanup step. Required dependency (see above).
 - **`/referee2`** — the full five-audit protocol. `/beautiful_deck` uses a rhetoric-scoped variant of it in the audit step.
 - **`/split-pdf`** — if the source content is a paper Scott is reading, split it first and work from the summaries.
 
 ## The philosophy behind it
 
-Full essays:
-- [`presentations/rhetoric_of_decks.md`](../../presentations/rhetoric_of_decks.md) — the operational principles
-- [`presentations/rhetoric_of_decks_full_essay.md`](../../presentations/rhetoric_of_decks_full_essay.md) — the 600-line intellectual genealogy from Aristotle through LLMs
+Full essays (in this skill directory):
+- [`rhetoric_of_decks.md`](rhetoric_of_decks.md) — the operational principles
+- [`rhetoric_of_decks_full_essay.md`](rhetoric_of_decks_full_essay.md) — the 600-line intellectual genealogy from Aristotle through LLMs
 
 `/beautiful_deck` is the operational skill version of those essays. You don't need to re-read them to invoke it — the skill handles the workflow — but the essays explain *why* the principles work.

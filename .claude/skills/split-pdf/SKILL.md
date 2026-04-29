@@ -201,8 +201,4 @@ After the agent returns, the parent reads the output files (plain markdown, not 
 | **Persist** | Save final extraction to `<basename>_text.md` alongside the source PDF |
 | **Confirm** | Ask user before continuing to next batch |
 
-## Acknowledgments
-
-The in-place PDF handling, persistent `_text.md` extraction, split reuse, build directory convention, and agent isolation protocol were inspired by improvements identified by [Ben Bentzin](https://www.mccombs.utexas.edu) (Associate Professor of Instruction, McCombs School of Business, University of Texas at Austin), who adapted the original skill for his own workflows and shared his findings (April 2026). His version demonstrated that subagent isolation prevents context bloat when reading multiple large PDFs in a single session — a critical reliability improvement. The implementation here is independently written but the ideas are his.
-
-For detailed explanation of why the batched-reading method works, see [methodology.md](methodology.md).
+For detailed explanation of why the batched-reading method works, see [methodology.md](methodology.md). Acknowledgments and credits live in [README.md](README.md).

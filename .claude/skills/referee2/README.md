@@ -104,7 +104,7 @@ Blindspot runs in the same session because it's auditing perception — you need
 
 ## Installation
 
-The skill lives at `.claude/skills/referee2/SKILL.md` in this repo. The full persona and protocol details are at `personas/referee2.md`.
+The skill lives at `.claude/skills/referee2/SKILL.md`. The full persona and protocol details are at `referee2.md` (in the same folder).
 
 To use it, ensure this repo is on your Claude Code skills path. Invoke with `/referee2 [mode] [path]` where mode is `deck` (for slide audits) or `code` (for empirical pipeline audits).
 
