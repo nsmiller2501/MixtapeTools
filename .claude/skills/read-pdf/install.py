@@ -2,11 +2,15 @@
 """
 read-pdf installer — sets up the local PDF→markdown converter.
 
-Idempotent. First run creates a venv at ~/.cache/claude-pdf-converter/venv,
-installs the configured backend, and warms up model downloads. Subsequent
-runs short-circuit if the backend imports cleanly under the venv.
+Idempotent. First run creates a per-backend venv at
+~/.cache/claude-pdf-converter/venv-<backend>/, installs the backend, and
+warms up model downloads. Subsequent runs short-circuit if the backend imports
+cleanly under the venv.
 
-The venv lives outside any git repo so that backend models (~hundreds of MB)
+Per-backend venvs mean PDF_BACKEND=marker and PDF_BACKEND=docling can coexist
+on the same machine — the bake-off can run both without reinstalling.
+
+The venvs live outside any git repo so that backend models (~hundreds of MB)
 do not pollute the skills checkout.
 """
 
@@ -26,7 +30,7 @@ PINS = {
 }
 
 CACHE_ROOT = Path.home() / ".cache" / "claude-pdf-converter"
-VENV_DIR = CACHE_ROOT / "venv"
+VENV_DIR = CACHE_ROOT / f"venv-{BACKEND}"
 
 
 def venv_python() -> Path:

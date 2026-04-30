@@ -71,7 +71,16 @@ The optional `[focus]` argument supplements but does not replace the project CLA
 
 ### 3. Discover new papers
 
-Read `./references/wiki/log.md` to find previously-ingested filenames. List PDFs in `./references/raw/` that do not appear in the log. These are the papers to ingest, in filename-sorted order. Non-PDF files in `raw/` are skipped silently.
+Read `./references/wiki/log.md` to find previously-ingested filenames. List PDFs in `./references/raw/` that do not appear in the log. These are the papers to ingest, in filename-sorted order.
+
+If there are non-PDF files in `raw/`, surface them to the user before continuing:
+
+```
+Non-PDF files found in references/raw/: <filenames>
+These were skipped for ingest. Move them elsewhere if they don't belong, or tell me if any should be treated differently.
+```
+
+Include these filenames in the end-of-run summary under a "Skipped (non-PDF)" section so the record is persistent. Do not silently ignore them.
 
 If no new papers are found, report that and exit.
 
@@ -198,14 +207,6 @@ After equations are handled, synthesize the structured extract directly into `re
 The structured extract is the durable, project-local artifact for each paper. Layout:
 
 ```markdown
-## Bibliographic metadata
-doi: <10.xxxx/yyyy from first page if present, else null>
-authors: [LastName1, LastName2, ...]
-title: <verbatim title from title page>
-year: <year>
-venue: <journal/working paper series/etc., verbatim>
-venue_type: journal | working_paper | book_chapter | other
-
 ## Plain-English synthesis
 [200-word cap, see below]
 
@@ -215,10 +216,6 @@ venue_type: journal | working_paper | book_chapter | other
 ...
 [continue through all 11 dimensions below]
 ```
-
-The DOI check: scan the first ~5000 chars of `markdown.md` for the regex `10\.\d{4,}/\S+`. Record only if found; do not guess.
-
-The bib metadata block is recorded for use by the (forthcoming) bib-pipeline feature, even though `wiki-update-local` itself does not assemble a `references.bib` file. Future runs of a separate bib skill will read this block.
 
 ### Plain-English synthesis block (top of `_text.md`)
 
@@ -347,12 +344,18 @@ Apply "compress, don't omit": sections of the paper directly relevant to the pro
 
 ### Embedding figures in wiki pages (subagent)
 
-When a relevant figure was copied to `references/wiki/figures/`, the wiki concept page that should reference it embeds it via standard markdown:
+When a relevant figure was copied to `references/wiki/figures/`, the wiki concept page embeds it using this uniform format regardless of Tier A/B:
 
 ```markdown
+**Figure N:** <verbatim caption> (p. 12)
+
 ![<short description>](../figures/<paper-stem>_fig<N>.png)
-*<verbatim caption from paper> ([<paper-stem>](../log.md), p. 12)*
+
+- Key visual finding: <one sentence — what the eye sees / the point of the figure>
+- **Figure notes:** <verbatim notes printed below the figure in the paper, if any>
 ```
+
+The Tier A/B distinction lives in `_text.md` only (full structured optical decomposition for Tier A; schematic one-liner for Tier B). Wiki pages get the same lightweight format for all figures — caption, embed, one-sentence takeaway, notes.
 
 If a wiki page references a figure that the converter did not extract (rare — typically only when the backend missed a figure or the PDF page is purely text), fall back to a verbal description and page reference.
 
@@ -366,7 +369,6 @@ Pages modified non-destructively: [list with brief description]
 Proposed destructive edits: [list of {page, unified diff, rationale}]
 Disambiguation questions: [list of {concept, candidate existing pages}]
 Proposed log entry: [single line for wiki/log.md]
-Bibliographic metadata: {doi, authors, title, year, venue, venue_type}
 Figures copied: [list of {source_cache_path, dest_wiki_path, paper_figure_label}]
 Equation fallback used: <true/false> (with count if true)
 Errors: [any issues encountered]
@@ -374,15 +376,25 @@ Errors: [any issues encountered]
 
 ## Per-paper atomicity (main session)
 
-For each paper, the main session:
+For each paper, the main session uses a **journal-and-rollback** pattern to guarantee the wiki is never left in an inconsistent state.
 
-1. Spawns the subagent and waits for its return summary
-2. If there are disambiguation questions, asks the user; passes answers back via a follow-up SendMessage to the same agent (or applies decisions directly if simple)
-3. If there are proposed destructive edits, presents them to the user as a single batched approval request (one prompt per paper, not one per edit). The user can approve all, reject all, or selectively approve.
-4. Applies approved destructive edits directly via Edit
-5. **Last:** appends the log entry to `wiki/log.md`
+**Before writing any wiki changes:**
 
-If any step before #5 fails (subagent error, user interrupt, edit failure), do not write the log entry. The next `/wiki-update-local` invocation will rediscover the paper as new and retry from scratch. Partial wiki pages from the failed attempt will be **overwritten** on retry — this is intentional. Do not implement resume logic.
+1. Record a snapshot of every wiki page that the subagent intends to touch (pages to be created: note they don't exist yet; pages to be modified: read and save current content). This is the rollback journal.
+
+**Then execute the write sequence:**
+
+2. Spawn the subagent and wait for its return summary.
+3. If there are disambiguation questions, ask the user; pass answers back via a follow-up SendMessage to the same agent (or apply decisions directly if simple).
+4. Apply all non-destructive edits.
+5. If there are proposed destructive edits, present them to the user as a single batched approval request (one prompt per paper, not one per edit). The user can approve all, reject all, or selectively approve. Apply approved edits.
+6. **Last:** append the log entry to `wiki/log.md`.
+
+**On failure at any step 2–6:**
+
+Roll back: restore each touched page to its journaled state (delete pages that were newly created; restore original content for pages that were modified). Do not write the log entry. The next `/wiki-update-local` invocation will rediscover the paper as new and retry cleanly from a known-good state.
+
+Do not implement partial-resume logic. The journal guarantees retry is always safe.
 
 After each paper finishes, move to the next. Do not batch papers.
 
@@ -397,7 +409,6 @@ After all papers are processed, report:
 
 ## What this skill does NOT do
 
-- **Does not assemble `references.bib`.** A separate skill (forthcoming, on its own feature branch) handles BibTeX generation from the metadata block in each `_text.md` extract via a CrossRef/OpenAlex/GROBID cascade. `wiki-update-local` records the metadata so that skill has what it needs, but does not run any network lookups itself.
 - **Does not download PDFs.** Drop them into `references/raw/` first.
 
 ## Rules
