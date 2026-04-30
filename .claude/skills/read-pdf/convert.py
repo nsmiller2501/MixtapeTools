@@ -27,7 +27,9 @@ from pathlib import Path
 
 BACKEND = os.environ.get("PDF_BACKEND", "docling")  # "docling" | "marker"
 CACHE_ROOT = Path.home() / ".cache" / "claude-pdf-converter"
-CACHE_DIR = CACHE_ROOT / "cache"
+# Cache is namespaced by backend — different backends produce different output
+# for the same PDF, so they must not share cache entries.
+CACHE_DIR = CACHE_ROOT / "cache" / BACKEND
 VENV_PYTHON = CACHE_ROOT / f"venv-{BACKEND}" / "bin" / "python"
 SKILL_DIR = Path(__file__).resolve().parent
 
