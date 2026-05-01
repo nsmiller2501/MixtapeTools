@@ -1,83 +1,106 @@
 #!/usr/bin/env python3
 """
-read-pdf installer — sets up the local PDF→markdown converter.
+read-pdf installer — sets up the local PDF→markdown converter (marker backend).
 
-Idempotent. First run creates a per-backend venv at
-~/.cache/claude-pdf-converter/venv-<backend>/, installs the backend, and
-warms up model downloads. Subsequent runs short-circuit if the backend imports
-cleanly under the venv.
+Idempotent. First run creates a venv at ~/.cache/claude-pdf-converter/venv-marker/,
+installs marker-pdf, and warms up model downloads. Subsequent runs short-circuit
+if marker imports cleanly under the venv.
 
-Per-backend venvs mean PDF_BACKEND=marker and PDF_BACKEND=docling can coexist
-on the same machine — the bake-off can run both without reinstalling.
-
-The venvs live outside any git repo so that backend models (~hundreds of MB)
+The venv lives outside any git repo so that backend models (~hundreds of MB)
 do not pollute the skills checkout.
+
+OS-agnostic: searches for a Python ≥ 3.10 across macOS, Linux, and Windows
+common install locations. If none is found, prints a platform-aware install hint.
 """
 
 import os
+import platform
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-# Backend selection. Final pin chosen post-bake-off; see read-pdf/README.md.
-# Override via PDF_BACKEND env var to test the other backend without editing.
-BACKEND = os.environ.get("PDF_BACKEND", "docling")  # "docling" | "marker"
+BACKEND = "marker"
+PINS = ["marker-pdf"]  # latest; pin a version after a regression is observed
 
-# Version pins. Both backends require Python 3.10+ for current releases.
-# Pre-bake-off placeholders — confirm + tighten after bake-off.
-PINS = {
-    "docling": ["docling"],          # latest; pin post-bake-off
-    "marker": ["marker-pdf"],        # latest; pin post-bake-off
-}
-
-# Both backends require Python ≥3.10. macOS system python is often 3.9, so
-# search common install locations for a suitable interpreter to use as the
-# venv base.
 PY_MIN = (3, 10)
-PY_CANDIDATES = [
-    "python3.13", "python3.12", "python3.11", "python3.10",
-    "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13",
-    "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12",
-    "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11",
-    "/opt/homebrew/bin/python3.13",
-    "/opt/homebrew/bin/python3.12",
-    "/opt/homebrew/bin/python3.11",
-    "/opt/homebrew/bin/python3",
-]
+
+# Names to try on PATH. Cross-platform: same on macOS/Linux/Windows because
+# python.org and most package managers install with these names.
+PY_NAMES = ["python3.13", "python3.12", "python3.11", "python3.10", "python3", "python"]
+
+# Absolute fallback paths by OS, only consulted if PATH search fails.
+def _fallback_paths() -> list[str]:
+    sysname = platform.system()
+    if sysname == "Darwin":
+        return [
+            f"/Library/Frameworks/Python.framework/Versions/{v}/bin/python{v}"
+            for v in ("3.13", "3.12", "3.11", "3.10")
+        ] + [
+            f"/opt/homebrew/bin/python{v}" for v in ("3.13", "3.12", "3.11", "3.10")
+        ] + [
+            f"/usr/local/bin/python{v}" for v in ("3.13", "3.12", "3.11", "3.10")
+        ]
+    if sysname == "Linux":
+        return [f"/usr/bin/python{v}" for v in ("3.13", "3.12", "3.11", "3.10")]
+    if sysname == "Windows":
+        # py launcher handles version selection on Windows
+        return ["py", "-3.13", "py", "-3.12", "py", "-3.11", "py", "-3.10"]
+    return []
+
+
+def _install_hint() -> str:
+    sysname = platform.system()
+    if sysname == "Darwin":
+        return "Install Python 3.10+ via `brew install python@3.12` or python.org installer."
+    if sysname == "Linux":
+        return "Install Python 3.10+ via your package manager (e.g. `apt install python3.12` or `dnf install python3.12`)."
+    if sysname == "Windows":
+        return "Install Python 3.10+ via `winget install Python.Python.3.12` or python.org installer."
+    return "Install Python 3.10 or newer."
+
+
+def _check_version(path: str) -> bool:
+    try:
+        out = subprocess.check_output(
+            [path, "-c", "import sys; print('%d.%d' % sys.version_info[:2])"],
+            text=True, stderr=subprocess.DEVNULL,
+        ).strip()
+        major, minor = (int(x) for x in out.split("."))
+        return (major, minor) >= PY_MIN
+    except Exception:
+        return False
 
 
 def find_python() -> str:
     """Return path to a Python ≥3.10. Prefers the running interpreter if it qualifies."""
     if sys.version_info >= PY_MIN:
         return sys.executable
-    for cand in PY_CANDIDATES:
-        path = shutil.which(cand) if "/" not in cand else (cand if Path(cand).exists() else None)
-        if not path:
-            continue
-        try:
-            out = subprocess.check_output(
-                [path, "-c", "import sys; print('%d.%d' % sys.version_info[:2])"],
-                text=True,
-            ).strip()
-            major, minor = (int(x) for x in out.split("."))
-            if (major, minor) >= PY_MIN:
-                return path
-        except Exception:
-            continue
+    for name in PY_NAMES:
+        path = shutil.which(name)
+        if path and _check_version(path):
+            return path
+    for cand in _fallback_paths():
+        path = cand if Path(cand).exists() else shutil.which(cand)
+        if path and _check_version(path):
+            return path
     print(
         f"error: need Python ≥{PY_MIN[0]}.{PY_MIN[1]} but found only "
-        f"{sys.version_info.major}.{sys.version_info.minor}. "
-        f"Install Python 3.11+ (e.g. via python.org or homebrew).",
+        f"{sys.version_info.major}.{sys.version_info.minor}.\n"
+        f"{_install_hint()}",
         file=sys.stderr,
     )
     sys.exit(2)
+
 
 CACHE_ROOT = Path.home() / ".cache" / "claude-pdf-converter"
 VENV_DIR = CACHE_ROOT / f"venv-{BACKEND}"
 
 
 def venv_python() -> Path:
+    # Windows venvs put python in Scripts/, not bin/
+    if platform.system() == "Windows":
+        return VENV_DIR / "Scripts" / "python.exe"
     return VENV_DIR / "bin" / "python"
 
 
@@ -88,9 +111,8 @@ def venv_exists() -> bool:
 def backend_imports() -> bool:
     if not venv_exists():
         return False
-    module = "docling" if BACKEND == "docling" else "marker"
     result = subprocess.run(
-        [str(venv_python()), "-c", f"import {module}"],
+        [str(venv_python()), "-c", "import marker"],
         capture_output=True,
     )
     return result.returncode == 0
@@ -109,12 +131,8 @@ def create_venv() -> None:
         [str(venv_python()), "-m", "pip", "install", "--upgrade", "pip"],
         check=True,
     )
-    pkgs = PINS.get(BACKEND)
-    if not pkgs:
-        print(f"error: unknown backend {BACKEND!r}", file=sys.stderr)
-        sys.exit(2)
     subprocess.run(
-        [str(venv_python()), "-m", "pip", "install", *pkgs],
+        [str(venv_python()), "-m", "pip", "install", *PINS],
         check=True,
     )
 
@@ -122,18 +140,11 @@ def create_venv() -> None:
 def warmup_models() -> None:
     """Trigger first-run model download so the first conversion is fast."""
     print("Downloading layout/OCR models (one-time)...", flush=True)
-    if BACKEND == "docling":
-        warmup = (
-            "from docling.document_converter import DocumentConverter; "
-            "DocumentConverter()"
-        )
-    elif BACKEND == "marker":
-        warmup = (
-            "from marker.models import create_model_dict; create_model_dict()"
-        )
-    else:
-        return
-    subprocess.run([str(venv_python()), "-c", warmup], check=True)
+    subprocess.run(
+        [str(venv_python()), "-c",
+         "from marker.models import create_model_dict; create_model_dict()"],
+        check=True,
+    )
 
 
 def main() -> int:

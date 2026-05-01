@@ -1,7 +1,7 @@
 # LLM Wiki
 
 A personal knowledge base maintained by Claude Code.
-Based on Andrej Karpathy's LLM Wiki pattern.
+Based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 
 ## Purpose
 

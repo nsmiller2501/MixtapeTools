@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-read-pdf converter — PDF → markdown + figures.
+read-pdf converter — PDF → markdown + figures (marker backend).
 
 Caches by SHA-256 of the PDF bytes. Re-running on the same content is free.
 
@@ -11,27 +11,127 @@ Prints the absolute path to the cached markdown.md on success (exit 0).
 On backend failure, exits non-zero with the error on stderr — no fallback.
 
 Cache layout:
-    ~/.cache/claude-pdf-converter/cache/<sha256>/
+    ~/.cache/claude-pdf-converter/cache/marker/<sha256>/
         markdown.md       # verbatim conversion with inline ![](figures/...)
-        figures/*.png     # extracted figures (and equations if image-fallback)
+        figures/*.png     # extracted figures
         meta.json         # backend, version, page/figure counts, source path
 """
 
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-BACKEND = os.environ.get("PDF_BACKEND", "docling")  # "docling" | "marker"
+BACKEND = "marker"
 CACHE_ROOT = Path.home() / ".cache" / "claude-pdf-converter"
-# Cache is namespaced by backend — different backends produce different output
-# for the same PDF, so they must not share cache entries.
 CACHE_DIR = CACHE_ROOT / "cache" / BACKEND
 VENV_PYTHON = CACHE_ROOT / f"venv-{BACKEND}" / "bin" / "python"
 SKILL_DIR = Path(__file__).resolve().parent
+
+
+def detect_torch_device() -> str:
+    """Pick best available torch device: cuda > mps > cpu. OS-agnostic."""
+    try:
+        import torch
+    except ImportError:
+        return "cpu"
+    if torch.cuda.is_available():
+        return "cuda"
+    if getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
+def normalize_footnotes(text: str) -> str:
+    """
+    Rewrite marker's bare-number footnote encoding as Pandoc-style markdown footnotes.
+
+    Marker places footnote superscripts as bare digits attached to the preceding
+    word/punctuation, then dumps the footnote body as a standalone paragraph
+    starting with the matching number at the next page-break boundary. This
+    function detects matched anchor/definition pairs and rewrites them:
+
+        ...coefficient.12 We then...      →  ...coefficient.[^12] We then...
+        12The county-level cluster...      →  (removed from body)
+
+    A definitions block is appended at the end of the document:
+
+        [^12]: The county-level cluster...
+
+    Guards: code fences, table rows, display-math paragraphs, and numbered list
+    items (digit followed by ". " or ") ") are left untouched.
+    Only numbers that appear as BOTH an anchor and a definition are rewritten —
+    this is the primary false-positive guard.
+    """
+    paragraphs = re.split(r'\n\n+', text)
+
+    # --- Pass 1: find definition paragraphs ---
+    # Matches: bare 1–3 digit number at paragraph start, NOT followed by ". "
+    # or ") " (numbered list items), then optional whitespace, then the body.
+    # No mandatory space between number and body (handles OCR gaps in old scans).
+    fn_def_re = re.compile(r'^(\d{1,3})(?!\.\s|\)\s)\s*(\S.+)', re.DOTALL)
+
+    footnote_defs: dict[str, str] = {}
+    def_para_indices: set[int] = set()
+    in_fence = False
+
+    for i, para in enumerate(paragraphs):
+        stripped = para.strip()
+        # Track code-fence state across paragraphs
+        if stripped.count('```') % 2 != 0:
+            in_fence = not in_fence
+        if in_fence:
+            continue
+        # Skip tables, display math, and code fences
+        if re.match(r'\s*(\||```|\$\$)', stripped):
+            continue
+        m = fn_def_re.match(stripped)
+        if m:
+            num, body = m.group(1), m.group(2).strip()
+            if body and not body.isdigit():
+                footnote_defs[num] = body
+                def_para_indices.add(i)
+
+    if not footnote_defs:
+        return text
+
+    # --- Pass 2: replace anchors in body paragraphs ---
+    # Anchor: one of the known footnote numbers immediately following a word
+    # character or sentence-ending punctuation, not preceded by '[' (citation).
+    # Lookahead: whitespace, sentence punctuation, closing bracket, or EOL.
+    nums_alt = '|'.join(re.escape(n) for n in sorted(footnote_defs, key=lambda x: -len(x)))
+    anchor_re = re.compile(
+        r'(?<=[a-zA-Z.,;:!?\'")\]])(?<!\[)(' + nums_alt + r')(?=[\s,.:;!?\n\)\]]|$)'
+    )
+
+    result_paras: list[str] = []
+    in_fence = False
+    for i, para in enumerate(paragraphs):
+        stripped = para.strip()
+        if stripped.count('```') % 2 != 0:
+            in_fence = not in_fence
+
+        if i in def_para_indices:
+            continue  # will be collected at end
+
+        # Skip anchor replacement inside protected blocks
+        if in_fence or re.match(r'\s*(\||```|\$\$)', stripped):
+            result_paras.append(para)
+        else:
+            result_paras.append(anchor_re.sub(lambda m: f'[^{m.group(1)}]', para))
+
+    # Append all definitions in numerical order
+    defs_block = '\n\n'.join(
+        f'[^{n}]: {footnote_defs[n]}'
+        for n in sorted(footnote_defs, key=int)
+    )
+    result_paras.append(defs_block)
+
+    return '\n\n'.join(result_paras)
 
 
 def sha256_of(path: Path) -> str:
@@ -57,58 +157,6 @@ def reexec_in_venv(args: list[str]) -> None:
     os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), str(Path(__file__).resolve()), *args])
 
 
-# ---------------------------------------------------------------------------
-# Backend implementations
-# ---------------------------------------------------------------------------
-# These are skeletons against the published APIs. Verify and refine after the
-# bake-off — in particular: figure-iteration APIs, equation-mode detection,
-# and table-rendering options vary between backend versions.
-
-def convert_with_docling(pdf_path: Path, out_dir: Path) -> dict:
-    from docling.document_converter import DocumentConverter
-
-    converter = DocumentConverter()
-    result = converter.convert(str(pdf_path))
-    doc = result.document
-
-    figures_dir = out_dir / "figures"
-    figures_dir.mkdir(exist_ok=True)
-
-    md = doc.export_to_markdown()
-
-    fig_count = 0
-    for i, picture in enumerate(getattr(doc, "pictures", []) or []):
-        try:
-            img = picture.get_image(doc) if hasattr(picture, "get_image") else None
-            if img is None:
-                continue
-            img_path = figures_dir / f"fig_{i + 1}.png"
-            img.save(img_path)
-            fig_count += 1
-        except Exception as exc:  # pragma: no cover — best-effort extraction
-            print(f"warn: figure {i + 1} extraction failed: {exc}", file=sys.stderr)
-
-    (out_dir / "markdown.md").write_text(md, encoding="utf-8")
-
-    page_count = None
-    pages_attr = getattr(doc, "pages", None)
-    if pages_attr is not None:
-        try:
-            page_count = len(pages_attr)
-        except TypeError:
-            page_count = None
-
-    return {
-        "backend": "docling",
-        "page_count": page_count,
-        "figure_count": fig_count,
-        # TODO post-bake-off: detect when docling emitted equations as LaTeX
-        # vs. left them as raster blocks. Set "image_fallback" if the latter,
-        # and write equation crops to figures/eq_*.png for vision transcription.
-        "equation_extraction_mode": "native",
-    }
-
-
 def convert_with_marker(pdf_path: Path, out_dir: Path) -> dict:
     from marker.converters.pdf import PdfConverter
     from marker.models import create_model_dict
@@ -130,6 +178,7 @@ def convert_with_marker(pdf_path: Path, out_dir: Path) -> dict:
         except Exception as exc:  # pragma: no cover
             print(f"warn: figure {name} save failed: {exc}", file=sys.stderr)
 
+    text = normalize_footnotes(text)
     (out_dir / "markdown.md").write_text(text, encoding="utf-8")
 
     return {
@@ -139,16 +188,6 @@ def convert_with_marker(pdf_path: Path, out_dir: Path) -> dict:
         "equation_extraction_mode": "native",  # marker emits LaTeX directly
     }
 
-
-BACKENDS = {
-    "docling": convert_with_docling,
-    "marker": convert_with_marker,
-}
-
-
-# ---------------------------------------------------------------------------
-# Driver
-# ---------------------------------------------------------------------------
 
 def main() -> int:
     if len(sys.argv) != 2:
@@ -163,6 +202,11 @@ def main() -> int:
     if not in_venv():
         reexec_in_venv([str(pdf_path)])
 
+    # Marker reads TORCH_DEVICE at import time. Set before importing the
+    # backend, after we're inside the venv (so torch is the venv's torch).
+    if "TORCH_DEVICE" not in os.environ:
+        os.environ["TORCH_DEVICE"] = detect_torch_device()
+
     digest = sha256_of(pdf_path)
     out_dir = CACHE_DIR / digest
     md_path = out_dir / "markdown.md"
@@ -170,19 +214,15 @@ def main() -> int:
         print(str(md_path))
         return 0
 
-    backend_fn = BACKENDS.get(BACKEND)
-    if backend_fn is None:
-        print(f"error: unknown backend {BACKEND!r}", file=sys.stderr)
-        return 2
-
     out_dir.mkdir(parents=True, exist_ok=True)
     started = time.time()
-    info = backend_fn(pdf_path, out_dir)
+    info = convert_with_marker(pdf_path, out_dir)
     info.update(
         {
             "source_path": str(pdf_path),
             "sha256": digest,
             "elapsed_seconds": round(time.time() - started, 2),
+            "torch_device": os.environ.get("TORCH_DEVICE", "cpu"),
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
     )

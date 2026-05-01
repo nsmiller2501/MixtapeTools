@@ -17,6 +17,11 @@ The user (or another skill, e.g. `wiki-update-local`) wants a clean markdown ren
 
 If the user gave a search query rather than a path, ask them to download the PDF first — this skill does not handle acquisition.
 
+## Prerequisites
+
+- **Python ≥ 3.10** must be available on the host (any OS — macOS, Linux, Windows). The installer in Step 1 will refuse to proceed if it can only find Python 3.9 or older. If `python3 --version` reports < 3.10, install a newer Python first (`brew install python@3.12`, `apt install python3.11`, `winget install Python.Python.3.12`, or python.org installer) before invoking this skill.
+- **Optional GPU acceleration** is auto-detected and used when available, in priority order: NVIDIA CUDA → Apple Silicon MPS → CPU. Acceleration is transparent — no flags needed. On an M-series Mac or a CUDA box, expect a 3–5× speedup over CPU.
+
 ## Step 1: Ensure the converter is installed
 
 The converter runs in a dedicated Python venv at `~/.cache/claude-pdf-converter/venv/`. The first invocation on a fresh machine creates this venv and downloads the layout/OCR models (~500 MB, 1–3 min). Subsequent invocations short-circuit.
@@ -67,20 +72,7 @@ When another skill calls `read-pdf` programmatically, it should invoke `convert.
 
 ## Equations
 
-If the chosen backend (post-bake-off) reproduces equations as LaTeX math mode (`$...$` / `$$...$$`) inline in `markdown.md`, no further work is needed.
-
-If `meta.json` reports `equation_extraction_mode: "image_fallback"`, equations were clipped as images into `figures/eq_*.png`. In that case, after Step 2 launch a vision sub-agent to transcribe each `eq_*.png` to LaTeX math mode and edit the markdown to replace the image references with the transcribed math. Prompt skeleton:
-
-```
-Read the image at <path>. It is a single equation clipped from an academic paper.
-Transcribe it as LaTeX, in display math mode ($$ ... $$). Output only the LaTeX —
-no commentary, no surrounding text. If the equation is not legible, output the
-literal string "[unreadable equation]".
-```
-
-Do this in a sub-agent, not the main session — equation images would otherwise pile into the parent's context.
-
-`equation_extraction_mode` values: `"native"` (backend produced LaTeX directly — no fallback needed) or `"image_fallback"` (vision transcription required).
+Marker emits equations as LaTeX math mode (`$...$` inline, `$$...$$` display) directly in `markdown.md`. No vision fallback is required. `meta.json` records `equation_extraction_mode: "native"` for traceability.
 
 ## Cache management
 
@@ -95,7 +87,9 @@ Do this in a sub-agent, not the main session — equation images would otherwise
 
 ## Backend
 
-The conversion backend is configured in `convert.py` via the `PDF_BACKEND` constant. Currently selectable: `docling` or `marker`. Final selection pending bake-off on `_bakeoff_pdf2md/` test PDFs — see [README.md](README.md) for the bake-off rubric and current pin versions.
+The conversion backend is **marker** (`marker-pdf`). Selected after a head-to-head bake-off against docling on a representative set of empirical-economics PDFs; marker won on equation fidelity, table structure, and figure extraction quality.
+
+Backend selection is fixed in `convert.py`. There is no runtime override — if the bake-off needs to be redone for a future backend candidate, edit the `BACKEND` constant explicitly so the cache namespace and venv are regenerated cleanly.
 
 ## Quick Reference
 
@@ -103,8 +97,6 @@ The conversion backend is configured in `convert.py` via the `PDF_BACKEND` const
 |------|--------|
 | **Install** | `python3 ~/.claude/skills/read-pdf/install.py` (idempotent; downloads models on first run) |
 | **Convert** | `python3 ~/.claude/skills/read-pdf/convert.py <pdf>` (prints path to `markdown.md`) |
-| **Equation fallback** | If `meta.json:equation_extraction_mode == "image_fallback"`, transcribe `figures/eq_*.png` via vision sub-agent |
-| **Cache** | Keyed by SHA-256 of PDF bytes; located at `~/.cache/claude-pdf-converter/cache/<hash>/` |
+| **Cache** | Keyed by SHA-256 of PDF bytes; located at `~/.cache/claude-pdf-converter/cache/marker/<hash>/` |
+| **GPU** | Auto-detected (CUDA → MPS → CPU). No flag needed. |
 | **Failure mode** | Hard fail. No silent fallback to pdftotext or other tools. |
-
-For background on backend selection and the bake-off, see [README.md](README.md).
