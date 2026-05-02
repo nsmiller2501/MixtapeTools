@@ -20,7 +20,7 @@ The user wants to read, review, or summarize an academic paper and either: (a) w
 ## Prerequisites
 
 - **Python ≥ 3.10** must be available. `install.py` refuses to proceed on Python 3.9 or older. If needed: `brew install python@3.12`, `apt install python3.11`, or python.org installer.
-- **Optional GPU acceleration** is auto-detected: NVIDIA CUDA → Apple Silicon MPS → CPU. No flags needed.
+- **Optional GPU acceleration** is auto-detected: NVIDIA CUDA → CPU. (MPS on Apple Silicon is excluded — surya's layout model crashes on MPS at runtime.)
 
 ## Step 1: Acquire the PDF
 

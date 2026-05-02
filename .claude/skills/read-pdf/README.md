@@ -84,7 +84,7 @@ Backend selection is fixed in `convert.py`. There is no runtime override — if 
 
 ### GPU acceleration
 
-Auto-detected in priority order: NVIDIA CUDA → Apple Silicon MPS → CPU. A 3–5× speedup on M-series Macs or CUDA boxes. No flags needed.
+Auto-detected: NVIDIA CUDA → CPU. MPS on Apple Silicon is excluded — surya's layout model crashes at runtime on MPS with an index-bounds error (some surya sub-models already refuse MPS; the layout model does not and fails mid-conversion). A 3–5× speedup on CUDA boxes. No flags needed on any platform.
 
 ### Content-hash cache
 

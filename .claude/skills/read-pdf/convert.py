@@ -34,15 +34,14 @@ SKILL_DIR = Path(__file__).resolve().parent
 
 
 def detect_torch_device() -> str:
-    """Pick best available torch device: cuda > mps > cpu. OS-agnostic."""
+    """Pick best available torch device: cuda > cpu. MPS excluded — surya's layout
+    model crashes on Apple Silicon MPS with an index-bounds error at runtime."""
     try:
         import torch
     except ImportError:
         return "cpu"
     if torch.cuda.is_available():
         return "cuda"
-    if getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available():
-        return "mps"
     return "cpu"
 
 
