@@ -1,102 +1,164 @@
 ---
 name: read-pdf
-description: Convert academic PDFs to clean markdown with extracted tables and figures, locally. Layout-aware conversion preserves equation fidelity, table structure, and figure clips. Output is cached by content hash so re-converting the same PDF is free. Use when a workflow needs a markdown representation of a PDF's content (read-pdf is the local-conversion counterpart to split-pdf, which offloads PDF reading to Anthropic's servers).
-allowed-tools: Bash(python3:*), Bash(mkdir:*), Bash(cp:*), Read, Write, Agent
-argument-hint: [pdf-path]
+description: Download or use a local academic PDF, convert to clean markdown locally (python:marker, layout-aware), then extract structured reading notes into `_text.md`. Same output contract as /split-pdf — bibliographic metadata block + 8-dimension research notes — but uses local conversion instead of Claude vision-reading PDF images. Preserves equation fidelity, table structure, and figure references. Use when you want higher-fidelity math/table extraction, or when you already have a local file.
+allowed-tools: Bash(python3:*), Bash(curl:*), Bash(wget:*), Bash(mkdir:*), Read, Write, WebSearch, WebFetch, Agent
+argument-hint: [pdf-path-or-search-query]
 ---
 
-# read-pdf: Local PDF → markdown converter
+# Read-PDF: Download, Convert, and Deep-Read Academic Papers
 
-Converts a PDF into a single markdown file with inline figure references and a sidecar `figures/` directory of extracted images. Designed for academic papers: equations preserved as math-mode LaTeX, tables as pipe-syntax markdown, figures clipped pixel-accurately and referenced inline.
-
-The output is cached by SHA-256 of the source PDF in `~/.cache/claude-pdf-converter/cache/<hash>/`. Subsequent invocations on the same file return the cached path immediately.
+Same I/O contract as /split-pdf: takes a PDF (local or searched), produces a structured `_text.md` extraction with a bibliographic metadata block and 8-dimension research notes. The difference is the reading mechanism: instead of Claude vision-reading PDF page images in chunks, read-pdf converts the PDF to markdown locally using python:marker, then reads the text. This preserves equation fidelity, table structure, and figure references without image-based context bloat.
 
 ## When This Skill Is Invoked
 
-The user (or another skill, e.g. `wiki-update-local`) wants a clean markdown rendering of a PDF. The argument is a path to a local PDF.
+The user wants to read, review, or summarize an academic paper and either: (a) wants layout-aware equation/table extraction, or (b) already has a local PDF. The input is either:
+- A file path to a local PDF (e.g., `~/Documents/papers/smith_2024.pdf`)
+- A search query or paper title (e.g., `"Gentzkow Shapiro Sinkinson 2014 competition newspapers"`)
 
-If the user gave a search query rather than a path, ask them to download the PDF first — this skill does not handle acquisition.
+**Important:** You cannot search for a paper you don't know exists. Provide either a file path or a specific query. If the user invokes this skill without specifying a paper, ask them.
 
 ## Prerequisites
 
-- **Python ≥ 3.10** must be available on the host (any OS — macOS, Linux, Windows). The installer in Step 1 will refuse to proceed if it can only find Python 3.9 or older. If `python3 --version` reports < 3.10, install a newer Python first (`brew install python@3.12`, `apt install python3.11`, `winget install Python.Python.3.12`, or python.org installer) before invoking this skill.
-- **Optional GPU acceleration** is auto-detected and used when available, in priority order: NVIDIA CUDA → Apple Silicon MPS → CPU. Acceleration is transparent — no flags needed. On an M-series Mac or a CUDA box, expect a 3–5× speedup over CPU.
+- **Python ≥ 3.10** must be available. `install.py` refuses to proceed on Python 3.9 or older. If needed: `brew install python@3.12`, `apt install python3.11`, or python.org installer.
+- **Optional GPU acceleration** is auto-detected: NVIDIA CUDA → Apple Silicon MPS → CPU. No flags needed.
 
-## Step 1: Ensure the converter is installed
+## Step 1: Acquire the PDF
 
-The converter runs in a dedicated Python venv at `~/.cache/claude-pdf-converter/venv/`. The first invocation on a fresh machine creates this venv and downloads the layout/OCR models (~500 MB, 1–3 min). Subsequent invocations short-circuit.
+**If a local file path is provided:**
+- Verify the file exists
+- Use the PDF in place. The working directory is the folder containing the PDF.
+- Proceed to Step 2
 
-Run:
+**If a search query or paper title is provided:**
+1. Use WebSearch to find the paper
+2. Use WebFetch or Bash (curl/wget) to download the PDF
+3. Save it to the current working directory
+4. Proceed to Step 2
+
+**CRITICAL: Always preserve the original PDF.** Never delete, move, or overwrite it at any point in this workflow.
+
+## Step 2: Ensure the converter is installed
 
 ```bash
 python3 ~/.claude/skills/read-pdf/install.py
 ```
 
-`install.py` is idempotent. If the venv already exists and the backend imports cleanly, it exits immediately. On first run, it prints:
+Idempotent. First run creates a venv at `~/.cache/claude-pdf-converter/venv/` and downloads marker models (~500 MB, 1–3 min). Surface the "First run" message to the user verbatim if it appears — they should know why this invocation is slow.
 
-> First run: creating venv at ~/.cache/claude-pdf-converter/venv and installing <backend> (~500MB, 1–3 min, one-time).
+## Step 3: Convert
 
-Surface that message to the user verbatim if it appears — they should know why this invocation is slow.
+**Before converting, check for a cached conversion.** Compute the SHA-256 hash of the PDF and check whether `markdown.md` already exists in the cache:
 
-## Step 2: Convert
+```python
+import hashlib, os, sys
 
-Run:
+pdf_path = "<absolute-pdf-path>"
 
-```bash
-python3 ~/.claude/skills/read-pdf/convert.py "<pdf-path>"
+with open(pdf_path, 'rb') as f:
+    pdf_hash = hashlib.sha256(f.read()).hexdigest()
+
+markdown_path = os.path.expanduser(
+    f'~/.cache/claude-pdf-converter/cache/marker/{pdf_hash}/markdown.md'
+)
+print(markdown_path if os.path.exists(markdown_path) else "NOT_CACHED")
 ```
 
-`convert.py` prints the absolute path to the resulting `markdown.md` on success and exits 0. On failure it exits non-zero and prints the backend's error to stderr — **do not fall back to pdftotext or any other tool**. Surface the error to the user and stop. The whole point of this skill is the layout-aware conversion; a degraded fallback would hide bugs and produce silently-wrong conversions.
-
-The cache layout for each PDF:
-
-```
-~/.cache/claude-pdf-converter/cache/<sha256>/
-├── markdown.md       # verbatim conversion with inline ![](figures/fig_N.png)
-├── figures/          # extracted images, pixel-accurate clips
-│   ├── fig_1.png
-│   └── ...
-└── meta.json         # backend, version, page count, source path, timestamp
-```
-
-Cache hits are silent — `convert.py` just prints the path. Cache misses run the backend and print the same path.
-
-## Step 3: Hand off the markdown
-
-Read the printed `markdown.md` path and either:
-
-- Return it to the calling skill (typical use), or
-- For standalone invocation, summarize what's in it: page count, figure count (read `meta.json`), and a one-paragraph topic summary derived from the first ~500 words of the markdown.
-
-When another skill calls `read-pdf` programmatically, it should invoke `convert.py` directly (bash) rather than spawning `/read-pdf` as a slash command — slash invocation re-enters Claude unnecessarily and adds latency. The script is the contract; the skill is the user-facing wrapper.
-
-## Equations
-
-Marker emits equations as LaTeX math mode (`$...$` inline, `$$...$$` display) directly in `markdown.md`. No vision fallback is required. `meta.json` records `equation_extraction_mode: "native"` for traceability.
-
-## Cache management
-
-- The cache is keyed by SHA-256 of the PDF bytes. Re-saving the same PDF under a new name produces a cache hit.
-- Cache entries are not auto-evicted. To force a re-conversion, delete the entry:
-
+- **If cached:** tell the user "Using cached markdown conversion (SHA-256 match), skipping re-conversion." Use the printed path as `markdown_path`.
+- **If not cached:** run:
   ```bash
-  rm -rf ~/.cache/claude-pdf-converter/cache/<sha256>/
+  python3 ~/.claude/skills/read-pdf/convert.py "<pdf-path>"
   ```
+  It prints the absolute path to `markdown.md` on success and exits 0. **Do not fall back to pdftotext or any other tool on failure** — surface the error and stop. The whole point of this skill is the layout-aware conversion; a degraded fallback produces silently-wrong output.
 
-- To wipe the entire cache (e.g., after a backend upgrade): `rm -rf ~/.cache/claude-pdf-converter/cache/`. The venv at `~/.cache/claude-pdf-converter/venv/` is untouched.
+## Step 4: Check for existing `_text.md`
 
-## Backend
+Look for `<basename>_text.md` in the same folder as the PDF.
 
-The conversion backend is **marker** (`marker-pdf`). Selected after a head-to-head bake-off against docling on a representative set of empirical-economics PDFs; marker won on equation fidelity, table structure, and figure extraction quality.
+If found, ask:
+> "An extract already exists (`<basename>_text.md`). Overwrite it, or save the new extraction as `<basename>_text2.md`?"
 
-Backend selection is fixed in `convert.py`. There is no runtime override — if the bake-off needs to be redone for a future backend candidate, edit the `BACKEND` constant explicitly so the cache namespace and venv are regenerated cleanly.
+Proceed using whichever filename the user chooses.
+
+## Step 5: Structured Extraction
+
+Read `markdown.md` and collect information along these dimensions:
+
+0. **Bibliographic metadata** — From the title section of the markdown, extract:
+   ```
+   ## Bibliographic metadata
+   doi: <10.xxxx/yyyy if present, else null>
+   authors: [LastName1, LastName2, ...]
+   title: <verbatim title>
+   year: <year>
+   venue: <journal/working paper series/etc., verbatim>
+   venue_type: journal | working_paper | book_chapter | other
+   ```
+   If a field is not visible, record `null`.
+
+1. **Research question** — What is the paper asking and why does it matter?
+2. **Audience** — Which sub-community of researchers cares about this?
+3. **Method** — How do they answer the question? What is the identification strategy?
+4. **Data** — What data do they use? Where precisely did they find it? Unit of observation? Sample size? Time period?
+5. **Statistical methods** — What econometric or statistical techniques? Key specifications?
+6. **Findings** — Main results? Key coefficient estimates and standard errors?
+7. **Contributions** — What is learned that we didn't know before?
+8. **Replication feasibility** — Public data? Replication archive? Data appendix? URLs?
+
+## The Output File
+
+Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first, followed by the research notes.
+
+Notify the user:
+> "Extract saved to `smith_2024_text.md` alongside the source PDF. Future requests on this paper can reuse it without re-reading."
+
+This file is the persistent, reusable artifact.
+
+## Agent Isolation Protocol
+
+**When read-pdf is invoked by another skill**, the conversion steps (Steps 2–3) run in the parent context — they are lightweight bash calls. The reading and extraction (Steps 4–5) MUST run inside a subagent. The converted `markdown.md` can be large, and reading it in the parent context of an active workflow accumulates permanent token cost. The subagent reads `markdown.md`, writes plain-text `_text.md`, and the parent reads only that.
+
+**Pattern:**
+
+The parent skill handles install.py, the SHA-256 cache check, convert.py if needed, and the `_text.md` collision check. Then it launches an Agent:
+
+```
+Read a converted markdown file and produce structured extraction notes.
+
+Markdown input: <markdown_path>
+Text output: <text_path>
+
+Process:
+1. Read <markdown_path> using the Read tool
+2. From the title section, extract a bibliographic metadata block:
+   ## Bibliographic metadata
+   doi: <10.xxxx/yyyy if present, else null>
+   authors: [LastName1, LastName2, ...]
+   title: <verbatim title>
+   year: <year>
+   venue: <journal/working paper series/etc., verbatim>
+   venue_type: journal | working_paper | book_chapter | other
+3. Extract: research question, audience, method, data (sources, sample size, time period),
+   statistical methods, findings, contributions, replication feasibility
+4. Write the final structured extraction to <text_path>, with the
+   ## Bibliographic metadata block first, followed by the research notes.
+
+Report when done: page count, figures/tables found, one-sentence content summary.
+```
+
+After the agent returns, the parent reads `_text.md` (plain text, not the large `markdown.md`) and continues its workflow.
+
+**Standalone invocations** (user calls `/read-pdf` directly) read `markdown.md` in the main conversation and write `_text.md` directly — no subagent needed for a one-off read.
 
 ## Quick Reference
 
 | Step | Action |
 |------|--------|
+| **Acquire** | Download via web search or use local file in place |
 | **Install** | `python3 ~/.claude/skills/read-pdf/install.py` (idempotent; downloads models on first run) |
-| **Convert** | `python3 ~/.claude/skills/read-pdf/convert.py <pdf>` (prints path to `markdown.md`) |
-| **Cache** | Keyed by SHA-256 of PDF bytes; located at `~/.cache/claude-pdf-converter/cache/marker/<hash>/` |
-| **GPU** | Auto-detected (CUDA → MPS → CPU). No flag needed. |
-| **Failure mode** | Hard fail. No silent fallback to pdftotext or other tools. |
+| **Check cache** | SHA-256 → `~/.cache/claude-pdf-converter/cache/marker/<hash>/markdown.md` |
+| **Convert** | `python3 ~/.claude/skills/read-pdf/convert.py <pdf>` if not cached |
+| **Collision** | Ask overwrite vs `_text2.md` if `_text.md` already exists |
+| **Extract** | Bibliographic metadata + 8-dimension notes from `markdown.md` |
+| **Persist** | Save to `<basename>_text.md` alongside the source PDF |
+
+For backend details, cache management, and GPU notes, see [README.md](README.md).
