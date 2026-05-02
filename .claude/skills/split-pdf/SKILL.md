@@ -123,6 +123,18 @@ Do NOT read ahead. Do NOT read all splits at once. The pause-and-confirm protoco
 
 As you read, collect information along these dimensions and write them into `notes.md`:
 
+0. **Bibliographic metadata** — From the first split (title page), extract:
+   ```
+   ## Bibliographic metadata
+   doi: <10.xxxx/yyyy if present on the title page, else null>
+   authors: [LastName1, LastName2, ...]
+   title: <verbatim title from title page>
+   year: <year>
+   venue: <journal/working paper series/etc., verbatim>
+   venue_type: journal | working_paper | book_chapter | other
+   ```
+   If a field is not visible on the title page, record `null`.
+
 1. **Research question** — What is the paper asking and why does it matter?
 2. **Audience** — Which sub-community of researchers cares about this?
 3. **Method** — How do they answer the question? What is the identification strategy?
@@ -140,7 +152,7 @@ The working notes file is `notes.md` in the split subdirectory, updated incremen
 
 By the time all splits are read, the notes should contain specific data sources, variable names, equation references, sample sizes, coefficient estimates, and standard errors. Not a summary — a structured extraction.
 
-**After all batches are complete**, write the final notes to `<basename>_text.md` in the same folder as the source PDF:
+**After all batches are complete**, write the final notes to `<basename>_text.md` in the same folder as the source PDF, with the `## Bibliographic metadata` block first:
 
 ```
 articles/smith_2024_text.md
@@ -172,9 +184,18 @@ Text output: <text_path>
 Process:
 1. Read 3 PDF files at a time using the Read tool
 2. After each batch, update the notes file with extracted content
-3. Extract: research question, audience, method, data (sources, sample size, time period),
+3. From the first split (title page), extract a bibliographic metadata block:
+   ## Bibliographic metadata
+   doi: <10.xxxx/yyyy if present on the title page, else null>
+   authors: [LastName1, LastName2, ...]
+   title: <verbatim title from title page>
+   year: <year>
+   venue: <journal/working paper series/etc., verbatim>
+   venue_type: journal | working_paper | book_chapter | other
+4. Extract: research question, audience, method, data (sources, sample size, time period),
    statistical methods, findings, contributions, replication feasibility
-4. Write the final structured extraction to the text output path
+5. Write the final structured extraction to the text output path, with the
+   ## Bibliographic metadata block first, followed by the research notes.
 
 Report when done: pages read, figures/tables found, one-sentence content summary.
 ```
