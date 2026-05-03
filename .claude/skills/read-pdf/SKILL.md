@@ -68,7 +68,7 @@ print(markdown_path if os.path.exists(markdown_path) else "NOT_CACHED")
   ```bash
   python3 ~/.claude/skills/read-pdf/convert.py "<pdf-path>"
   ```
-  It prints the absolute path to `markdown.md` on success and exits 0. **Do not fall back to pdftotext or any other tool on failure** — surface the error and stop. The whole point of this skill is the layout-aware conversion; a degraded fallback produces silently-wrong output.
+  It prints the absolute path to `markdown.md` on success and exits 0. For born-digital PDFs with a usable embedded text layer, `convert.py` uses that text layer and disables marker's full-document OCR path while preserving marker's layout/table processing. **Do not fall back to pdftotext or any other tool on failure** — surface the error and stop. The whole point of this skill is the layout-aware conversion; a degraded fallback produces silently-wrong output.
 
 ## Step 4: Check for existing `_text.md`
 

@@ -82,6 +82,10 @@ The conversion backend is **marker** (`marker-pdf`). Selected after a head-to-he
 
 Backend selection is fixed in `convert.py`. There is no runtime override — if the bake-off needs to be redone for a future backend candidate, edit the `BACKEND` constant in `convert.py` explicitly so the cache namespace and venv are regenerated cleanly.
 
+### Born-digital PDFs and OCR
+
+Most journal PDFs already contain an embedded text layer. For those files, `convert.py` samples the first pages with `pdftotext` and tells marker to use the embedded text rather than re-OCRing the whole document. Marker still performs layout, table, and selected region recognition, but avoids the extremely slow full-document OCR path. If the text-layer sample is missing or too sparse, marker keeps OCR enabled for scanned PDFs.
+
 ### GPU acceleration
 
 Auto-detected: NVIDIA CUDA → CPU. MPS on Apple Silicon is excluded — surya's layout model crashes at runtime on MPS with an index-bounds error (some surya sub-models already refuse MPS; the layout model does not and fails mid-conversion). A 3–5× speedup on CUDA boxes. No flags needed on any platform.

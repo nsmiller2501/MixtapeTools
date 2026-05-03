@@ -141,6 +141,23 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
+def text_layer_chars(path: Path, pages: int = 3) -> int:
+    """Return non-whitespace chars extracted from the PDF text layer sample."""
+    try:
+        result = subprocess.run(
+            ["pdftotext", "-l", str(pages), str(path), "-"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return 0
+    if result.returncode != 0:
+        return 0
+    return sum(1 for ch in result.stdout if not ch.isspace())
+
+
 def in_venv() -> bool:
     return Path(sys.prefix).resolve() == VENV_PYTHON.parent.parent.resolve()
 
@@ -158,7 +175,10 @@ def convert_with_marker(pdf_path: Path, out_dir: Path) -> dict:
     from marker.models import create_model_dict
     from marker.output import text_from_rendered
 
-    converter = PdfConverter(artifact_dict=create_model_dict())
+    text_chars = text_layer_chars(pdf_path)
+    use_text_layer = text_chars >= 500
+    config = {"disable_ocr": True} if use_text_layer else {}
+    converter = PdfConverter(artifact_dict=create_model_dict(), config=config)
     rendered = converter(str(pdf_path))
     text, _, images = text_from_rendered(rendered)
 
@@ -181,6 +201,8 @@ def convert_with_marker(pdf_path: Path, out_dir: Path) -> dict:
         "backend": "marker",
         "page_count": None,
         "figure_count": fig_count,
+        "text_layer_chars_sample": text_chars,
+        "ocr_disabled": use_text_layer,
         "equation_extraction_mode": "native",  # marker emits LaTeX directly
     }
 
