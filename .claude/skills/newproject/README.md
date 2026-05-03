@@ -77,9 +77,7 @@ The `progress_logs/` directory solves a real problem: Claude Code sessions don't
 
 ## First-time setup
 
-One-time edit before the first `/newproject` run:
-
-1. **Edit `templates/project_CLAUDE.md`** — replace `Refer to the user as Noah` with your own name (or remove the line).
+Before using a generated project, fill in the placeholders in its root `CLAUDE.md`, especially `[NAME]`, collaborators, project overview, data sources, and key files.
 
 ## Installation
 
