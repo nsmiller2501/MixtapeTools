@@ -6,7 +6,7 @@
 
 ## Communication Guidelines
 
-- Refer to the user as **Noah**
+- Refer to the user as **[NAME]**
 - Collaborators: [List collaborators and their roles]
 
 ---
@@ -47,7 +47,7 @@
 - **Data cleaning**: `path/to/cleaning.R`
 - **Paper draft**: `path/to/paper.tex`
 - **Presentation**: `path/to/slides.tex`
-- **Central BibTeX file**: `references/references.bib` (maintained by `/wiki-update`; cite from any `.tex` via `\bibliography{<relative-path>/references/references}`)
+- **References and BibTeX**: if this project uses reference ingestion, `/wiki-update` and `/bib-update` lazy-create `references/` and `references/references.bib`; do not create or maintain those files here unless the reference skills have initialized them.
 
 ### Conventions
 
