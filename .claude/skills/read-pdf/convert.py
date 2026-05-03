@@ -142,10 +142,7 @@ def sha256_of(path: Path) -> str:
 
 
 def in_venv() -> bool:
-    try:
-        return Path(sys.executable).resolve() == VENV_PYTHON.resolve()
-    except FileNotFoundError:
-        return False
+    return Path(sys.prefix).resolve() == VENV_PYTHON.parent.parent.resolve()
 
 
 def reexec_in_venv(args: list[str]) -> None:

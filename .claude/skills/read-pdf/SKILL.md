@@ -43,7 +43,7 @@ The user wants to read, review, or summarize an academic paper and either: (a) w
 python3 ~/.claude/skills/read-pdf/install.py
 ```
 
-Idempotent. First run creates a venv at `~/.cache/claude-pdf-converter/venv/` and downloads marker models (~500 MB, 1–3 min). Surface the "First run" message to the user verbatim if it appears — they should know why this invocation is slow.
+Idempotent. First run creates a venv at `~/.cache/claude-pdf-converter/venv-marker/` and downloads marker models (~500 MB, 1–3 min). Surface the "First run" message to the user verbatim if it appears — they should know why this invocation is slow.
 
 ## Step 3: Convert
 
