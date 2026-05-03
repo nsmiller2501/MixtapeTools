@@ -18,11 +18,12 @@ Scans `references/raw/` for per-paper `_text.md` extracts, reads each paper's `#
 
 1. Check that `references/raw/` exists. If not, stop: "No `references/raw/` directory found in the current working directory."
 2. Scan `references/raw/` for files matching `*_text.md`. Collect their basename stems (e.g., `Deryugina_etal_2019_AER` from `Deryugina_etal_2019_AER_text.md`). Exclude `log.md` and any file whose name ends in `_log.md`.
-3. Also scan `references/raw/` for PDF files (`*.pdf`) with no corresponding `_text.md`. These go through the **bootstrap fallback** (see below) to extract a minimal metadata block before entering the fetch cascade.
-4. If `references/references.bib` exists, read it and parse out existing citation keys — lines matching `@\w+\{<key>,`. If the file does not exist, create it (empty).
-5. For each stem (from `_text.md` or bootstrap), skip if its citation key already appears in `.bib`. Queue the rest for the fetch cascade.
-6. If the queue is empty, report "All entries up to date — nothing to add." and exit.
-7. Run the fetch cascade (see below) for each queued stem. Collect results, then surface the tier report and append.
+3. Parse each `_text.md` for a valid `## Bibliographic metadata` block. If the block is missing or malformed and `references/raw/<stem>.pdf` exists, send that stem through the **bootstrap fallback** (see below) rather than skipping. If the block is missing or malformed and no matching PDF exists, warn and skip that paper.
+4. Also scan `references/raw/` for PDF files (`*.pdf`) with no corresponding `_text.md`. These go through the **bootstrap fallback** to extract a minimal metadata block before entering the fetch cascade.
+5. If `references/references.bib` exists, read it and parse out existing citation keys — lines matching `@\w+\{<key>,`. If the file does not exist, create it (empty).
+6. For each stem (from `_text.md` or bootstrap), skip if its citation key already appears in `.bib`. Queue the rest for the fetch cascade.
+7. If the queue is empty, report "All entries up to date — nothing to add." and exit.
+8. Run the fetch cascade (see below) for each queued stem. Collect results, then surface the tier report and append.
 
 ## Rebuild mode (--rebuild-bib)
 
@@ -34,9 +35,9 @@ When `--rebuild-bib` is passed:
 4. Hard-stop at each tier-3 entry for per-entry approval before writing.
 5. Write all accepted entries to `references/references.bib`, overwriting.
 
-## Bootstrap fallback (PDF with no _text.md)
+## Bootstrap fallback (missing metadata or bare PDF)
 
-When a PDF in `references/raw/` has no corresponding `_text.md`, extract a minimal metadata block from its first page rather than skipping it entirely.
+When a PDF in `references/raw/` has no corresponding `_text.md`, or the corresponding `_text.md` is missing a parseable `## Bibliographic metadata` block, extract a minimal metadata block from the PDF's first page rather than skipping it entirely.
 
 1. Run: `pdftotext -l 1 "<pdf-path>" -` to extract page-1 text. If `pdftotext` fails or returns empty (scanned/image PDF), fall back to: spawn a vision subagent on page 1 alone (converted via `pdftoppm -r 150 -l 1`) to OCR the title, authors, year, and venue.
 2. From the extracted text, populate:
@@ -48,7 +49,10 @@ When a PDF in `references/raw/` has no corresponding `_text.md`, extract a minim
    venue: <journal/series/etc., verbatim>
    venue_type: journal | working_paper | book_chapter | other
    ```
-3. Surface the extracted block to the user: "No `_text.md` found for `<stem>`. Extracted from page 1 — please verify before proceeding:" followed by the block.
+3. Surface the extracted block to the user with the correct reason:
+   - Bare PDF: "No `_text.md` found for `<stem>`. Extracted from page 1 — please verify before proceeding:"
+   - Missing/malformed block: "`<stem>_text.md` is missing a parseable `## Bibliographic metadata` block. Extracted replacement metadata from page 1 — please verify before proceeding:"
+   Then show the block.
 4. Wait for confirmation (yes / edit / skip). On skip, exclude this stem from the run.
 5. On confirmation, treat this block exactly as a parsed `_text.md` metadata block and enter the fetch cascade.
 
@@ -66,7 +70,7 @@ venue: <journal/working paper series/etc., verbatim>
 venue_type: journal | working_paper | book_chapter | other
 ```
 
-If a `_text.md` is missing this block entirely, or the block cannot be parsed, warn and skip that paper — do not fail the run.
+If a `_text.md` is missing this block entirely, or the block cannot be parsed, bootstrap from the matching PDF when available. If no matching PDF exists, warn and skip that paper — do not fail the run.
 
 ## Citation key
 
@@ -183,6 +187,6 @@ This step is idempotent. Never add duplicate BibTeX pointers.
 - **Never overwrite an existing entry** in default mode. `--rebuild-bib` is the only path to a full regeneration.
 - **Never guess the DOI.** Use only what is in the metadata block or page-1 bootstrap. If `doi: null`, start at Source 1.
 - **Filename stem is the citation key.** If the API returns a different key, rewrite it.
-- **Missing metadata block → warn and skip.** Do not fail the entire run because one `_text.md` is missing or malformed.
+- **Missing metadata block → bootstrap if possible.** If a matching PDF exists, extract page-1 metadata and ask the user to verify it. If no matching PDF exists, warn and skip. Do not fail the entire run because one `_text.md` is missing or malformed.
 - **Tier-3 entries block.** Never append an unverified LLM-constructed entry without explicit per-entry user approval.
 - **Bootstrap requires confirmation.** Never enter the fetch cascade on a bootstrapped metadata block without user verification first.

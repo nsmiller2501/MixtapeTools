@@ -20,9 +20,11 @@ Confirms with you, then regenerates `.bib` from scratch for all papers. Blocks f
 
 **Automatic** — called as the final step of `/wiki-update`. You don't need to invoke it manually after a normal ingest run.
 
-## PDFs with no _text.md
+## Missing metadata or PDFs with no _text.md
 
 If a PDF in `references/raw/` has no `_text.md` (e.g., it was added to the folder but never ingested), `/bib-update` will extract a minimal metadata block from page 1 via `pdftotext` (or a vision subagent for scanned PDFs), show it to you for verification, then proceed with the fetch cascade. This lets you add `.bib` entries for papers that don't need a full wiki ingest.
+
+The same bootstrap path is used when a matching `_text.md` exists but is missing a parseable `## Bibliographic metadata` block. In that case `/bib-update` does not rewrite the extract; it uses verified page-1 metadata for the current BibTeX run.
 
 ## Citation key convention
 
@@ -43,6 +45,6 @@ This means the key you use in `.tex` files (`\cite{Deryugina_etal_2019_AER}`) al
 
 ## Relationship to wiki-update
 
-`/bib-update` reads the `## Bibliographic metadata` block that each per-paper subagent writes at the top of `_text.md`. It does not re-read PDFs and does not require a wiki — it works on any project that has `references/raw/*_text.md` files with metadata blocks, even if no wiki has been built.
+`/bib-update` reads the `## Bibliographic metadata` block that each per-paper subagent writes at the top of `_text.md`. It does not require a wiki, and it can bootstrap metadata from page 1 when a PDF has no `_text.md` or the extract is missing its metadata block.
 
 After creating or updating `references/references.bib`, `/bib-update` also idempotently adds a pointer to the project root `CLAUDE.md` if one is not already present. It inserts the pointer under `## Key Files` when that section exists, or appends the pointer to the end otherwise.

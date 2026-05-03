@@ -11,6 +11,8 @@ Maintains a project's reference wiki by ingesting newly-added PDFs from `referen
 
 **Ingest path is auto-detected per paper.** If the read-pdf converter is installed, it runs first for high-fidelity markdown (Protocol M: best tables, figures, and equation handling). If only a cached `_text.md` extract exists, that feeds wiki writing directly (Protocol E). Otherwise the full split-PDF vision pipeline runs (Protocol S). All three paths produce the same wiki output — the difference is quality of table and figure capture.
 
+**`pdftotext` is not an ingest source.** It is allowed only for narrow pre-flight tasks: first-page filename proposals when the converter is unavailable, metadata checks needed for `/bib-update`, and other explicit bootstrap/diagnostic checks that do not synthesize wiki content. Once a paper is assigned to Protocol M or Protocol E, do not use `pdftotext` to read, summarize, validate, or supplement substantive content. Wait for the selected input (`markdown.md` or `_text.md`) and read that source only.
+
 ## When this skill is invoked
 
 The user has added one or more PDFs to `references/raw/` and wants the wiki updated. The optional argument is a free-form focus string (e.g., "focus on IV strategies and instrument validity") that applies to this batch in addition to the project's standing context.
@@ -114,6 +116,8 @@ For each non-conforming file, extract enough text to propose a name. Choose the 
 
 If either method returns empty or <50 chars of non-whitespace, mark the file as **unparseable** and flag for manual handling.
 
+This `pdftotext` fallback is for filename proposal only. Do not reuse its output for paper synthesis, wiki page writing, tables, figures, or relevance filtering.
+
 **Batched approval.** After proposals for all non-conforming files are ready, present as one block:
 
 ```
@@ -148,7 +152,7 @@ For each new paper (using its post-rename canonical name), determine its ingest 
 
 1. **Tier M — Converted markdown:** `~/.claude/skills/read-pdf/convert.py` exists, **and** running it for this PDF succeeds (cache hit is instant; a miss triggers the full conversion here). Capture the returned `markdown.md` path and cache directory. If `convert.py` was already run during step 4 for this paper, it was cached — re-running is a no-op.
 
-   If `convert.py` exists but fails for a specific paper (conversion error), report the error, skip tier M for that paper, and fall through to tier E or S.
+   If `convert.py` exists but fails for a specific paper (conversion error), report the error, skip tier M for that paper, and fall through to tier E or S. Do not use `pdftotext` as a temporary or parallel substitute while conversion is running or after conversion fails.
 
 2. **Tier E — Cached extract:** `references/raw/<basename>_text.md` exists. No conversion needed.
 
@@ -193,6 +197,8 @@ Each subagent prompt must be self-contained — the agent has no memory of this 
 ### Protocol M — Converted Markdown
 
 *Input:* path to `markdown.md` (in the converter cache), path to the cache directory (for figures), canonical paper basename.
+
+Protocol M reads only the converted `markdown.md`, `meta.json`, and cache-local figure/equation files. Do not inspect the source PDF with `pdftotext` or any other text extractor for substantive synthesis, even if conversion is slow. If conversion is still running, wait.
 
 **Step 1: Check for equation fallback.**
 
@@ -252,6 +258,8 @@ Equation fallback used: <true/false> (with count and any "[unreadable equation]"
 **Step 1: Read the extract.**
 
 Read `_text.md` in full. Extract the `## Bibliographic metadata` block for the return value. Note any CLIP placeholders in the figures sections (these were created by a prior Protocol S run and are still pending).
+
+Protocol E reads only the cached `_text.md` and any figure files it references. Do not re-read the PDF with `pdftotext` to expand or validate the extract.
 
 **Step 2: Write wiki pages** using the substantive-change rule and relevance filtering below.
 
@@ -525,3 +533,4 @@ After all papers are processed, report:
 - **Project conventions in `references/CLAUDE.md` override this skill** if they conflict on format/naming/citation. This skill owns workflow only.
 - **Never rename a PDF without user approval.** Even a single non-conforming file goes through the batched propose/approve flow. No silent `mv`. No overwriting an existing file.
 - **Never fall back from the converter silently.** If `convert.py` errors on a PDF, report the error and proceed to tier E or S for that paper — do not substitute pdftotext output without telling the user.
+- **Never use `pdftotext` for substantive ingest.** `pdftotext` is limited to first-page metadata/filename/bootstrap checks. It must not be used to summarize, validate, or supplement Protocol M or Protocol E content.
