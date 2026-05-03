@@ -98,7 +98,7 @@ To wipe the entire cache (e.g., after a backend upgrade):
 ```bash
 rm -rf ~/.cache/claude-pdf-converter/cache/
 ```
-The venv at `~/.cache/claude-pdf-converter/venv/` is untouched.
+The venv at `~/.cache/claude-pdf-converter/venv-marker/` is untouched.
 
 ### `_text.md` collision handling
 
