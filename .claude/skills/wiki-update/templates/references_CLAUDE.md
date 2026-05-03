@@ -1,7 +1,7 @@
 # LLM Wiki
 
 A personal knowledge base maintained by Claude Code.
-Based on Andrej Karpathy's LLM Wiki pattern.
+Based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 
 ## Purpose
 
@@ -11,17 +11,18 @@ Claude maintains the wiki. The human curates sources, asks questions, and guides
 ## Folder structure
 
 ```
-raw/          -- source documents (immutable -- never modify these)
-wiki/         -- markdown pages maintained by Claude
-wiki/index.md -- table of contents for the entire wiki
-wiki/log.md   -- append-only record of all operations
+raw/             -- source documents (immutable -- never modify these)
+wiki/            -- markdown pages maintained by Claude
+wiki/index.md    -- table of contents for the entire wiki
+wiki/log.md      -- append-only record of all operations
+wiki/figures/    -- extracted figure clips from source PDFs
 ```
 
 ## Ingest workflow
 
 When the user adds a new source to `raw/` and asks you to ingest it:
 
-1. Read the full source document
+1. Read the full source document (via `/wiki-update`'s converter for PDFs, if available)
 2. Discuss key takeaways with the user before writing anything
 3. Create a summary page in `wiki/` named after the source
 4. Create or update concept pages for each major idea or entity
