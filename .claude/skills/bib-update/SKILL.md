@@ -159,6 +159,24 @@ BibTeX update — N papers processed:
 - **Tier 2** (CrossRef or OpenAlex fuzzy match): auto-appended, flagged in the report for spot-check.
 - **Tier 3** (LLM-from-metadata): printed in full, blocks for per-entry approval before appending.
 
+## Update project CLAUDE.md pointer
+
+After `references/references.bib` has been created or updated, ensure the project root `CLAUDE.md` points to it.
+
+If `./CLAUDE.md` exists and does NOT already contain the literal string `references/references.bib`, add this pointer:
+
+```markdown
+- **Central BibTeX file**: `./references/references.bib` (maintained by `/bib-update`; cite from any `.tex` via `\bibliography{<relative-path>/references/references}`)
+```
+
+Placement:
+
+1. If `CLAUDE.md` has a `## Key Files` section, insert the pointer into that section before the next `##` heading.
+2. If there is no `## Key Files` section, append the pointer to the end of `CLAUDE.md`.
+3. If `./CLAUDE.md` does not exist, skip silently.
+
+This step is idempotent. Never add duplicate BibTeX pointers.
+
 ## Rules
 
 - **Idempotent.** Re-running is always a safe no-op if all keys are present.
