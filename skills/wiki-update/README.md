@@ -33,6 +33,8 @@ The skill picks the best available path per paper, in order:
 
 The skill reports which tier each paper was assigned before spawning any subagents.
 
+`pdftotext` is not a substantive ingest path. It may be used for narrow pre-flight checks such as first-page filename proposals when the converter is unavailable or metadata/bootstrap checks, but Protocol M must read from converted `markdown.md`, and Protocol E must read from the cached `_text.md`.
+
 ---
 
 ## Layout
@@ -112,6 +114,7 @@ Each paper is ingested by a dedicated subagent so that converted markdown and ex
 
 - **No PDF download.** Drop them into `references/raw/` first.
 - **No silent converter fallback.** If `convert.py` errors on a specific paper, the skill reports the error and falls through to Protocol E or S for that paper rather than substituting `pdftotext` output silently.
+- **No `pdftotext` summaries.** Once a paper is assigned to Protocol M or E, `pdftotext` must not be used to read, summarize, validate, or supplement the paper's substantive content.
 
 ---
 
