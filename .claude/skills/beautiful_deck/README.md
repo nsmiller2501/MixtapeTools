@@ -21,6 +21,8 @@
 9. **Graphics audit (third agent)** — dispatches a second sub-agent focused only on numerical accuracy of figures/tables, label positioning, axis coherence, color consistency, and font sizing.
 10. **Final compile** — recompiles to a clean state and delivers.
 
+The skill also reads [`style_preferences.md`](style_preferences.md) for user-specific stylistic defaults. These are separate from the rhetorical principles in `rhetoric_of_decks.md`: rhetoric decides what the deck must accomplish; style preferences capture durable visual tastes that should carry across decks when they fit the audience and content. The file is currently populated with an example preference for reference; keep, edit, or delete it at the user's discretion.
+
 ## Audience first — the load-bearing decision
 
 The very first thing the skill resolves is **who the audience is**. Audience determines the rhetorical balance, the aesthetic direction, the act proportions, and the pacing — every other decision in the skill depends on it. The skill will not proceed to source-content discussion, theme work, or anything else until audience is committed.
@@ -165,5 +167,6 @@ If you install `/beautiful_deck` without `/tikz`, both steps will fail. Always i
 Full essays (in this skill directory):
 - [`rhetoric_of_decks.md`](rhetoric_of_decks.md) — the operational principles
 - [`rhetoric_of_decks_full_essay.md`](rhetoric_of_decks_full_essay.md) — the 600-line intellectual genealogy from Aristotle through LLMs
+- [`style_preferences.md`](style_preferences.md) — user-specific stylistic defaults, including functional slide-header progress indicators.
 
 `/beautiful_deck` is the operational skill version of those essays. You don't need to re-read them to invoke it — the skill handles the workflow — but the essays explain *why* the principles work.
