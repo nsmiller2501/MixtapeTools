@@ -1,8 +1,8 @@
 ---
 name: wiki-update
-description: Ingest new PDFs from a project's references/raw/ folder into the project's wiki, following the project's wiki conventions and filtering for relevance to the project's research focus. Auto-detects the best ingest path: converted markdown (via read-pdf's converter, if installed) for high-fidelity tables, figures, and equations; cached structured extract (_text.md) if available; or full split-PDF pipeline as fallback. Creates `references/raw/`, `references/wiki/`, and `references/CLAUDE.md` on first invocation if absent. Use when the user adds new papers to references/raw/ and asks to update the wiki, or says "ingest new references", "update the wiki", or similar.
-allowed-tools: Read, Edit, Write, Glob, Grep, Bash(ls*), Bash(curl:*), Bash(pdftotext:*), Bash(python3:*), Bash(mv:*), Bash(cp:*), Bash(mkdir:*), Bash(touch:*), Agent
-argument-hint: [optional focus or theme for this batch] [--rebuild-bib]
+description: Ingest new PDFs from a project's references/raw/ folder into the project's wiki, following the project's wiki conventions and filtering for relevance to the project's research focus. Auto-detects the best ingest path: converted markdown (via read-pdf's converter, if installed) for high-fidelity tables, figures, and equations; cached structured extract (_text.md) if available; or full split-PDF pipeline as fallback. Creates `references/raw/`, `references/wiki/`, and `references/CLAUDE.md` on first invocation if absent. Calls `/bib-update` automatically at the end to refresh `references/references.bib`. Use when the user adds new papers to references/raw/ and asks to update the wiki, or says "ingest new references", "update the wiki", or similar.
+allowed-tools: Read, Edit, Write, Glob, Grep, Bash(ls*), Bash(pdftotext:*), Bash(python3:*), Bash(mv:*), Bash(cp:*), Bash(mkdir:*), Bash(touch:*), Agent
+argument-hint: [optional focus or theme for this batch]
 ---
 
 # wiki-update: Ingest new references into the project wiki
@@ -457,7 +457,6 @@ Pages modified non-destructively: [list with brief description]
 Proposed destructive edits: [list of {page, unified diff, rationale}]
 Disambiguation questions: [list of {concept, candidate existing pages}]
 Proposed log entry: [single line for wiki/log.md]
-Bibliographic metadata: {doi, authors, title, year, venue, venue_type}
 Pending CLIPs: [list of {target_path, source_paper, page_number, one_liner}]
 [Protocol M only] Figures copied: [list of {source_cache_path, dest_wiki_path, paper_figure_label}]
 [Protocol M only] Equation fallback used: <true/false>
@@ -490,87 +489,9 @@ After each paper finishes, move to the next. Do not batch papers.
 
 ## Post-log: update `references/references.bib`
 
-After **all** papers have been ingested and logged, the main session updates the central BibTeX file at `references/references.bib`. This step runs in the main session (not subagents) so network-fetch failures and unverified entries don't poison wiki writes.
+After **all** papers have been ingested and logged, invoke `/bib-update` in append-only mode. It reads the `## Bibliographic metadata` blocks from each newly-ingested paper's `_text.md`, runs the DOI-direct → CrossRef → OpenAlex → LLM-fallback cascade, and appends new entries to `references/references.bib`. Papers already present in `.bib` are skipped automatically.
 
-### Mode
-
-- **Default:** append-only. For each filename ingested in this run, add one entry. Skip any filename whose citation key already exists in `references.bib` — never overwrite.
-- **`--rebuild-bib` flag:** iterate every filename in `wiki/log.md`, re-run the fetch cascade using cached `_text.md` metadata (never re-read PDFs), and overwrite `references.bib` after a single confirmation prompt. If a `_text.md` is missing, skip with a warning.
-
-If `references/references.bib` does not exist, create it.
-
-### Citation key
-
-Use the filename stem verbatim (e.g., `Deryugina_etal_2019_AER`). If the fetched BibTeX has a different key, rewrite it. Key collision with an existing entry → surface as a conflict; do not overwrite.
-
-### Fetch cascade (per paper, stop at first success)
-
-**0. DOI from `_text.md` metadata.** The subagent returned a DOI in `Bibliographic metadata` if one was found. If present, fetch directly via content-negotiation:
-
-```
-curl -sLH "Accept: application/x-bibtex" "https://doi.org/<DOI>"
-```
-
-A successful response is accepted as-is (rewrite the key, done).
-
-**1. CrossRef title+author search.** Query `https://api.crossref.org/works?query.title=<urlencoded-title>&query.author=<first-author-last>&rows=5`. Apply the **3-signal match test** to each candidate:
-
-- Year matches (±1 acceptable, flag in report)
-- First author's last name matches (case-insensitive)
-- Title fuzzy-match ≥85% after normalization (lowercase, strip punctuation, collapse whitespace)
-
-Require **three-way agreement** across filename (parsed as `Author_etal_Year_Venue`), subagent-returned metadata, and API result — year and first-author must agree. Disagreement → reject candidate.
-
-On first passing candidate: content-negotiate its DOI to get clean BibTeX.
-
-**2. OpenAlex title+author search.** Query `https://api.openalex.org/works?search=<title>&filter=authorships.author.display_name.search:<first-author-last>`. Apply the same match test and three-way agreement.
-
-**3. LLM-from-PDF fallback.** If all network sources fail, construct a BibTeX entry from the subagent's returned metadata. Map `venue_type`:
-- `journal` → `@article`
-- `working_paper` → `@techreport` (institution = venue)
-- `book_chapter` → `@incollection`
-- other → `@misc`
-
-Mark as **unverified** and block for user approval.
-
-**Preprint/published divergence:** the filename's venue wins. If the filename says `Anderson_etal_2022_NBER` but an API returns a 2024 AER version, reject that result and either re-query scoped to the WP series or fall through to LLM fallback.
-
-### Review and append
-
-```
-BibTeX entries for this batch (N papers):
-
-[auto-appended, no review needed]
-✓ <key>  — CrossRef via DOI (<doi>)
-...
-
-[auto-appended, flagged for spot-check]
-⚠ <key>  — CrossRef title-match (<fuzzy%>, year/author OK)
-...
-
-[REQUIRES APPROVAL]
-? <key>  — LLM-from-PDF (unverified)
-   <full entry printed>
-   Approve / Edit / Skip?
-...
-```
-
-Tier 1 (DOI hits) and Tier 2 (fuzzy matches) are appended immediately. Tier 3 (LLM-unverified) blocks for per-entry approval.
-
-### Failure handling
-
-- `curl` timeout / network error on any source → fall through to next source.
-- All sources fail → LLM-from-PDF fallback → block for approval.
-- JSON parse error → treat as failure, fall through.
-- Content-negotiation returns empty body → fall through.
-
-### Rebuild mode (`--rebuild-bib`)
-
-1. Confirm with user: "This will overwrite `references/references.bib` with entries for N papers from `log.md`. Proceed?"
-2. Iterate filenames in `log.md` order.
-3. For each, read the `## Bibliographic metadata` block from `references/raw/<basename>_text.md`. If missing, warn and skip.
-4. Run the cascade as above (cached metadata only — no subagent re-read, no PDF access).
-5. Write all accepted entries to `references.bib`, overwriting. Hard-stop at any tier-3 entry to get approval.
+To regenerate `.bib` from scratch, run `/bib-update --rebuild-bib` as a separate, explicit step — not as part of a normal ingest run.
 
 ---
 
@@ -602,7 +523,5 @@ After all papers are processed, report:
 - **Never write the log entry before wiki edits complete.** The log is the source of truth for "what's been ingested" — it must lag behind, not lead.
 - **Never invent project context.** If `CLAUDE.md` placeholders are unfilled, stop and ask. Do not guess the research question.
 - **Project conventions in `references/CLAUDE.md` override this skill** if they conflict on format/naming/citation. This skill owns workflow only.
-- **Never overwrite existing `.bib` entries.** Append-only in default mode. Key collisions surface as conflicts. Only `--rebuild-bib` may overwrite, and only after explicit confirmation.
-- **Never silently accept an LLM-generated BibTeX entry.** Tier-3 (unverified) entries must be printed in full and blocked for user approval.
 - **Never rename a PDF without user approval.** Even a single non-conforming file goes through the batched propose/approve flow. No silent `mv`. No overwriting an existing file.
 - **Never fall back from the converter silently.** If `convert.py` errors on a PDF, report the error and proceed to tier E or S for that paper — do not substitute pdftotext output without telling the user.
