@@ -148,7 +148,7 @@ These questions extract what a researcher needs to **build on or replicate** the
 
 ## The Notes File
 
-The working notes file is `notes.md` in the split subdirectory, updated incrementally after each batch. Structure it with clear headers for each of the 8 dimensions. After each batch, update whichever dimensions have new information — do not rewrite from scratch.
+The working notes file is `notes.md` in the split subdirectory, updated incrementally after each batch. Structure it with clear headers for the bibliographic metadata block and each of the eight research dimensions. After each batch, update whichever dimensions have new information — do not rewrite from scratch.
 
 By the time all splits are read, the notes should contain specific data sources, variable names, equation references, sample sizes, coefficient estimates, and standard errors. Not a summary — a structured extraction.
 
