@@ -44,3 +44,5 @@ This means the key you use in `.tex` files (`\cite{Deryugina_etal_2019_AER}`) al
 ## Relationship to wiki-update
 
 `/bib-update` reads the `## Bibliographic metadata` block that each per-paper subagent writes at the top of `_text.md`. It does not re-read PDFs and does not require a wiki — it works on any project that has `references/raw/*_text.md` files with metadata blocks, even if no wiki has been built.
+
+After creating or updating `references/references.bib`, `/bib-update` also idempotently adds a pointer to the project root `CLAUDE.md` if one is not already present. It inserts the pointer under `## Key Files` when that section exists, or appends the pointer to the end otherwise.
