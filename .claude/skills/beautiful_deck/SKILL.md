@@ -11,7 +11,7 @@ This skill implements Scott's full deck-creation pipeline. It is NOT just a comp
 
 Scott's philosophy: **a deck is a performance medium, not a document**. It must be beautiful, technically rigorous, smoothly paced (MB/MC equivalence across slides), and visually clean at the pixel level. Every element earns its presence. Every title is an assertion. Every figure carries one message.
 
-This skill is the orchestrator. It calls `/tikz` for visual cleanup, draws on its own local reference files (preambles, palettes, TikZ measurement formulas, domain patterns) in this skill directory, and dispatches sub-agents for rhetoric and graphics audits.
+This skill is the orchestrator. It calls `/tikz` for visual cleanup, draws on its own local reference files (preambles, palettes, TikZ measurement formulas, domain patterns, style preferences) in this skill directory, and dispatches sub-agents for rhetoric and graphics audits.
 
 ---
 
@@ -119,6 +119,8 @@ The goal is: something truly effective for *this* audience, *this* content, and 
 **If Path A (Scott's house style):** Copy the Warm Professional preamble from `~/.claude/skills/beautiful_deck/preamble_warm_professional.tex` — this IS Scott's house style and is not boilerplate for outward-facing academic work. Proceed to Step 2.
 
 **If Path B (original design — the default when Scott says "design for me an original Beamer style"):** You are designing an original aesthetic. Follow this process:
+
+Before implementing either path, read `~/.claude/skills/beautiful_deck/style_preferences.md`. Treat it as user-specific stylistic guidance only: it should shape persistent visual preferences such as slide-header treatments, but it does not override audience fit, content needs, or the rhetorical principles in `rhetoric_of_decks.md`.
 
 ### 1.1 Palette construction
 
@@ -628,6 +630,7 @@ The rhetorical balance depends on the audience — see Q2 in Step 0.
 For the complete essay behind these principles, all in this skill directory:
 - `rhetoric_of_decks.md` — the condensed operational version
 - `rhetoric_of_decks_full_essay.md` — the 600-line intellectual genealogy from Aristotle through LLMs
+- `style_preferences.md` — user-specific stylistic defaults that persist across decks; separate from rhetorical principles.
 
 This skill operationalizes those essays. You don't need to re-read them to execute the workflow — just follow the steps above.
 
