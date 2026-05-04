@@ -35,3 +35,12 @@ Functional header ornaments should either live outside the content region or res
 - Treat title rules, progress lines, title bars, section indicators, and side accents as layout elements, not overlay decoration.
 - If a header ornament sits near the title or slide body, reserve vertical or horizontal clearance for it in the frame-title template, slide header macro, or content margins.
 - Do not draw header ornaments over the content coordinate system unless they are guaranteed to stay outside text, figures, tables, and code blocks.
+
+## Screenshot and Image Placeholders
+
+When a slide reserves space for a screenshot, UI capture, or other image, size the placeholder like the eventual image rather than like a text callout.
+
+- If the image is the primary visual in a column, use the full available column width unless the slide's composition clearly calls for a smaller image.
+- If vertical space is the binding constraint, use the full available content height and let width follow the image aspect ratio.
+- Placeholder text should be secondary. Keep the note readable, but do not let the note determine the size of the image box.
+- If the user prefers smaller image treatments, this section can be edited or deleted without changing the core skill.
