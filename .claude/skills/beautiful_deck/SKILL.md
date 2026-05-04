@@ -232,6 +232,19 @@ Every slide title must state a claim. Examples:
 
 If someone reads only the titles in sequence, they should understand the entire argument. Test this: write out just the titles. Does the sequence tell a coherent story? If not, your arc is broken.
 
+### Title length and line breaks
+
+Assertion titles should normally fit on one line. A title that wraps is usually trying to do body-text work. Rewrite it shorter before adding title-template machinery.
+
+Use this order:
+
+1. Keep the assertion, but remove setup words.
+2. Replace a clause with a sharper verb.
+3. Move qualifiers into the visual, caption, speaker notes, or the next slide.
+4. Split the slide if the full assertion needs multiple clauses.
+
+When line breaks are unavoidable, break only between words whenever possible. Do not rely on hyphenating or splitting a word across lines to make a title or body text fit; rewrite, resize the specific element, or change the layout first.
+
 ### The outline checkpoint
 
 Write the outline as:
@@ -342,7 +355,7 @@ Work slide by slide, but also slide-sequence by slide-sequence. For each slide, 
 
 1. Re-read the outline to confirm this slide's role in the arc.
 2. **Check the pedagogical movement within the section.** Where are we in the Narrative → Application → Picture → Codeblock → Technical sequence? If we are writing a technical slide, confirm that the preceding slides have already delivered the story, the application, the picture, and (if relevant) the code. If they have not, back up and write those slides first. Never let the technical arrive before the intuition.
-3. Write the title as an assertion.
+3. Write the title as an assertion that fits on one line unless there is a deliberate exception.
 4. Pick ONE visual element: a figure, an equation, a diagram, a single statistic, a code block. Not two.
 5. Add minimal supporting text — a labeled setup ("From the FOC:", "Step 1:") or ONE concluding line. NEVER a wall of sentences.
 6. Check: can someone in the back row read every character? If not, cut text or increase font.
@@ -350,6 +363,8 @@ Work slide by slide, but also slide-sequence by slide-sequence. For each slide, 
 ### 4.2 The hard rules (no exceptions)
 
 - **One idea per slide.** Two max for inseparable contrasts.
+- **One-line assertion titles by default.** If a title wraps, rewrite it shorter before engineering around the wrap.
+- **Do not split words across lines when avoidable.** Hyphenated or broken words are a last resort; prefer rewriting, resizing the specific element, or changing layout.
 - **No wall of sentences.** If you catch yourself writing a sentence that narrates what the audience can see, delete it.
 - **No bullet lists by default.** Find the structure (sequence, contrast, hierarchy, causal chain) and make it visible with layout.
 - **No decoration without function.** Stock photos, clip art, decorative icons — delete.
@@ -522,12 +537,13 @@ Dispatch a sub-agent (via the Task tool) to evaluate the deck against the Rhetor
 > You are Referee 2 in rhetoric-review mode. Audit the Beamer deck at `<deck>.tex` and its compiled PDF at `<deck>.pdf` against the principles in `~/.claude/skills/beautiful_deck/rhetoric_of_decks.md`. Check specifically:
 >
 > 1. **Titles are assertions.** Read the titles in sequence. Do they tell a coherent story? List any title that is a label rather than an assertion, with a suggested rewrite.
-> 2. **One idea per slide.** List any slide with two or more competing ideas.
-> 3. **No wall of sentences.** List any slide with more than two prose sentences stacked vertically.
-> 4. **MB/MC equivalence.** Rate each slide's density on a 1–5 scale. Flag outliers (slides that are dramatically denser or sparser than their neighbors).
-> 5. **Narrative arc.** Does the deck have a clear Setup / Development / Resolution structure? Does the opening hook and does the closing linger?
-> 6. **Devil's Advocate.** Is there a slide addressing the strongest objection? If the context is academic or external, this is required.
-> 7. **Audience fit.** Does the rhetorical balance (ethos / pathos / logos) match the audience declared at Step 0?
+> 2. **Title line discipline.** Flag assertion titles that wrap or are likely to wrap. Suggest shorter one-line rewrites. Also flag avoidable word breaks or hyphenation used only to make text fit.
+> 3. **One idea per slide.** List any slide with two or more competing ideas.
+> 4. **No wall of sentences.** List any slide with more than two prose sentences stacked vertically.
+> 5. **MB/MC equivalence.** Rate each slide's density on a 1–5 scale. Flag outliers (slides that are dramatically denser or sparser than their neighbors).
+> 6. **Narrative arc.** Does the deck have a clear Setup / Development / Resolution structure? Does the opening hook and does the closing linger?
+> 7. **Devil's Advocate.** Is there a slide addressing the strongest objection? If the context is academic or external, this is required.
+> 8. **Audience fit.** Does the rhetorical balance (ethos / pathos / logos) match the audience declared at Step 0?
 >
 > Return a structured report with numbered concerns and suggested rewrites. Do NOT modify the deck source — only diagnose. The main agent will apply fixes.
 

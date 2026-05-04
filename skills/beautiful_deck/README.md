@@ -14,7 +14,7 @@
 2. **Design an original theme** — builds a custom `.sty` or preamble tuned to the audience. Never boilerplate. A reader should not be able to guess what theme package is underneath.
 3. **Design the narrative arc** — writes a one-page outline enforcing the pedagogical movement `Narrative → Application → Picture → Codeblock → Technical`. Shows the outline to the user for approval before writing any slides.
 4. **Generate figures and tables code-first** — writes standalone R / Python / Stata scripts, runs them, saves figures and tables, and only then writes the `\includegraphics{}` and `\input{}` calls in the deck.
-5. **Write the slides** — one idea per slide, assertion titles, no wall of sentences, MB/MC equivalence across the deck, and **safe TikZ generation from the start** (Step 4.4 — see below).
+5. **Write the slides** — one idea per slide, assertion titles that normally fit on one line, no wall of sentences, MB/MC equivalence across the deck, and **safe TikZ generation from the start** (Step 4.4 — see below).
 6. **Compile and fix warnings** — runs the compile loop until `Overfull`, `Underfull`, font, and fatal errors all return zero counts.
 7. **Run `/tikz`** — invokes the measurement-based visual collision audit to catch any *residual* TikZ collisions. Because Step 5 writes safe TikZ from the start, `/tikz` is a check, not a rescue mission.
 8. **Rhetoric audit (second agent)** — dispatches a sub-agent to verify titles-are-assertions, one-idea-per-slide, MB/MC balance, narrative arc, Devil's Advocate presence, and audience fit.
@@ -32,6 +32,10 @@ Every section, every slide sequence, every topic must move in this order. Not th
 The anti-pattern is the lecture that opens with definitions, proves a theorem, and then offers an example at the end "for intuition." That treats technical content as primary and intuition as decorative. Scott's pedagogy is the opposite: the intuition *is* the content, and the technical statement is what the audience walks *away* with, not what they walk in with.
 
 The skill enforces this at every slide-sequencing step. If the agent catches itself writing a technical slide before the picture that motivates it, it backs up and writes the picture first.
+
+## Why title line discipline matters
+
+Slide titles are assertions, but they are still slide titles. A title that wraps is usually doing body-text work and can collide with frame-title ornaments, progress rules, or the slide body. The skill now treats one-line assertion titles as the default: rewrite shorter first, split the slide if needed, and avoid breaking words across lines whenever possible.
 
 ## Why an original theme matters
 
