@@ -24,6 +24,22 @@
 
 ---
 
+### `aristotle.md` — Ethos, Pathos, and Logos for Academic Decks
+
+**What it is:** A companion essay to the Rhetoric of Decks framework focused on Aristotle's three artistic proofs and how they apply to academic presentations.
+
+**Covers:**
+- **Ethos** as character made visible: practical wisdom, seriousness, and goodwill toward the audience
+- **Pathos** as audience state: anxiety, curiosity, confidence, confusion, and why attention depends on emotion
+- **Logos** as visible inference: enthymeme, example, assertion titles, and one proof object per slide
+- How the balance changes between **classroom teaching decks** and **research seminar decks**
+- Why the Devil's Advocate slide works rhetorically
+- How AI-generated decks create a new verification problem
+
+**When to use it:** When you want the deeper Aristotelian foundation for audience-specific academic deck design, especially for teaching or research seminars.
+
+---
+
 ### `rhetoric_of_decks_full_essay.md` — The Full Intellectual Framework
 
 **What it is:** A 600+ line essay tracing rhetoric from Aristotle through LLMs. The complete intellectual foundation behind the practical principles.
