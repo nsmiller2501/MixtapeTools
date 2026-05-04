@@ -90,12 +90,26 @@ Bold: +10%. Monospace: +15%.
 
 If estimated label width > usable space: collision guaranteed. Move the label above/below or shorten it.
 
-### Pass 3: Arrow label positioning
-
-Every arrow label must have a positional keyword:
+For short arrows between boxes, the gap calculation is not enough. A label can fit horizontally and still crowd the arrow or touch the endpoint boxes. When the usable gap is less than 2.5cm, or when the label uses more than half of the usable gap, prefer a standalone label node with explicit coordinates and dimensions. Draw the arrow separately.
 
 ```latex
-% GOOD
+% Preferred for short arrows between boxes
+\node[font=\scriptsize, align=center, minimum width=1.8cm, minimum height=0.35cm]
+  at (2.2,0.95) {package the prompt};
+\draw[->] (A) -- (B);
+```
+
+Use inline edge labels only when both checks pass:
+
+1. Estimated label width is comfortably below usable gap, with at least 0.3cm padding on both sides.
+2. The label's rendered box clears the arrow line and both endpoint boxes by at least 0.3cm.
+
+### Pass 3: Arrow label positioning
+
+Every inline arrow label must have a positional keyword:
+
+```latex
+% GOOD only when Pass 2 clearance also passes
 \draw[->] (A) -- (B) node[midway, above] {label};
 
 % BAD — label sits ON the arrow
@@ -105,6 +119,8 @@ Every arrow label must have a positional keyword:
 Horizontal arrows: `above` or `below`.
 Vertical arrows: `left` or `right`.
 Diagonal: whichever side has more space.
+
+For short arrows, prefer the standalone-node pattern from Pass 2. Positional keywords are necessary but not sufficient: `node[midway, above]` can still collide with endpoint boxes when the arrow is short or the label is long.
 
 ### Pass 4: Labels vs. drawn shapes (the Boundary Rule)
 
