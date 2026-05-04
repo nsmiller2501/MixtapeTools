@@ -43,4 +43,6 @@ When a slide reserves space for a screenshot, UI capture, or other image, size t
 - If the image is the primary visual in a column, use the full available column width unless the slide's composition clearly calls for a smaller image.
 - If vertical space is the binding constraint, use the full available content height and let width follow the image aspect ratio.
 - Placeholder text should be secondary. Keep the note readable, but do not let the note determine the size of the image box.
+- Make placeholders easy to replace after the user adds real files. Prefer a helper macro or commented line that already shows the intended syntax, such as `\includegraphics[width=\linewidth,height=4cm,keepaspectratio]{figures/example.png}` or, when `\graphicspath{{figures/}}` is set, `\includegraphics[width=\linewidth,height=4cm,keepaspectratio]{example.png}`.
+- Add a brief source comment next to each placeholder naming the expected screenshot file or explaining that the user can replace only the filename.
 - If the user prefers smaller image treatments, this section can be edited or deleted without changing the core skill.
