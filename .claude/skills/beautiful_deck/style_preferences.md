@@ -19,3 +19,19 @@ Every content slide should have a thin horizontal separator between the assertio
 - Keep the treatment subtle; it should orient the speaker and audience without competing with content.
 
 For Beamer, implement this in the frame-title template or a shared slide-header macro so it is automatic and consistent. Prefer a computed width such as `\insertframenumber/\inserttotalframenumber * \paperwidth` over manually edited per-slide values.
+
+## Edge Accents
+
+If a deck uses vertical bars, side rails, page-edge rules, or other side ornamentation, place those accents in the page gutter rather than at the content origin.
+
+- Draw edge accents in page coordinates, or with a negative x-offset from the text area.
+- Do not let side ornamentation occupy the same coordinate region as slide body text, captions, code blocks, tables, figures, or wrapped frame titles.
+- If the deck's style does not need side ornamentation, omit it. This is a stylistic option, not a required deck feature.
+
+## Header Ornaments
+
+Functional header ornaments should either live outside the content region or reserve the space they need.
+
+- Treat title rules, progress lines, title bars, section indicators, and side accents as layout elements, not overlay decoration.
+- If a header ornament sits near the title or slide body, reserve vertical or horizontal clearance for it in the frame-title template, slide header macro, or content margins.
+- Do not draw header ornaments over the content coordinate system unless they are guaranteed to stay outside text, figures, tables, and code blocks.
