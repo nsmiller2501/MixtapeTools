@@ -35,7 +35,7 @@ The skill enforces this at every slide-sequencing step. If the agent catches its
 
 ## Why title line discipline matters
 
-Slide titles are assertions, but they are still slide titles. A title that wraps is usually doing body-text work and can collide with frame-title ornaments, progress rules, or the slide body. The skill now treats one-line assertion titles as the default: rewrite shorter first, split the slide if needed, and avoid breaking words across lines whenever possible.
+Slide titles are assertions, but they are still slide titles. A title that wraps is usually doing body-text work and can collide with frame-title ornaments, progress rules, or the slide body. The skill now treats one-line assertion titles as the default: rewrite shorter first, split the slide if needed, and avoid breaking words across lines whenever possible. The same no-broken-words rule applies to microtext in TikZ nodes, table cells, callout boxes, captions, and placeholders.
 
 ## Why an original theme matters
 
