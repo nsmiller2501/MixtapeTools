@@ -24,7 +24,8 @@ For Beamer, implement this in the frame-title template or a shared slide-header 
 
 If a deck uses vertical bars, side rails, page-edge rules, or other side ornamentation, place those accents in the page gutter rather than at the content origin.
 
-- Draw edge accents in page coordinates, or with a negative x-offset from the text area.
+- In Beamer frame-title templates, prefer a negative x-offset from the text area for gutter accents. Page-coordinate overlays can be fragile when frames contain imported images; use page coordinates only after compiling representative image-heavy slides.
+- For non-Beamer formats, or for tested Beamer background templates, page coordinates are fine.
 - Do not let side ornamentation occupy the same coordinate region as slide body text, captions, code blocks, tables, figures, or wrapped frame titles.
 - If the deck's style does not need side ornamentation, omit it. This is a stylistic option, not a required deck feature.
 
