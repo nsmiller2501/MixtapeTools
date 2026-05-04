@@ -245,6 +245,8 @@ Use this order:
 
 When line breaks are unavoidable, break only between words whenever possible. Do not rely on hyphenating or splitting a word across lines to make a title or body text fit; rewrite, resize the specific element, or change the layout first.
 
+This applies everywhere text appears, including TikZ nodes, table cells, callout boxes, captions, and screenshot placeholders. Short labels are especially sensitive: a two-word label such as "paper extraction" may wrap between words, but an ordinary word like "paper" or "sessions" must not be split across lines. If a word breaks inside a constrained box, widen the box or column, shorten the phrase, reduce only that local font size, or redesign the layout.
+
 ### The outline checkpoint
 
 Write the outline as:
@@ -364,7 +366,7 @@ Work slide by slide, but also slide-sequence by slide-sequence. For each slide, 
 
 - **One idea per slide.** Two max for inseparable contrasts.
 - **One-line assertion titles by default.** If a title wraps, rewrite it shorter before engineering around the wrap.
-- **Do not split words across lines when avoidable.** Hyphenated or broken words are a last resort; prefer rewriting, resizing the specific element, or changing layout.
+- **Do not split words across lines when avoidable.** Hyphenated or broken words are a last resort; prefer rewriting, resizing the specific element, or changing layout. This includes TikZ nodes and table cells, not just prose text.
 - **No wall of sentences.** If you catch yourself writing a sentence that narrates what the audience can see, delete it.
 - **No bullet lists by default.** Find the structure (sequence, contrast, hierarchy, causal chain) and make it visible with layout.
 - **No decoration without function.** Stock photos, clip art, decorative icons — delete.
@@ -540,10 +542,11 @@ Dispatch a sub-agent (via the Task tool) to evaluate the deck against the Rhetor
 > 2. **Title line discipline.** Flag assertion titles that wrap or are likely to wrap. Suggest shorter one-line rewrites. Also flag avoidable word breaks or hyphenation used only to make text fit.
 > 3. **One idea per slide.** List any slide with two or more competing ideas.
 > 4. **No wall of sentences.** List any slide with more than two prose sentences stacked vertically.
-> 5. **MB/MC equivalence.** Rate each slide's density on a 1–5 scale. Flag outliers (slides that are dramatically denser or sparser than their neighbors).
-> 6. **Narrative arc.** Does the deck have a clear Setup / Development / Resolution structure? Does the opening hook and does the closing linger?
-> 7. **Devil's Advocate.** Is there a slide addressing the strongest objection? If the context is academic or external, this is required.
-> 8. **Audience fit.** Does the rhetorical balance (ethos / pathos / logos) match the audience declared at Step 0?
+> 5. **Microtext fit.** Check TikZ nodes, table cells, callout boxes, captions, and placeholders for ordinary words split across lines. Suggest wider boxes/columns, shorter phrases, local font changes, or layout changes.
+> 6. **MB/MC equivalence.** Rate each slide's density on a 1–5 scale. Flag outliers (slides that are dramatically denser or sparser than their neighbors).
+> 7. **Narrative arc.** Does the deck have a clear Setup / Development / Resolution structure? Does the opening hook and does the closing linger?
+> 8. **Devil's Advocate.** Is there a slide addressing the strongest objection? If the context is academic or external, this is required.
+> 9. **Audience fit.** Does the rhetorical balance (ethos / pathos / logos) match the audience declared at Step 0?
 >
 > Return a structured report with numbered concerns and suggested rewrites. Do NOT modify the deck source — only diagnose. The main agent will apply fixes.
 
