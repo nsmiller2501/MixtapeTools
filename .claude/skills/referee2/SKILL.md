@@ -250,7 +250,7 @@ The parent session orchestrates by spawning subagents and aggregating their repo
 3. **Read active overrides.** If `correspondence/referee2/referee2_overrides.md` exists, read only entries with `Status: active`. If it does not exist, create it lazily only when the first override is needed.
 4. **Spawn Agent 0 (auditor).** Prompt: audit full spec-readiness across comment/code divergences, scope-bundle ambiguities, and run-state/output provenance ambiguities. Return materiality-tiered findings. Do NOT write a spec.
 5. **Gate only on material blockers.** If Agent 0 finds `blocking` issues not covered by active overrides, stop for user review and follow the blocking menu below. If Agent 0 finds only `nonblocking-clarification` or `documentation-nit` issues, proceed automatically and carry relevant `REFEREE2_FLAG[...]` assumptions into Agent A.
-6. **Spawn Agent A (translator).** Prompt: read the source code and source-of-truth outputs, treat executable code behavior as authoritative, and write the spec to `code/replication/spec_<scope>.md`, expected-output extraction files, and `expected_outputs_<scope>_notes.md`. Return a one-line status: `spec=<path> outputs=<path> notes=<path> restricted_manifest_needed=yes`.
+6. **Spawn Agent A (translator).** Prompt: read the source code and source-of-truth outputs, treat executable code behavior as authoritative, and write the spec to `code/replication/YYYY-MM-DD_roundN_spec_<scope>.md`, expected-output extraction files, and `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md`. Return a one-line status: `spec=<path> outputs=<path> notes=<path> restricted_manifest_needed=yes`.
 7. **Write the restricted B/C manifest.** Create `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md` listing allowed pre-first-run files, sealed target paths, and prohibited files.
 8. **Spawn Agents B and C in parallel.** Each receives the restricted manifest, spec path, and input data paths. Each writes and runs a first-run replication before opening expected outputs or source outputs. Each compares after first-run artifacts are saved, may make diagnostic revisions, and returns a triage table.
 9. **Aggregate.** The parent collects B's and C's triage tables, combines them with the other four audits, and files the formal report. The triage table format and discrepancy categories are defined further down.
@@ -279,6 +279,7 @@ Tier: blocking | nonblocking-clarification | documentation-nit
 Scope: <path or scope component>
 Issue fingerprint: <short stable description>
 Evidence: <specific code/comment/provenance evidence>
+Materiality rationale: <why this does or does not affect model/sample/variables/outputs>
 Downstream assumption: <what Agent A should assume if nonblocking or overridden>
 Blocks Agent A: yes | no
 ```
@@ -301,7 +302,7 @@ For each blocker, choose one:
 
 Option 1 stops referee2. Do not edit source inside the audit. The user fixes code/comments outside referee2 and reruns.
 
-Options 2 and 3 append entries to `correspondence/referee2/referee2_overrides.md`. Override IDs use `REFEREE2_FLAG[OVR-YYYY-MM-DD-###]`; choose the next unused number for the date.
+Options 2 and 3 append entries to `correspondence/referee2/referee2_overrides.md`. Override IDs use `REFEREE2_FLAG[OVR-YYYY-MM-DD-###]`; choose the next unused number for the date. Overrides are always user-decided and agent-entered: the parent may draft and append the ledger entry, but only after the user explicitly chooses an override for a specific Agent 0 blocker.
 
 Ledger template:
 
@@ -315,6 +316,7 @@ Status: active
 Tier: blocking-user-overridden | blocking-unresolved-user-proceed
 Date created: YYYY-MM-DD
 Date retired:
+Created from finding: REFEREE2_FLAG[A0-YYYY-MM-DD-###]
 Scope path: <path>
 Issue fingerprint: <short stable description>
 User decision: <verbatim or concise user decision>
@@ -343,12 +345,15 @@ Task:
 - Audit comment/code divergences, scope-bundle ambiguities, and run-state/output provenance ambiguities.
 - Classify every finding as `blocking`, `nonblocking-clarification`, or `documentation-nit`.
 - Use `REFEREE2_FLAG[A0-YYYY-MM-DD-###]` IDs.
+- Include a materiality rationale explaining why each finding does or does not affect model/sample/variables/outputs.
 - Report possibly retired active overrides separately.
+- Write the full Agent 0 findings artifact to `correspondence/referee2/YYYY-MM-DD_roundN_agent0_findings.md`.
 - Do not write a spec.
 - Do not edit author code.
 
 Return:
 - Findings table with required fields.
+- Agent 0 artifact path: `correspondence/referee2/YYYY-MM-DD_roundN_agent0_findings.md`.
 - Gate result: `no-blockers` or `blocking-user-review-needed`.
 ```
 
@@ -364,9 +369,10 @@ Read:
 
 Task:
 - Treat executable code behavior as authoritative.
-- Write `code/replication/spec_<scope>.md`.
-- Write expected-output extraction file(s) and `expected_outputs_<scope>_notes.md`.
-- Include relevant nonblocking and override `REFEREE2_FLAG[...]` assumptions locally in the spec.
+- Write `code/replication/YYYY-MM-DD_roundN_spec_<scope>.md`.
+- Write expected-output extraction file(s) and `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md`.
+- Include only sanitized B/C-facing `REFEREE2_FLAG[...]` replication assumptions in the spec.
+- Do not copy Agent 0 evidence, materiality rationale, user decision text, override ledger text, or full provenance narrative into the spec.
 - Do not edit author code.
 
 Return:
@@ -397,6 +403,7 @@ Do not read before first-run outputs are saved:
 Task:
 - Implement from the spec only.
 - Save first-run script and first-run outputs.
+- Write the round-specific first-run lock file in `correspondence/referee2/`.
 - Only then open expected-output extracts and source outputs.
 - Compare substantive outputs, not formatting.
 - Preserve first-run artifacts if you make diagnostic revisions.
@@ -415,7 +422,7 @@ Pseudo-code is one paraphrase away from the original code: it primes the auditor
 
 The spec must declare input data paths, not source-of-truth output paths. Output artifact paths belong in sealed comparison instructions, not in the substantive spec.
 
-The spec must contain these seven sections plus an input-data declaration:
+The spec must contain these seven sections plus an input-data declaration. If any flags affect replication, include a sanitized `REFEREE2_FLAG assumptions for replication` section immediately after `Input data`.
 
 ```markdown
 # Specification: <project / scope>
@@ -425,6 +432,14 @@ Primary analysis dataset:
 - Path: data/derived/panel_daily.dta
 - Unit of observation: county-day
 - Required variables: fips, date, mortality_rate, heat_index, controls...
+
+## REFEREE2_FLAG assumptions for replication
+- REFEREE2_FLAG[A0-YYYY-MM-DD-###]
+  Downstream assumption: <implementation-relevant assumption only>
+- REFEREE2_FLAG[OVR-YYYY-MM-DD-###]
+  Downstream assumption: <implementation-relevant assumption only>
+- REFEREE2_FLAG[FIG-YYYY-MM-DD-###]
+  Downstream assumption: <figure replication/human-comparison assumption only>
 
 ## 1. Model
 Equation in math notation; specify regressors, fixed effects, standard error
@@ -469,6 +484,14 @@ where appropriate, e.g.:
 $$E[\varepsilon_{it} \mid s_i, \mathbf{X}_{it}, \alpha_{st}] = 0$$
 ```
 
+The `REFEREE2_FLAG assumptions for replication` section is not an audit trail. Include only:
+
+- `nonblocking-clarification` flags that affect implementation assumptions
+- active override flags when `Spec flag required: yes`
+- `figure-human-comparison` flags that tell B/C how to handle non-numeric figure comparisons
+
+Do not include documentation nits, Agent 0 evidence, Agent 0 materiality rationale, user decision text, override ledger text, full scope/provenance narrative, or prior report context. Those belong in Agent 0 output, expected-output notes, override ledger, or final report.
+
 **The orthogonality test for the spec:** could two competent econometricians, given this spec, produce *structurally different but mathematically equivalent* implementations? If yes → the spec is doing its job. If both would write identical-shaped code → the spec has collapsed back into the original.
 
 ### Comment handling — comments are claims to verify, not guides to trust
@@ -495,9 +518,9 @@ Existing output artifacts are the source of truth by default. Expected-output fi
 
 Agent A writes:
 
-- `code/replication/expected_outputs_<scope>.csv` for table-like numeric targets by default
-- `code/replication/expected_outputs_<scope>.json` when outputs are nested, scalar dictionaries, or multi-panel objects where CSV would obscure structure
-- `code/replication/expected_outputs_<scope>_notes.md` always
+- `code/replication/YYYY-MM-DD_roundN_expected_outputs_<scope>.csv` for table-like numeric targets by default
+- `code/replication/YYYY-MM-DD_roundN_expected_outputs_<scope>.json` when outputs are nested, scalar dictionaries, or multi-panel objects where CSV would obscure structure
+- `code/replication/YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md` always
 
 For table-like outputs, use these columns where applicable:
 
@@ -519,13 +542,13 @@ Parent writes a physical restricted manifest for B/C at `correspondence/referee2
 
 ```markdown
 ## You may read before first run
-- code/replication/spec_<scope>.md
+- code/replication/YYYY-MM-DD_roundN_spec_<scope>.md
 - code/config.do only for path assignment; do not inspect analysis logic
 - data/derived/panel_daily.dta only to confirm schema/units and run replication
 
 ## Sealed until first-run outputs are saved
-- code/replication/expected_outputs_<scope>.csv
-- code/replication/expected_outputs_<scope>_notes.md
+- code/replication/YYYY-MM-DD_roundN_expected_outputs_<scope>.csv
+- code/replication/YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md
 - output/tables/main_results.tex
 
 ## You must not read
@@ -545,11 +568,33 @@ Expected outputs opened after first-run outputs saved: yes/no
 First-run output path: <path>
 ```
 
+B/C must also write a round-specific first-run lock file before opening expected outputs or source outputs:
+
+```markdown
+correspondence/referee2/YYYY-MM-DD_roundN_<language>_first_run_lock.md
+```
+
+Lock file contents:
+
+```markdown
+# Referee2 First-Run Lock
+
+Language: <R|Python|Stata>
+Round: YYYY-MM-DD_roundN
+Spec path: <path>
+First-run script path: <path>
+First-run output path: <path>
+Timestamp first-run output saved: <timestamp>
+Expected outputs opened before first-run: no
+Source outputs opened before first-run: no
+```
+
 B/C may revise after opening expected outputs, but must preserve first-run scripts and outputs. Use artifact names like:
 
 ```markdown
 code/replication/referee2_replicate_R_first_run.R
 code/replication/referee2_R_first_run_outputs.csv
+correspondence/referee2/YYYY-MM-DD_roundN_R_first_run_lock.md
 code/replication/referee2_replicate_R_revised.R
 code/replication/referee2_R_revised_outputs.csv
 code/replication/referee2_R_revision_log.md
@@ -626,14 +671,16 @@ Use the **scope calibration table** from the persona to determine intensity.
 You READ, RUN, and CREATE your own audit artifacts. You NEVER edit the author's code. Audit independence requires separation.
 
 ### Output
-1. Spec file at `code/replication/spec_<scope>.md` (written by Agent A)
-2. Expected-output extraction file at `code/replication/expected_outputs_<scope>.<csv|json>` plus `expected_outputs_<scope>_notes.md` (written by Agent A)
+1. Spec file at `code/replication/YYYY-MM-DD_roundN_spec_<scope>.md` (written by Agent A)
+2. Expected-output extraction file at `code/replication/YYYY-MM-DD_roundN_expected_outputs_<scope>.<csv|json>` plus `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md` (written by Agent A)
 3. Full scope manifest and restricted B/C manifest in `correspondence/referee2/`
-4. Replication scripts in `code/replication/referee2_replicate_*.{R,do,py}` (written by Agents B and C)
-5. Preserved first-run outputs, optional revised outputs, and revision logs
-6. Comparison tables showing each replication's outputs vs. expected outputs
-7. Discrepancy diagnoses with source classification (per the triage table)
-8. Formal referee report in `correspondence/referee2/`
+4. Agent 0 findings at `correspondence/referee2/YYYY-MM-DD_roundN_agent0_findings.md`
+5. First-run lock files at `correspondence/referee2/YYYY-MM-DD_roundN_<language>_first_run_lock.md`
+6. Replication scripts in `code/replication/referee2_replicate_*.{R,do,py}` (written by Agents B and C)
+7. Preserved first-run outputs, optional revised outputs, and revision logs
+8. Comparison tables showing each replication's outputs vs. expected outputs
+9. Discrepancy diagnoses with source classification (per the triage table)
+10. Formal referee report in `correspondence/referee2/`
 
 ---
 
@@ -701,16 +748,20 @@ The subagent proceeds with documented assumptions. Refusing to proceed because o
 Use the formal referee report template from `~/.claude/skills/referee2/referee2.md`:
 - Summary
 - Status: `passed`, `blocked-on-user-review`, `partial-audit-replication-blocked`, `proceeding-with-nonblocking-flags`, `human-figure-comparison-required`, or `failed-substantive-discrepancy`
+- Status is the audit workflow state, not the substantive referee verdict.
 - Findings by audit
 - Major Concerns (must be addressed)
 - Minor Concerns (should be addressed)
 - Questions for Authors
 - Verdict
+- Verdict is the substantive referee judgment: Accept, Minor Revisions, Major Revisions, or Reject. If status is `blocked-on-user-review`, write `Verdict: Not reached`.
 - Prioritized Recommendations
 
 ### File Locations
 - Full scope manifest: `correspondence/referee2/YYYY-MM-DD_roundN_scope.md`
 - Restricted B/C manifest: `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`
+- Agent 0 findings: `correspondence/referee2/YYYY-MM-DD_roundN_agent0_findings.md`
+- First-run lock files: `correspondence/referee2/YYYY-MM-DD_roundN_<language>_first_run_lock.md`
 - Override ledger: `correspondence/referee2/referee2_overrides.md`
 - Report: `correspondence/referee2/YYYY-MM-DD_roundN_report.md`
 - Deck (if producing one): `correspondence/referee2/YYYY-MM-DD_roundN_deck.tex`

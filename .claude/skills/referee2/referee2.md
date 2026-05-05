@@ -106,10 +106,16 @@ You perform **five distinct audits**, each producing findings that feed into you
    ├── referee2_replicate_python_first_run.py
    ├── referee2_python_first_run_outputs.csv
    └── ...
+
+   correspondence/referee2/
+   ├── YYYY-MM-DD_roundN_R_first_run_lock.md
+   ├── YYYY-MM-DD_roundN_python_first_run_lock.md
+   └── ...
    ```
 4. **Seal expected outputs until first-run outputs exist**:
    - B/C write replication scripts from the spec
    - B/C run them and save first-run outputs
+   - B/C write round-specific first-run lock files
    - Only then may B/C open expected-output extracts or source-of-truth outputs
 5. **Compare implementations against expected-output extracts**:
    - Point estimates must match to 6+ decimal places
@@ -129,9 +135,10 @@ If the raw data cannot be shared with the referee, the cross-language replicatio
 
 **Deliverable:**
 1. First-run replication scripts and first-run outputs saved to `code/replication/`
-2. Optional revised scripts, revised outputs, and revision logs
-3. A comparison table showing expected outputs vs. independent replications, with discrepancies highlighted and diagnosed
-4. A statement that expected outputs were opened only after first-run outputs were saved
+2. Round-specific first-run lock files documenting that expected/source outputs were not opened before first-run outputs were saved
+3. Optional revised scripts, revised outputs, and revision logs
+4. A comparison table showing expected outputs vs. independent replications, with discrepancies highlighted and diagnosed
+5. A statement that expected outputs were opened only after first-run outputs were saved
 
 ---
 
@@ -216,6 +223,8 @@ Produce a formal referee report with this structure:
 
 **Status:** [passed / blocked-on-user-review / partial-audit-replication-blocked / proceeding-with-nonblocking-flags / human-figure-comparison-required / failed-substantive-discrepancy]
 
+Status is the audit workflow state, not the substantive referee verdict. If the audit is `blocked-on-user-review`, the verdict is `Not reached`.
+
 **Scope manifest:** `correspondence/referee2/YYYY-MM-DD_roundN_scope.md`
 
 **Restricted manifest:** `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`
@@ -238,13 +247,14 @@ Produce a formal referee report with this structure:
 ## Audit 2: Cross-Language Replication
 
 ### Specification and Expected Outputs
-- Spec: `code/replication/spec_[scope].md`
-- Expected outputs: `code/replication/expected_outputs_[scope].csv` or `.json`
-- Expected-output notes: `code/replication/expected_outputs_[scope]_notes.md`
+- Spec: `code/replication/YYYY-MM-DD_roundN_spec_[scope].md`
+- Expected outputs: `code/replication/YYYY-MM-DD_roundN_expected_outputs_[scope].csv` or `.json`
+- Expected-output notes: `code/replication/YYYY-MM-DD_roundN_expected_outputs_[scope]_notes.md`
 
 ### First-Run Replication Artifacts
 - `code/replication/referee2_replicate_[language]_first_run.[ext]`
 - `code/replication/referee2_[language]_first_run_outputs.csv`
+- `correspondence/referee2/YYYY-MM-DD_roundN_[language]_first_run_lock.md`
 
 Expected outputs opened after first-run outputs saved: [yes/no]
 
@@ -320,6 +330,7 @@ Expected outputs opened after first-run outputs saved: [yes/no]
 [ ] Minor Revisions
 [ ] Major Revisions
 [ ] Reject
+[ ] Not reached
 
 **Justification:** [Brief explanation]
 
