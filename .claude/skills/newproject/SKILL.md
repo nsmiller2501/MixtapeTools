@@ -46,7 +46,8 @@ Templates use `{{PROJECT_ROOT}}` and `{{PROJECT_NAME}}` placeholders that this s
 │   └── logs/                          # Log files from all scripts
 ├── documents/                         # Outside PDFs, papers
 ├── decks/                             # Beamer presentations
-├── notes/                            # Methodological log, decisions, codebook, etc.
+├── notes/                            # Personal scratch notes; ignored by git in git-enabled projects
+├── agent_memory/                      # Shared Claude/Codex reference files for this project
 ├── correspondence/                   # Letters, emails, referee reports (subdirs created lazily by /referee2 and /blindspot)
 └── progress_logs/                    # Session continuity logs
 ```
@@ -67,7 +68,7 @@ Set `PROJECT_ROOT` = `[location]/[project-name]` as an absolute path.
 ### Step 3 — Create all directories
 
 ```bash
-mkdir -p [project-name]/{code/{download,data/validation,analysis/{stata,R,python}},data/{raw,clean},output/{figures,tables,logs},documents,decks,notes,correspondence,progress_logs}
+mkdir -p [project-name]/{code/{download,data/validation,analysis/{stata,R,python}},data/{raw,clean},output/{figures,tables,logs},documents,decks,notes,agent_memory,correspondence,progress_logs}
 ```
 
 ### Step 4 — Render config files from templates
@@ -83,11 +84,11 @@ Read `~/.claude/skills/newproject/templates/project_CLAUDE.md`.
 Write it to `[project-name]/CLAUDE.md` as-is.
 Update the Project Overview section heading to reference the project name.
 
-### Step 5b — Create index stubs in `notes/`
+### Step 5b — Create index stubs in `agent_memory/`
 
 CLAUDE.md points to these files rather than embedding their content. Create each as an empty stub so Claude and the user have a known location to append to.
 
-**`notes/key_decisions.md`**:
+**`agent_memory/key_decisions.md`**:
 ```markdown
 # Key Decisions — [project-name]
 
@@ -97,7 +98,7 @@ Running log of methodological decisions. Append new rows; do not edit prior entr
 |------|----------|-----------|
 ```
 
-**`notes/dropped_analyses.md`**:
+**`agent_memory/dropped_analyses.md`**:
 ```markdown
 # Dropped Analyses — [project-name]
 
@@ -106,7 +107,7 @@ Analyses tried and abandoned — so they don't get re-suggested.
 - **[Analysis name]** ([YYYY-MM-DD]): [Why dropped]
 ```
 
-**`notes/codebook.md`**:
+**`agent_memory/codebook.md`**:
 ```markdown
 # Codebook — [project-name]
 
@@ -116,7 +117,7 @@ Definitions of key variables, especially constructed ones.
 |----------|------------|--------|
 ```
 
-**`notes/sample_restrictions.md`**:
+**`agent_memory/sample_restrictions.md`**:
 ```markdown
 # Sample Restrictions — [project-name]
 

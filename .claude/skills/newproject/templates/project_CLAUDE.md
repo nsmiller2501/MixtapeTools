@@ -69,10 +69,10 @@ Unless the user explicitly specifies otherwise:
 
 Look here first when you need project history, codebook entries, or prior decisions. Do not duplicate this content into CLAUDE.md — update the linked file instead.
 
-- **Methodological decisions**: `notes/key_decisions.md`
-- **Dropped analyses**: `notes/dropped_analyses.md`
-- **Codebook (variable definitions)**: `notes/codebook.md`
-- **Sample restrictions**: `notes/sample_restrictions.md`
+- **Methodological decisions**: `agent_memory/key_decisions.md`
+- **Dropped analyses**: `agent_memory/dropped_analyses.md`
+- **Codebook (variable definitions)**: `agent_memory/codebook.md`
+- **Sample restrictions**: `agent_memory/sample_restrictions.md`
 - **Current status / next steps**: latest entry in `progress_logs/`
 - **Referee 2 correspondence**: `correspondence/referee2/` (see `/referee2` skill)
 
