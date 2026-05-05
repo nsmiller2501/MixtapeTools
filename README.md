@@ -18,6 +18,16 @@ As I develop new approaches, I'll add them here. Anyone is free to use them.
 
 ---
 
+## A Note on Collaboration Style
+
+The tools here reflect a specific way of working with Claude Code: **Claude as a thinking partner**, not Claude as an autonomous agent. I steer iteratively; Claude executes when the next move is clear and surfaces ambiguity when it isn't. This approach has distinctly less automation than many people prefer, and that is deliberate — I think more clearly when I am thinking *through* Claude rather than *at* Claude. The dialogue is the work, not just the delivery mechanism for the work.
+
+If your taste runs toward highly automated pipelines, or toward AI that never takes initiative without permission, a lot of what's here may feel too loose on one axis and too presumptuous on the other. Both styles are legitimate; they're not what these tools are optimized for.
+
+**YMMV. Take what's useful; leave the rest.**
+
+---
+
 ## Who I Am
 
 **Scott Cunningham** — Professor of Economics at Baylor University
@@ -121,6 +131,31 @@ Blindspot doesn't need separation because it's auditing *perception* — your ow
 **The workflow:**
 1. Produce output → `/blindspot` → interpret and write
 2. Complete project → open fresh terminal → `/referee2`
+
+---
+
+### 2c. Bibcheck (Many-Agent Bibliography Audit)
+
+**Location:** [`skills/bibcheck/`](skills/bibcheck/) | `.claude/skills/bibcheck/SKILL.md` (actual skill)
+
+A third verification skill, narrower than Referee 2 and bounded to a single artifact: the `.bib` file. `/bibcheck` audits a bibliography by spawning **many narrow-focus agents** — one per citation, or one per field across all citations — to verify each entry against canonical sources (DOI, journal landing page, author working paper).
+
+**Why narrow agents:** A single agent asked to audit 80 citations in one pass tends to drift. Early entries get careful treatment; later entries get pattern-matched. Splitting the work — one agent per entry, full attention budget on a small task, parallel siblings for the next — moves the bottleneck from agent attention to orchestration. Orchestration is what cheap parallel agents are for.
+
+**Two modes:**
+
+| Mode | Best for | How it works |
+|------|----------|--------------|
+| **Per-citation** (default) | Catching mixed-up entries (title of paper A with authors of paper B) | One Agent subagent per `@article{}` entry; each fully audits its one entry; reviewer agent consolidates |
+| **Per-field** (`--by-field`) | Catching systematic transcription errors (a journal name consistently wrong, swapped volume/issue, leaked working-paper years) | One specialist per field (title, year, journal, authors, volume/issue, pages, DOI); each launched as an isolated `claude --dangerously-skip-permissions -p` subprocess so they cannot peek at each other |
+
+**Outputs:** a timestamped `bibcheck_<ts>/` folder containing `bibcheck_report.md` (per-entry findings, Clean / Corrected / Unverifiable summary) and `corrected.bib` (drop-in replacement). The skill never auto-overwrites the source — you review and merge.
+
+**Critical Rule:** `/bibcheck` is bounded. It checks whether `.bib` entries are accurate descriptions of papers that exist. It does NOT check whether each citation supports the claim it's attached to in the manuscript — that is a `/referee2` literature audit.
+
+**Usage:** `/bibcheck path/to/refs.bib` (per-citation) or `/bibcheck --by-field path/to/refs.bib` (per-field). Optional `--max-parallel N` (default 8).
+
+Read the full documentation: [`skills/bibcheck/README.md`](skills/bibcheck/README.md)
 
 ---
 
