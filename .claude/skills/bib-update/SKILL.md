@@ -1,6 +1,13 @@
 ---
 name: bib-update
-description: Assemble or refresh `references/references.bib` from per-paper `## Bibliographic metadata` blocks in `references/raw/<basename>_text.md`. Cascade: DOI direct fetch → CrossRef title+author → OpenAlex → LLM-from-metadata fallback. Idempotent — safe to re-run; only appends entries whose citation key is missing. Use `--rebuild-bib` to regenerate from scratch. Runnable standalone (no wiki required) or called automatically as the final step of `/wiki-update`.
+description: >-
+  Assemble or refresh `references/references.bib` from per-paper
+  `## Bibliographic metadata` blocks in `references/raw/<basename>_text.md`.
+  Cascade: DOI direct fetch → CrossRef title+author → OpenAlex →
+  LLM-from-metadata fallback. Idempotent — safe to re-run; only appends entries
+  whose citation key is missing. Use `--rebuild-bib` to regenerate from scratch.
+  Runnable standalone (no wiki required) or called automatically as the final
+  step of `/wiki-update`.
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash(ls*), Bash(curl:*), Bash(mkdir:*), Bash(pdftotext:*)
 argument-hint: [--rebuild-bib]
 ---
