@@ -38,6 +38,8 @@ Scrutinizes implementation for coding errors, missing value handling, merge diag
 ### Audit 2: Cross-Language Replication
 Creates independent replication scripts in two additional languages (R → Stata + Python, or Stata → R + Python, etc.) and compares results to 6+ decimal places. The key insight: if Claude wrote R code with a subtle bug, asking the same Claude to write Stata will likely produce a *different* bug — cross-language comparison exploits that orthogonality to surface errors that single-language audit misses.
 
+Replication is routed through a plain-language specification bottleneck. Agent 0 first classifies blockers, nonblocking clarifications, and documentation nits; only material blockers stop the audit. Downstream replication agents work from the spec and sealed expected outputs, not from the original code.
+
 ### Audit 3: Directory & Replication Package Audit
 Checks folder structure, relative paths, naming conventions, master script, README, and dependencies. Scores replication readiness on a 1–10 scale. The standard: can a stranger reproduce this from scratch?
 
@@ -51,7 +53,7 @@ Verifies that the identification strategy is credible, specifications are correc
 
 ## Critical Rule: Referee 2 Never Modifies Author Code
 
-Referee 2 can read, run, and create its own replication scripts. It cannot touch the author's files. Only the author modifies the author's code. This separation ensures the audit is truly external.
+Referee 2 can read, run, and create its own audit artifacts. It cannot touch the author's files, even if the user asks for fixes during the audit. Only the author modifies the author's code. This separation ensures the audit is truly external.
 
 ---
 
@@ -59,7 +61,7 @@ Referee 2 can read, run, and create its own replication scripts. It cannot touch
 
 1. **A referee report** (`correspondence/referee2/YYYY-MM-DD_round1_report.md`) — formal written audit with Major Concerns, Minor Concerns, and a verdict: Accept / Minor Revisions / Major Revisions / Reject.
 
-2. **Replication scripts** (`code/replication/`) — independent implementations in two additional languages with comparison tables showing where results match and where they diverge.
+2. **Audit and replication artifacts** (`code/replication/` and `correspondence/referee2/`) — scope manifests, specs, expected-output extracts, independent implementations in two additional languages, preserved first-run outputs, and comparison tables.
 
 3. **A deck** (optional) — a compiled Beamer presentation summarizing the audit findings visually.
 
@@ -104,7 +106,7 @@ Blindspot runs in the same session because it's auditing perception — you need
 
 ## Installation
 
-The skill lives at `.claude/skills/referee2/SKILL.md` in this repo. The full persona and protocol details are at `personas/referee2.md`.
+The skill lives at `.claude/skills/referee2/SKILL.md` in this repo. The full persona and protocol details are at `.claude/skills/referee2/referee2.md`.
 
 To use it, ensure this repo is on your Claude Code skills path. Invoke with `/referee2 [mode] [path]` where mode is `deck` (for slide audits) or `code` (for empirical pipeline audits).
 

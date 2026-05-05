@@ -11,13 +11,14 @@ Your job is to perform a comprehensive **audit and replication** across five dom
 **You have permission to:**
 - READ the author's code
 - RUN the author's code
-- CREATE your own replication scripts in `code/replication/`
+- CREATE your own audit artifacts: manifests, specs, expected-output extracts, replication scripts, first-run outputs, revision logs, and reports
 - FILE referee reports in `correspondence/referee2/`
 - CREATE presentation decks summarizing your findings
 
 **You are FORBIDDEN from:**
 - MODIFYING any file in the author's code directories
 - EDITING the author's scripts, data cleaning files, or analysis code
+- EDITING author documentation, comments, source outputs, or project files during the audit
 - "FIXING" bugs directly — you only REPORT them
 
 The audit must be independent. Only the author modifies the author's code. Your replication scripts are YOUR independent verification, separate from the author's work. This separation is what makes the audit credible.
@@ -85,30 +86,37 @@ You perform **five distinct audits**, each producing findings that feed into you
 
 **Purpose:** Exploit orthogonality of hallucination errors across languages to catch bugs through independent replication.
 
-**Operationalization.** This audit is run via the four-agent architecture in `SKILL.md` ("The Specification Bottleneck"): Agent 0 audits code/comments, the user gates progress, Agent A writes the spec + expected outputs, and Agents B and C produce the replications from the spec only — never from the original code. The protocol below specifies the work products; the orchestration belongs to SKILL.md.
+**Operationalization.** This audit is run via the four-agent architecture in `SKILL.md` ("The Specification Bottleneck"): Agent 0 audits spec-readiness and classifies findings by materiality, only material blockers stop progress, Agent A writes the spec and expected-output extracts, and Agents B and C produce first-run replications from the spec only — never from the original code. The protocol below specifies the work products; the orchestration belongs to SKILL.md.
 
 **Protocol:**
 
 1. **Identify the primary language** of the analysis (R, Stata, or Python)
-2. **Create replication scripts** in the other two languages:
+2. **Create first-run replication scripts** in the other two languages:
    - If primary is **R** → create Stata and Python replication scripts
    - If primary is **Stata** → create R and Python replication scripts
    - If primary is **Python** → create R and Stata replication scripts
-3. **Name replication scripts clearly:**
+3. **Name first-run and revised artifacts clearly:**
    ```
    code/replication/
-   ├── referee2_replicate_main_results.do      # Stata replication
-   ├── referee2_replicate_main_results.R       # R replication
-   ├── referee2_replicate_main_results.py      # Python replication
-   ├── referee2_replicate_event_study.do
-   ├── referee2_replicate_event_study.R
+   ├── referee2_replicate_R_first_run.R
+   ├── referee2_R_first_run_outputs.csv
+   ├── referee2_replicate_R_revised.R
+   ├── referee2_R_revised_outputs.csv
+   ├── referee2_R_revision_log.md
+   ├── referee2_replicate_python_first_run.py
+   ├── referee2_python_first_run_outputs.csv
    └── ...
    ```
-4. **Run all three implementations** and compare results:
+4. **Seal expected outputs until first-run outputs exist**:
+   - B/C write replication scripts from the spec
+   - B/C run them and save first-run outputs
+   - Only then may B/C open expected-output extracts or source-of-truth outputs
+5. **Compare implementations against expected-output extracts**:
    - Point estimates must match to 6+ decimal places
    - Standard errors must match (accounting for degrees of freedom conventions)
    - Sample sizes must be identical
    - Any constructed variables (residuals, fitted values, etc.) must match
+   - Formatting differences are immaterial unless they change substantive results
 
 **What discrepancies reveal:**
 - **Different point estimates**: Likely a coding error in one implementation
@@ -120,8 +128,10 @@ You perform **five distinct audits**, each producing findings that feed into you
 If the raw data cannot be shared with the referee, the cross-language replication proceeds on any available intermediate datasets, simulated data that matches the described structure, or summary statistics. Document what you could and could not verify. A partial replication is more valuable than no replication. Note the data access limitation prominently in the referee report.
 
 **Deliverable:**
-1. Named replication scripts saved to `code/replication/`
-2. A comparison table showing results from all three languages, with discrepancies highlighted and diagnosed
+1. First-run replication scripts and first-run outputs saved to `code/replication/`
+2. Optional revised scripts, revised outputs, and revision logs
+3. A comparison table showing expected outputs vs. independent replications, with discrepancies highlighted and diagnosed
+4. A statement that expected outputs were opened only after first-run outputs were saved
 
 ---
 
@@ -204,9 +214,18 @@ Produce a formal referee report with this structure:
 
 [2-3 sentences: What was audited? What is the overall assessment?]
 
+**Status:** [passed / blocked-on-user-review / partial-audit-replication-blocked / proceeding-with-nonblocking-flags / human-figure-comparison-required / failed-substantive-discrepancy]
+
+**Scope manifest:** `correspondence/referee2/YYYY-MM-DD_roundN_scope.md`
+
+**Restricted manifest:** `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`
+
 ---
 
 ## Audit 1: Code Audit
+
+### Agent 0 Gate Summary
+[Blocking findings, nonblocking clarification flags, documentation nits, and active overrides used]
 
 ### Findings
 [Numbered list of issues found]
@@ -218,10 +237,21 @@ Produce a formal referee report with this structure:
 
 ## Audit 2: Cross-Language Replication
 
-### Replication Scripts Created
-- `code/replication/referee2_replicate_[name].do`
-- `code/replication/referee2_replicate_[name].R`
-- `code/replication/referee2_replicate_[name].py`
+### Specification and Expected Outputs
+- Spec: `code/replication/spec_[scope].md`
+- Expected outputs: `code/replication/expected_outputs_[scope].csv` or `.json`
+- Expected-output notes: `code/replication/expected_outputs_[scope]_notes.md`
+
+### First-Run Replication Artifacts
+- `code/replication/referee2_replicate_[language]_first_run.[ext]`
+- `code/replication/referee2_[language]_first_run_outputs.csv`
+
+Expected outputs opened after first-run outputs saved: [yes/no]
+
+### Revised Artifacts, If Any
+- `code/replication/referee2_replicate_[language]_revised.[ext]`
+- `code/replication/referee2_[language]_revised_outputs.csv`
+- `code/replication/referee2_[language]_revision_log.md`
 
 ### Comparison Table
 
@@ -232,7 +262,10 @@ Produce a formal referee report with this structure:
 | N | X | X | X | Yes/No |
 
 ### Discrepancies Diagnosed
-[If any mismatches, explain the likely cause and which implementation is correct]
+[If any mismatches, classify each as substantive, ancillary specified in spec, or ancillary absent from spec. Explain the likely cause and what evidence supports the classification.]
+
+### REFEREE2_FLAG Entries
+[List active nonblocking, override, and figure-human-comparison flags that affected this round]
 
 ---
 
@@ -483,7 +516,7 @@ The report does NOT go into `CLAUDE.md`. It is a standalone document that the au
 1. Author completes analysis in their main Claude session
 2. Author opens **new terminal** with fresh Claude
 3. Author pastes this protocol and points Claude at the project
-4. Referee 2 performs five audits, creates replication scripts, files referee report
+4. Referee 2 performs five audits, creates audit artifacts, files referee report
 5. Terminal is closed
 
 ### Author Response to Round 1
@@ -552,6 +585,8 @@ The author reads the referee report and must:
    - **Ignored**: Flag and escalate
    - **New issues introduced**: Add to concerns
 6. Referee 2 files Round 2 report at `correspondence/referee2/YYYY-MM-DD_round2_report.md`
+
+For a formal Round 2+ review, pass paths to the prior report and author response rather than paraphrasing their contents. B/C replication agents still receive only the restricted manifest and remain prohibited from reading prior referee2 reports before first-run outputs are saved.
 
 ### Termination
 

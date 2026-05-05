@@ -197,6 +197,22 @@ File your report at `correspondence/referee2/` (or as specified by the user). If
 
 ## Mode 2: Code Audit
 
+### Non-Negotiable Boundary: Never Edit Author Code
+
+Referee2 may write only its own audit artifacts:
+
+- scope manifests
+- override ledgers
+- plain-language specs
+- expected-output extraction files and notes
+- replication scripts
+- first-run and revised replication outputs
+- referee reports
+
+Referee2 must never edit author code, comments, data-cleaning scripts, analysis scripts, project documentation, or source output artifacts. This remains true even if the user asks for fixes during the referee2 interaction. If the user wants fixes, stop the audit, run a normal coding session or feature branch outside referee2, then rerun referee2.
+
+Agent A treats current executable code behavior as authoritative. Comments help with labels and interpretation, but comments never override code behavior. If the user decides a comment reflects intent and code is wrong, stop the audit until author code is fixed outside referee2.
+
 ### The Core Principle: Cross-Language Replication
 
 Hallucination errors in LLM-generated code are like measurement error. If Claude writes buggy R code, the same Claude writing Stata code will likely make a *different* bug. These errors are **orthogonal across languages**.
@@ -218,31 +234,197 @@ Cross-language replication exploits this orthogonality:
 
 | Agent | Reads | Produces |
 |---|---|---|
-| **0 — Auditor** | Original code + comments | Code/comment audit findings only. Does NOT write a spec, regardless of how clean the audit looks. |
-| **A — Translator** | Original code + comments (only after user signs off on Audit 0's findings) | Spec file + expected-outputs file. |
-| **B — Replicator (language 1)** | Spec file, expected-outputs file, data. **Never sees the original code.** | Replication script + comparison against expected outputs. |
-| **C — Replicator (language 2)** | Same as B; never sees original code. | Replication script + comparison against expected outputs. |
+| **0 — Auditor** | Full scope manifest, active override ledger, original code + comments, source outputs for provenance | Materiality-tiered readiness findings only. Does NOT write a spec. |
+| **A — Translator** | Original code + comments, full scope manifest, active override ledger, source-of-truth outputs | Spec file + expected-output extraction files and notes. |
+| **B — Replicator (language 1)** | Restricted manifest, spec, input data, path-assignment config only. Expected outputs and source outputs are sealed until first-run artifacts are saved. **Never sees the original code.** | First-run replication script/output, optional revised script/output, comparison table. |
+| **C — Replicator (language 2)** | Same as B; never sees original code. | First-run replication script/output, optional revised script/output, comparison table. |
 
-The parent session orchestrates by spawning subagents and aggregating their reports. **The parent does not read spec content** — it only passes file paths to B and C. The parent's own context is contaminated (it has the user's invocation and Step -1's enumeration); if it summarizes the spec into B/C's prompts, that contaminated paraphrase replaces the clean spec. Hand off via `Read these files before doing anything: <spec path>, <outputs path>, <data path>` and let B/C read the files themselves.
+The parent session orchestrates by spawning subagents and aggregating their reports. **The parent does not read spec content** — it only passes file paths to B and C. The parent's own context is contaminated (it has the user's invocation and Step -1's enumeration); if it summarizes the spec into B/C's prompts, that contaminated paraphrase replaces the clean spec. Hand off via `Read these files before doing anything: <restricted manifest path>, <spec path>, <input data paths>` and let B/C read the files themselves.
 
-**Why split Agent 0 from Agent A.** A single agent that does "audit, and if clean write the spec" judges its own gate — it has an incentive to declare things clean to keep going, and minor divergences can bypass the user entirely. Splitting puts the user in the loop on every audit-to-spec handoff. The user, not the auditor, decides whether code/comment divergences are resolved enough for the spec to be written against.
+**Why split Agent 0 from Agent A.** A single agent that does "audit, and if clean write the spec" judges its own gate. Splitting prevents Agent 0's comment/code read from becoming the spec-writing voice. Agent 0 gates only material blockers; nonblocking clarifications and documentation nits proceed as flagged audit state.
 
 **The protocol:**
 
-1. **Spawn Agent 0 (auditor).** Prompt: perform the code/comment audit only (see "Comment handling" below for what counts as a divergence). Return all findings, classified by severity. Do NOT write a spec.
-2. **Surface findings to user; wait for explicit go-ahead.** Parent presents Agent 0's report. The user resolves divergences (typically by editing source so code and comments agree, or by clarifying intent), then authorizes proceeding. Even if Agent 0's audit is clean, the user still confirms — this is the explicit go/no-go gate, not an automatic continuation.
-3. **Spawn Agent A (translator).** Prompt: read the (possibly updated) source code and write the spec to `code/replication/spec_<scope>.md` and the expected outputs to `code/replication/expected_outputs_<scope>.<ext>` (`.json`, `.csv`, or `.txt` — whatever fits; capture point estimates, SEs, sample sizes, and anything else the comparison will check, to ≥6 decimal places). Return a one-line status: `spec=<path> outputs=<path>`.
-4. **Spawn Agents B and C in parallel.** Each receives the spec path, expected-outputs path, and data path — and is told **not** to read the original code, even if it discovers where the code lives. Each writes its replication, runs it, compares its outputs against the expected-outputs file, and returns a triage table.
-5. **Aggregate.** The parent collects B's and C's triage tables, combines them with the other four audits, and files the formal report. The triage table format and discrepancy categories are defined further down.
+1. **Discover and confirm the scope bundle.** Default to the audited entrypoint(s), sourced/imported code, configs, required inputs, and source-of-truth output artifacts. If the user explicitly narrows scope, honor that guardrail and record it.
+2. **Write the full scope manifest.** Create `correspondence/referee2/YYYY-MM-DD_roundN_scope.md`. Infer `roundN` by scanning existing `correspondence/referee2/YYYY-MM-DD_round*_*.md` files for today's date and taking max `N + 1`; if none exist, use `round1`.
+3. **Read active overrides.** If `correspondence/referee2/referee2_overrides.md` exists, read only entries with `Status: active`. If it does not exist, create it lazily only when the first override is needed.
+4. **Spawn Agent 0 (auditor).** Prompt: audit full spec-readiness across comment/code divergences, scope-bundle ambiguities, and run-state/output provenance ambiguities. Return materiality-tiered findings. Do NOT write a spec.
+5. **Gate only on material blockers.** If Agent 0 finds `blocking` issues not covered by active overrides, stop for user review and follow the blocking menu below. If Agent 0 finds only `nonblocking-clarification` or `documentation-nit` issues, proceed automatically and carry relevant `REFEREE2_FLAG[...]` assumptions into Agent A.
+6. **Spawn Agent A (translator).** Prompt: read the source code and source-of-truth outputs, treat executable code behavior as authoritative, and write the spec to `code/replication/spec_<scope>.md`, expected-output extraction files, and `expected_outputs_<scope>_notes.md`. Return a one-line status: `spec=<path> outputs=<path> notes=<path> restricted_manifest_needed=yes`.
+7. **Write the restricted B/C manifest.** Create `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md` listing allowed pre-first-run files, sealed target paths, and prohibited files.
+8. **Spawn Agents B and C in parallel.** Each receives the restricted manifest, spec path, and input data paths. Each writes and runs a first-run replication before opening expected outputs or source outputs. Each compares after first-run artifacts are saved, may make diagnostic revisions, and returns a triage table.
+9. **Aggregate.** The parent collects B's and C's triage tables, combines them with the other four audits, and files the formal report. The triage table format and discrepancy categories are defined further down.
+
+### Agent 0 Materiality Tiers
+
+Agent 0 does not use a binary clean/dirty gate. It classifies each finding into one of three tiers:
+
+| Tier | Meaning | Gate effect |
+|---|---|---|
+| `blocking` | A reasonable replication could produce different scientific conclusions depending on whether code, comments, scope, or output provenance are treated as authoritative. | Stops Agent A unless covered by an active override. |
+| `nonblocking-clarification` | A mismatch or ambiguity exists, but Agent 0 can state why it is unlikely to affect the model, sample, variables, or reported outputs. | Proceeds to Agent A with a `REFEREE2_FLAG[...]` assumption where relevant. |
+| `documentation-nit` | Documentation is stale, vague, or stylistically misleading, but no replication-relevant ambiguity remains. | Proceeds; report in Agent 0/final report only. |
+
+Usually classify as `blocking` when the issue affects model equations, estimators, identifying variation, sample inclusion/exclusion, treatment/control definitions, outcome construction, key covariates, fixed effects, clustering, weights, standard errors, units/scaling, merge keys, or timing/order where results could change.
+
+Usually classify as `nonblocking-clarification` when the issue affects precision finer than the data contain, harmless label looseness, implementation details with no plausible impact on estimates, documented/inferable default behavior, or edge-case handling for cases absent from the observed data.
+
+Anti-overconfidence rule: when unsure whether a mismatch is blocking or nonblocking, classify it as blocking unless Agent 0 can state why the distinction is unlikely to affect the model, sample, variables, or reported outputs.
+
+Agent 0 finding IDs use one grep-friendly token:
+
+```markdown
+REFEREE2_FLAG[A0-YYYY-MM-DD-###]
+Tier: blocking | nonblocking-clarification | documentation-nit
+Scope: <path or scope component>
+Issue fingerprint: <short stable description>
+Evidence: <specific code/comment/provenance evidence>
+Downstream assumption: <what Agent A should assume if nonblocking or overridden>
+Blocks Agent A: yes | no
+```
+
+Agent 0 should include a separate `Possibly retired active overrides` section when an active ledger entry appears obsolete. It must not retire overrides automatically.
+
+### Blocking Menu and Override Ledger
+
+If Agent 0 finds uncovered blockers, parent presents this bounded menu and stops the audit until the user chooses:
+
+```markdown
+Agent 0 found blocking divergences. Referee2 cannot proceed to Agent A until each blocker is resolved or explicitly overridden.
+
+For each blocker, choose one:
+1. I will fix the code/comment outside referee2, then rerun.
+2. Mark as intentional and add an active override.
+3. Proceed with unresolved risk and add an active override.
+4. Cancel the audit for now.
+```
+
+Option 1 stops referee2. Do not edit source inside the audit. The user fixes code/comments outside referee2 and reruns.
+
+Options 2 and 3 append entries to `correspondence/referee2/referee2_overrides.md`. Override IDs use `REFEREE2_FLAG[OVR-YYYY-MM-DD-###]`; choose the next unused number for the date.
+
+Ledger template:
+
+```markdown
+# Referee2 Override Ledger
+
+If source code/comments are later changed so an override no longer applies, mark the entry `Status: retired` and explain the retirement reason. Agents read only active overrides for blocking decisions.
+
+## REFEREE2_FLAG[OVR-YYYY-MM-DD-001]
+Status: active
+Tier: blocking-user-overridden | blocking-unresolved-user-proceed
+Date created: YYYY-MM-DD
+Date retired:
+Scope path: <path>
+Issue fingerprint: <short stable description>
+User decision: <verbatim or concise user decision>
+Do not block if: <condition under which this override still applies>
+Still block if: <condition under which this override no longer applies>
+Spec flag required: yes
+```
+
+Agent 0 reads active overrides to avoid re-blocking adjudicated issues. Agent A reads active overrides only to encode localized `REFEREE2_FLAG[...]` assumptions in the spec. Agents B and C never read the override ledger.
+
+### Required Subagent Prompt Components
+
+Use these components when spawning the code-audit subagents. Add concrete paths from the current round, but do not paraphrase code behavior in the parent prompt.
+
+Agent 0 prompt must include:
+
+```markdown
+Role: Agent 0 — referee2 spec-readiness auditor.
+
+Read:
+- Full scope manifest: correspondence/referee2/YYYY-MM-DD_roundN_scope.md
+- Active override ledger if present: correspondence/referee2/referee2_overrides.md
+- Original code, comments, configs, inputs, and source outputs listed in the full scope manifest
+
+Task:
+- Audit comment/code divergences, scope-bundle ambiguities, and run-state/output provenance ambiguities.
+- Classify every finding as `blocking`, `nonblocking-clarification`, or `documentation-nit`.
+- Use `REFEREE2_FLAG[A0-YYYY-MM-DD-###]` IDs.
+- Report possibly retired active overrides separately.
+- Do not write a spec.
+- Do not edit author code.
+
+Return:
+- Findings table with required fields.
+- Gate result: `no-blockers` or `blocking-user-review-needed`.
+```
+
+Agent A prompt must include:
+
+```markdown
+Role: Agent A — referee2 translator.
+
+Read:
+- Full scope manifest
+- Active override ledger, if present
+- Original code/comments/configs/source outputs listed in the full scope manifest
+
+Task:
+- Treat executable code behavior as authoritative.
+- Write `code/replication/spec_<scope>.md`.
+- Write expected-output extraction file(s) and `expected_outputs_<scope>_notes.md`.
+- Include relevant nonblocking and override `REFEREE2_FLAG[...]` assumptions locally in the spec.
+- Do not edit author code.
+
+Return:
+- `spec=<path> outputs=<path(s)> notes=<path>`
+- Input data paths B/C need.
+- Sealed source-output paths B/C may open only after first-run outputs are saved.
+```
+
+Agents B/C prompts must include:
+
+```markdown
+Role: Agent B/C — referee2 independent replicator.
+
+Read before first run:
+- Restricted manifest
+- Spec file
+- Input data files listed as allowed
+- Path-assignment config files only if the restricted manifest permits them
+
+Do not read before first-run outputs are saved:
+- Original code
+- Source outputs
+- Expected-output extracts or notes
+- Prior referee2 reports
+- Override ledger
+- Full scope manifest
+
+Task:
+- Implement from the spec only.
+- Save first-run script and first-run outputs.
+- Only then open expected-output extracts and source outputs.
+- Compare substantive outputs, not formatting.
+- Preserve first-run artifacts if you make diagnostic revisions.
+- Do not edit author code.
+
+Return:
+- First-run script/output paths.
+- `Expected outputs opened after first-run outputs saved: yes/no`.
+- Optional revised script/output paths and revision log.
+- Triage table.
+```
 
 **Spec template — prose for substance, math notation for the model. Not pseudo-code.**
 
 Pseudo-code is one paraphrase away from the original code: it primes the auditor to write the same structural pattern in the target language, defeating orthogonality. Prose forces commitment to *what* without prescribing *how*. Math notation pins down the model unambiguously without prescribing implementation.
 
-The spec must contain these six sections:
+The spec must declare input data paths, not source-of-truth output paths. Output artifact paths belong in sealed comparison instructions, not in the substantive spec.
+
+The spec must contain these seven sections plus an input-data declaration:
 
 ```markdown
 # Specification: <project / scope>
+
+## Input data
+Primary analysis dataset:
+- Path: data/derived/panel_daily.dta
+- Unit of observation: county-day
+- Required variables: fips, date, mortality_rate, heat_index, controls...
 
 ## 1. Model
 Equation in math notation; specify regressors, fixed effects, standard error
@@ -256,11 +438,16 @@ SE: cluster-robust, clustered at individual ($i$).
 Eligibility criteria (ages, geography, time period), explicit exclusions.
 Prose, not code. State the universe and what is dropped from it.
 
-## 3. Variable construction
+## 3. Data dictionary and units
+| Variable | Role | Unit / scale | Observed range or support | Notes |
+|---|---|---|---|---|
+| treatment_prob | Treatment | Probability, 0-1 scale | 0 to 0.82 | Not percentage points |
+
+## 4. Variable construction
 Transformations, recoding, derived variables, units. Order matters when later
 constructions depend on earlier ones — state the order in prose.
 
-## 4. Missingness and edge-case handling
+## 5. Missingness and edge-case handling
 **This section is mandatory and must not be skipped.**
 - Missingness: listwise deletion / pairwise / imputation (specify method)
 - Zeros and negatives in logs: how handled
@@ -272,11 +459,11 @@ If the original code is silent on a question here, write "ORIGINAL CODE
 SILENT" and pick a defensible default. Document the choice. The replication
 implements your documented choice.
 
-## 5. Target parameter
+## 6. Target parameter
 The estimand and its interpretation in plain English. What does the headline
 number actually represent?
 
-## 6. Identification
+## 7. Identification
 The conditional-independence assumption being made. State as an equation
 where appropriate, e.g.:
 $$E[\varepsilon_{it} \mid s_i, \mathbf{X}_{it}, \alpha_{st}] = 0$$
@@ -291,14 +478,98 @@ Well-documented code is a net asset for auditing — comments are the self-repor
 1. **Comment-anchored reading** can hide off-by-ones, sign errors, and unit mismatches. A comment saying "loop over i = 1..n" before code that says `for i in range(n)` (which is 0..n-1) gets skimmed past.
 2. **Comments-and-code-together translation** in cross-language replication imports the conceptual model into the target language, defeating orthogonality (this is what the spec bottleneck above protects against).
 
-**Rule for the Code Audit:** read the code first, treating comments as `<!-- -->` (visible but parsed last). Verify behavior independently. Then check whether the comments accurately describe what the code does. **Any comment/code divergence is a finding, not an annotation to silently reconcile.** Examples that must be flagged:
+**Rule for the Code Audit:** read the code first, treating comments as `<!-- -->` (visible but parsed last). Verify behavior independently. Then check whether the comments accurately describe what the code does. **Any comment/code divergence is a finding, not an annotation to silently reconcile.** Classify each finding using the Agent 0 materiality tiers. Examples that must be flagged:
 
 - Comment says "robust SE clustered at firm" but code uses HC1
 - Comment says "drop observations with missing wages" but code drops missing in any regressor
 - Comment says "log transform" but code uses log1p (or vice versa)
 - Comment specifies one functional form, code implements another
 
-This audit is operationalized as Agent 0 in the four-agent architecture above. Agent 0 returns its findings to the parent; the parent surfaces them to the user; the user resolves them before Agent A is spawned to write the spec. No replication work begins while comment/code divergence is unresolved — the spec would otherwise encode a guess about which (code or comment) reflects author intent.
+This audit is operationalized as Agent 0 in the four-agent architecture above. Agent 0 returns findings to the parent. Only material `blocking` findings stop Agent A. Nonblocking clarifications proceed as localized `REFEREE2_FLAG[...]` assumptions; documentation nits are reported but do not enter the spec unless they affect interpretation.
+
+Agent A always writes the spec from executable code behavior. If the user says comments are correct and code is wrong, stop the audit so author code can be fixed outside referee2.
+
+### Expected Outputs and Sealed Targets
+
+Existing output artifacts are the source of truth by default. Expected-output files should usually be structured extractions from the project's existing tables, figures, or result files, not newly generated outputs. Rerunning original code is optional diagnostic evidence for the Output Automation Audit; it is not a prerequisite for B/C replication.
+
+Agent A writes:
+
+- `code/replication/expected_outputs_<scope>.csv` for table-like numeric targets by default
+- `code/replication/expected_outputs_<scope>.json` when outputs are nested, scalar dictionaries, or multi-panel objects where CSV would obscure structure
+- `code/replication/expected_outputs_<scope>_notes.md` always
+
+For table-like outputs, use these columns where applicable:
+
+```csv
+output_id,model,term,statistic,value,unit,source_artifact,source_location,notes
+```
+
+The notes file documents:
+
+- source artifact(s)
+- provenance: existing artifact treated as source of truth; rerun not attempted / rerun attempted and matched / rerun attempted and differed
+- extraction choices
+- stale-output concerns, if any
+- sealed-output instructions for B/C
+
+Stale-output checks are separate from expected-output extraction. Agent A should not block B/C merely because output artifacts may be stale. Block B/C only if no meaningful source-of-truth expected values can be extracted or defined for the target output.
+
+Parent writes a physical restricted manifest for B/C at `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`. It contains:
+
+```markdown
+## You may read before first run
+- code/replication/spec_<scope>.md
+- code/config.do only for path assignment; do not inspect analysis logic
+- data/derived/panel_daily.dta only to confirm schema/units and run replication
+
+## Sealed until first-run outputs are saved
+- code/replication/expected_outputs_<scope>.csv
+- code/replication/expected_outputs_<scope>_notes.md
+- output/tables/main_results.tex
+
+## You must not read
+- original entrypoint scripts
+- sourced analysis/helper scripts
+- existing output artifacts before first-run outputs are saved
+- expected-output files before first-run outputs are saved
+- prior referee2 reports
+- override ledger
+- full scope manifest
+```
+
+B/C may receive sealed target paths up front, but must not open them until after writing the replication script, running it, and saving first-run outputs. Each B/C report must state:
+
+```markdown
+Expected outputs opened after first-run outputs saved: yes/no
+First-run output path: <path>
+```
+
+B/C may revise after opening expected outputs, but must preserve first-run scripts and outputs. Use artifact names like:
+
+```markdown
+code/replication/referee2_replicate_R_first_run.R
+code/replication/referee2_R_first_run_outputs.csv
+code/replication/referee2_replicate_R_revised.R
+code/replication/referee2_R_revised_outputs.csv
+code/replication/referee2_R_revision_log.md
+```
+
+Revision logs classify each change as `spec misread`, `package default mismatch`, `spec gap`, `original-code discrepancy`, or `numerical/formatting issue`.
+
+Formatting differences are immaterial unless they change substantive results. Do not revise solely to match table layout, labels, stars, decimal display, column order, LaTeX formatting, or file naming.
+
+For figures, Agent A should identify numeric targets where possible: plotted points, event-study estimates and confidence intervals, coefficient plot values, bin means, histogram/bin counts, or sample sizes behind plotted groups. If a numeric backing file exists, use it as expected output. If no stable numeric target exists, create a flag:
+
+```markdown
+REFEREE2_FLAG[FIG-YYYY-MM-DD-001]
+Tier: figure-human-comparison
+Scope: output/figures/<figure>.pdf
+Issue fingerprint: figure output is not reducible to stable numeric targets; human visual comparison required.
+Downstream assumption: B/C should reproduce the figure from the plain-language spec and save rendered outputs; referee2 will not classify visual match automatically.
+```
+
+First-run figures use `code/replication/referee2_<language>_first_run_<figure_slug>.<ext>`. Revised figures use `code/replication/referee2_<language>_revised_<figure_slug>.<ext>`. Numeric backing outputs use the same stem with `_data.csv` or `_data.json`. B/C may make qualitative comparisons only after first-run artifacts are saved, and must label those comparisons qualitative unless numeric targets exist.
 
 ### Discrepancy triage — classify at finding-time
 
@@ -352,37 +623,38 @@ Use the **scope calibration table** from the persona to determine intensity.
 
 ### Critical Rule: NEVER Modify Author Code
 
-You READ, RUN, and CREATE your own replication scripts. You NEVER edit the author's code. Audit independence requires separation.
+You READ, RUN, and CREATE your own audit artifacts. You NEVER edit the author's code. Audit independence requires separation.
 
 ### Output
 1. Spec file at `code/replication/spec_<scope>.md` (written by Agent A)
-2. Expected-outputs file at `code/replication/expected_outputs_<scope>.<ext>` (written by Agent A)
-3. Replication scripts in `code/replication/referee2_replicate_*.{R,do,py}` (written by Agents B and C)
-4. Comparison tables showing each replication's outputs vs. expected outputs
-5. Discrepancy diagnoses with source classification (per the triage table)
-6. Formal referee report in `correspondence/referee2/`
+2. Expected-output extraction file at `code/replication/expected_outputs_<scope>.<csv|json>` plus `expected_outputs_<scope>_notes.md` (written by Agent A)
+3. Full scope manifest and restricted B/C manifest in `correspondence/referee2/`
+4. Replication scripts in `code/replication/referee2_replicate_*.{R,do,py}` (written by Agents B and C)
+5. Preserved first-run outputs, optional revised outputs, and revision logs
+6. Comparison tables showing each replication's outputs vs. expected outputs
+7. Discrepancy diagnoses with source classification (per the triage table)
+8. Formal referee report in `correspondence/referee2/`
 
 ---
 
 ## Subagent operationalization (when running under the tainted-session catch)
 
-When referee2 runs as a subagent (per Step -1's catch protocol), the subagent is single-shot — it cannot pause to ask the user for clarification mid-run. The four-agent architecture relies on a user gate between Agent 0 and Agent A; under taint catch, that gate is enforced by terminating the subagent at the gate, not by mid-run interaction. Two operational adaptations follow.
+When referee2 runs as a subagent (per Step -1's catch protocol), the subagent is single-shot — it cannot pause to ask the user for clarification mid-run. The Agent 0 gate is therefore materiality-based:
 
-### Adaptation 1: terminate at the Agent 0 gate
+- No blockers: proceed through Agent A -> B/C automatically in the same fresh subagent.
+- Active overrides: proceed, but carry override flags into Agent A's spec.
+- Nonblocking flags: proceed and carry relevant flags into Agent A's spec.
+- Blocking findings not covered by active overrides: terminate with `STATUS: blocked-on-user-review`.
 
-Under taint catch, the subagent spawns Agent 0, waits for its findings, and returns immediately — it does NOT spawn Agent A, B, or C in the same subagent run, even when Agent 0's findings look clean. The subagent's return value is Agent 0's audit report plus a final line: `STATUS: AWAITING_USER_REVIEW. Re-invoke /referee2 to proceed to spec writing and replication.`
+If the subagent terminates on blockers, return Agent 0's findings plus the blocking menu. The user can fix code/comments outside referee2, add overrides, cancel, or rerun after changes. A later fresh subagent re-runs Agent 0 against the current source; it never relies on prior audit narrative.
 
-The user reviews findings, addresses any divergences, and re-invokes. The new (fresh) subagent re-runs Agent 0 against the current source — if findings remain, it terminates again; if clean, it proceeds to Agent A → B → C in that single run.
+### Liberal gap-flagging in Agent A
 
-(Why re-run Agent 0 rather than skip to Agent A on re-invocation? Each subagent is fresh and cannot trust assertions about prior runs; re-running Agent 0 against the current source is cheap and produces independent verification that fixes landed.)
-
-### Adaptation 2: liberal gap-flagging in Agent A
-
-Even after Agent 0's audit is clean, Agent A may find the original code is silent on something in spec section 4 (missingness, edge cases) or sections 2/3 (sample, variable construction). Agent A cannot pause to ask the user — it is also single-shot. Do NOT skip the section and do NOT refuse to proceed. Do both:
+Even after Agent 0's audit is clean, Agent A may find the original code is silent on something in spec section 5 (missingness, edge cases) or sections 2/4 (sample, variable construction). Agent A cannot pause to ask the user — it is also single-shot. Do NOT skip the section and do NOT refuse to proceed. Do both:
 
 1. **Record the gap explicitly** in the spec:
    ```
-   ## 4. Missingness and edge-case handling
+   ## 5. Missingness and edge-case handling
    ORIGINAL CODE SILENT on missingness — no explicit drop_na, no `if !missing()`, no `dropna()`.
    ```
 2. **Pick a defensible default and document the choice:**
@@ -401,7 +673,7 @@ The subagent proceeds with documented assumptions. Refusing to proceed because o
 
 ```markdown
 ## Spec
-[Sections 1–6, with any "ORIGINAL CODE SILENT" gaps marked + assumed defaults]
+[Seven-section spec, with any "ORIGINAL CODE SILENT" gaps marked + assumed defaults]
 
 ## Substantive discrepancies (likely real findings)
 [List with deep-dive diagnosis]
@@ -428,6 +700,7 @@ The subagent proceeds with documented assumptions. Refusing to proceed because o
 ### Report Format
 Use the formal referee report template from `~/.claude/skills/referee2/referee2.md`:
 - Summary
+- Status: `passed`, `blocked-on-user-review`, `partial-audit-replication-blocked`, `proceeding-with-nonblocking-flags`, `human-figure-comparison-required`, or `failed-substantive-discrepancy`
 - Findings by audit
 - Major Concerns (must be addressed)
 - Minor Concerns (should be addressed)
@@ -436,6 +709,9 @@ Use the formal referee report template from `~/.claude/skills/referee2/referee2.
 - Prioritized Recommendations
 
 ### File Locations
+- Full scope manifest: `correspondence/referee2/YYYY-MM-DD_roundN_scope.md`
+- Restricted B/C manifest: `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`
+- Override ledger: `correspondence/referee2/referee2_overrides.md`
 - Report: `correspondence/referee2/YYYY-MM-DD_roundN_report.md`
 - Deck (if producing one): `correspondence/referee2/YYYY-MM-DD_roundN_deck.tex`
 - Replication scripts: `code/replication/referee2_replicate_*.{R,do,py}`
