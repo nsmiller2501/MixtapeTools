@@ -274,6 +274,7 @@ A Claude Code **skill** — invoke with `/tikz path/to/file.tex` — that system
 |---------|-------------|
 | `/compiletex [file.tex]` | Compile any LaTeX file and report errors/warnings. Aims for zero warnings. |
 | `/newproject [name]` | Scaffold a new research project with standard folder structure and CLAUDE.md. Also available as a [skill](skills/newproject/). |
+| `/newbook [slug]` | Scaffold a book-shaped project: `memoir`-based LaTeX skeleton, Palatino body, Gov 2001 palette, voiced-sidebar callouts, one chapter per file, bibliography stub, CLAUDE.md with voice cast. Parallel to `/newproject`. [See documentation](skills/newbook/). |
 
 ### 6. CLAUDE.md Template
 

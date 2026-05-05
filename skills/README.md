@@ -22,6 +22,7 @@ This directory contains documentation, methodology, and example output for the s
 | [**Split-PDF**](split-pdf/) | `/split-pdf` | Downloads and deep-reads academic PDFs without crashing the session. Uses the PDF in place (no centralized `articles/` folder), splits into 4-page chunks in a `_build/` directory, reads in batches of ~12 pages, writes structured notes, and saves a persistent `_text.md` extraction so future invocations skip re-reading. When called by another skill, reads inside a subagent to prevent context bloat. [See full walkthrough →](split-pdf/) |
 | [**Bibcheck**](bibcheck/) | `/bibcheck` | Many-agent bibliography audit. Spawns one narrow-focus agent per citation (or one specialist per field) to verify each `.bib` entry against canonical sources — DOI, journal landing page, author working paper. Catches the silent errors a single-agent audit misses as attention decays across long lists: mixed-up entries (title of paper A with authors of paper B), wrong years, journal misattributions. Per-field mode launches each specialist as an isolated `claude -p` subprocess so they cannot peek at each other's conclusions. Outputs a `bibcheck_report.md` and a drop-in `corrected.bib`. [See documentation →](bibcheck/) |
 | [**New Project**](newproject/) | `/newproject` | Scaffolds a new research project with standard directory structure, CLAUDE.md template, and documented README. [See documentation →](newproject/) |
+| [**New Book**](newbook/) | `/newbook` | Scaffolds a book-shaped project: `memoir`-based LaTeX skeleton, Palatino body, Gov 2001 palette, voiced-sidebar `\voice{<name>}{<text>}` callouts, one chapter per file, bibliography stub, `CLAUDE.md` with voice and lineage rules, `% SUBSTACK MAP:` placeholders in each chapter, and a chapter-per-file structure that converts cleanly to HTML later. Parallel to `/newproject`. This is the skill that produced *AI Agents and the Research Worker*. [See documentation →](newbook/) |
 
 ---
 
@@ -73,8 +74,11 @@ Each skill is a markdown file at `.claude/skills/<name>/SKILL.md`. It has a smal
 ├── bibcheck/
 │   ├── SKILL.md           # The instructions Claude follows
 │   └── methodology.md     # Why narrow agents beat one big audit (for humans)
-└── newproject/
-    └── SKILL.md           # The instructions Claude follows
+├── newproject/
+│   └── SKILL.md           # The instructions Claude follows
+└── newbook/
+    ├── SKILL.md           # The instructions Claude follows
+    └── templates/         # File templates the scaffold uses
 
 skills/
 ├── referee2/
@@ -87,8 +91,10 @@ skills/
 │   └── README.md          # Full documentation and examples (for humans)
 ├── bibcheck/
 │   └── README.md          # Two modes, when to use each, cost and rate-limit notes
-└── newproject/
-    └── README.md          # Philosophy, folder purposes, installation (for humans)
+├── newproject/
+│   └── README.md          # Philosophy, folder purposes, installation (for humans)
+└── newbook/
+    └── README.md          # Book-shaped scaffold; voiced sidebars; chapter-per-file structure
 ```
 
 If you're curious what the actual instructions look like, you can read the [SKILL.md file directly](../.claude/skills/split-pdf/SKILL.md) — but you don't need to understand it to use the skill.
