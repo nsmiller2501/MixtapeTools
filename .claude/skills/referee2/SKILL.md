@@ -54,7 +54,7 @@ Running Blindspot first makes Referee 2 more useful: perception problems are cau
 >
 > This session has prior context that may compromise audit independence. Two options:
 >
-> **(a) Subagent** — I spawn a fresh subagent in this session and pass your invocation verbatim. Convenient (no session restart), but any unstated context from our earlier conversation will not reach the subagent.
+> **(a) Subagents** — I keep this parent session only as orchestrator, then spawn fresh role-specific subagents for Agent 0, Agent A, and Agents B/C. Convenient (no session restart), but any unstated context from our earlier conversation will not reach the subagents.
 >
 > **(b) Cancel** — You start a brand new session and re-invoke `/referee2`. Highest fidelity, since you provide the full invocation in a clean context.
 >
@@ -62,15 +62,29 @@ Running Blindspot first makes Referee 2 more useful: perception problems are cau
 
 There is no "(c) proceed anyway" option. Proceeding in a tainted main session produces an invalid audit; the menu is bounded by what produces a valid one. If the user reasons in conversation that the prior context was unrelated and asks to proceed anyway, exercise judgment per the detection threshold above (B) — the catch fired because of judgment, and judgment can clear it.
 
-### If the user picks (a) Subagent — prompt construction
+### If the user picks (a) Subagents — parent orchestration
 
-When the user picks subagent, you (the parent) construct the subagent prompt to minimize the "compression loss" that the user is implicitly accepting. The discipline: **transcription, not interpretation.** Quote verbatim. Do not paraphrase.
+When the user picks subagents, you (the parent) do not delegate the whole referee2 protocol to one subagent. Subagents cannot be assumed to spawn other subagents. The parent stays in charge of orchestration and spawns each role-specific fresh subagent itself:
 
-Subagent prompt template:
+1. Parent performs path enumeration/scope confirmation using only paths, not project narrative.
+2. Parent writes or reuses the full scope manifest and reads active override ledger state.
+3. Parent spawns Agent 0 and waits for the gate result.
+4. If Agent 0 blocks, parent reports blockers to the user and stops.
+5. If Agent 0 does not block, parent spawns Agent A and waits for `ready_for_BC=yes`.
+6. Parent writes the restricted B/C manifest.
+7. Parent spawns Agents B and C in parallel and waits for their triage results.
+8. Parent aggregates role-subagent reports and writes the final report.
+
+The discipline is still **transcription, not interpretation**. Quote verbatim. Do not paraphrase substantive project behavior in any role prompt.
+
+Role-subagent prompt header template:
 
 ```
-You are running referee2 in a fresh subagent context. The user invoked
-this skill via:
+You are running one role in the referee2 protocol in a fresh subagent context.
+The parent session is orchestrating the protocol. You must not spawn further
+subagents.
+
+The user invoked this skill via:
 
   User invocation (verbatim):
   > /referee2 <args>
@@ -80,17 +94,19 @@ this skill via:
 
 Mode: <deck|code>
 Target: <absolute path to file or directory>
+Role: <Agent 0|Agent A|Agent B|Agent C>
 
 Read ~/.claude/skills/referee2/SKILL.md and execute the protocol from
-Step 0 onward. Do not assume any prior context. The user's verbatim text
-above is your only specification.
+the instructions for your assigned role only. Do not assume any prior context.
+The user's verbatim text above plus the manifest/spec paths supplied by the
+parent are your only specification.
 ```
 
 #### Path enumeration (when the user's invocation is vague)
 
-If the user's invocation is not a precise path (e.g., "audit everything we worked on this session," "the new code," empty target), do NOT skip enumeration and let the subagent flounder. Enumerate concrete paths from this session's tool history, then **confirm with the user before spawning:**
+If the user's invocation is not a precise path (e.g., "audit everything we worked on this session," "the new code," empty target), do NOT skip enumeration and let the role subagents flounder. Enumerate concrete paths from this session's tool history, then **confirm with the user before spawning Agent 0:**
 
-> I'll audit these files in the subagent (enumerated from this session's tool use):
+> I'll audit these files with fresh referee2 subagents (enumerated from this session's tool use):
 >
 > ```
 > /path/to/a.do
@@ -100,7 +116,7 @@ If the user's invocation is not a precise path (e.g., "audit everything we worke
 >
 > Add, remove, or proceed?
 
-After user confirms, include the confirmed list in the subagent prompt under a `Session-enumerated audit scope` heading.
+After user confirms, include the confirmed list in the full scope manifest or Agent 0 prompt under a `Session-enumerated audit scope` heading.
 
 **Hard rule for enumeration: paths only, no narrative.** Do NOT include "this script does X," "we use Y approach," or any editorialization. Path strings are objective transcription; everything else is interpretation that contaminates the subagent's independence. If the user's invocation IS a precise path already, skip enumeration entirely — they've specified scope.
 
@@ -110,9 +126,9 @@ Tell the user: "Understood — start a new terminal session and re-invoke `/refe
 
 ### Iterative re-invocation in the same parent session
 
-After a subagent run completes and the user addresses findings (updates code, fills spec gaps), the user may re-invoke referee2 in the same parent session for a second audit. This is fine — each subagent is fresh by virtue of being a subagent, regardless of how many prior subagents the parent has spawned. The independence requirement is about the *auditor*, not the user-Claude collaboration.
+After a role-subagent run completes and the user addresses findings (updates code, fills spec gaps), the user may re-invoke referee2 in the same parent session for a second audit. This is fine — each role subagent is fresh by virtue of being a subagent, regardless of how many prior subagents the parent has spawned. The independence requirement is about the *auditor*, not the user-Claude collaboration.
 
-**However:** when constructing the prompt for a follow-up subagent, **NEVER include prior-audit findings in the prompt.** Each subagent audits the current state on its own terms — pass current code + current spec + scope, never prior-audit narrative. Two reasons:
+**However:** when constructing the prompt for a follow-up role subagent, **NEVER include prior-audit findings in the prompt** unless the role is explicitly resuming from a prior artifact path. Each subagent audits the current state on its own terms — pass current code + current spec + scope, never prior-audit narrative. Two reasons:
 
 - **Anchoring:** the new subagent would look for the same problems and possibly miss new ones
 - **Confirmation:** the new subagent might rationalize that previous findings were "addressed" without independently verifying
@@ -230,7 +246,7 @@ Cross-language replication exploits this orthogonality:
 
 **Why telling one agent to "set the original code aside" doesn't work.** Context cannot be unread. A single Claude that sees the original code and then writes the spec and then writes the replication is implementing from-the-code, not from-the-spec — the spec becomes a side channel while the original code drives the translation. To enforce the bottleneck, the agent that reads the original code and the agents that write the replications must be **separate subagents with isolated contexts**.
 
-**If the handoff cannot happen, stop the replication audit.** Agent A writing B/C's R, Python, or Stata scripts invalidates the cross-language replication. If true isolated B/C subagents are unavailable, or if orchestration cannot pass only the restricted manifest/spec/input paths to B/C, do not continue in the same context. File the spec and expected-output artifacts as partial progress and report `Status: partial-audit-replication-blocked`.
+**If a handoff cannot happen, stop at the missing stage.** Agent A writing B/C's R, Python, or Stata scripts invalidates the cross-language replication. Agent 0 writing Agent A's spec is also invalid. If the parent cannot spawn the next required isolated role subagent, do not continue in the same context. Preserve completed artifacts, report `Status: partial-audit-replication-blocked`, and allow a later invocation to resume at the next missing role if source state is unchanged.
 
 **Four-agent architecture:**
 
@@ -241,21 +257,24 @@ Cross-language replication exploits this orthogonality:
 | **B — Replicator (language 1)** | Restricted manifest, spec, input data, path-assignment config only. Expected outputs and source outputs are sealed until first-run artifacts are saved. **Never sees the original code.** | First-run replication script/output, optional revised script/output, comparison table. |
 | **C — Replicator (language 2)** | Same as B; never sees original code. | First-run replication script/output, optional revised script/output, comparison table. |
 
-The parent session orchestrates by spawning subagents and aggregating their reports. **The parent does not read spec content** — it only passes file paths to B and C. The parent's own context is contaminated (it has the user's invocation and Step -1's enumeration); if it summarizes the spec into B/C's prompts, that contaminated paraphrase replaces the clean spec. Hand off via `Read these files before doing anything: <restricted manifest path>, <spec path>, <input data paths>` and let B/C read the files themselves. If B/C cannot be spawned, the parent must not ask Agent A or itself to "just do the replication."
+The parent session orchestrates by spawning role subagents and aggregating their reports. **The parent does not perform the role work.** It may create manifests, pass artifact paths, wait for subagent results, present blocking menus, and write the final report from role-subagent outputs. It must not read original code to audit it, write Agent A's spec, or write B/C replication scripts. **The parent does not read spec content** — it only passes file paths to B and C. The parent's own context is contaminated (it has the user's invocation and Step -1's enumeration); if it summarizes the spec into B/C's prompts, that contaminated paraphrase replaces the clean spec. Hand off via `Read these files before doing anything: <restricted manifest path>, <spec path>, <input data paths>` and let B/C read the files themselves. If a role subagent cannot be spawned, the parent must not ask the previous role or itself to "just do the next step."
 
 **Why split Agent 0 from Agent A.** A single agent that does "audit, and if clean write the spec" judges its own gate. Splitting prevents Agent 0's comment/code read from becoming the spec-writing voice. Agent 0 gates only material blockers; nonblocking clarifications and documentation nits proceed as flagged audit state.
 
 **The protocol:**
 
 1. **Discover and confirm the scope bundle.** Default to the audited entrypoint(s), sourced/imported code, configs, required inputs, and source-of-truth output artifacts. If the user explicitly narrows scope, honor that guardrail and record it.
-2. **Check for resumable Agent A artifacts.** Before creating a new round, check whether the newest completed round for the same scope has a full scope manifest, spec, expected-output artifacts, expected-output notes, and a restricted manifest, but lacks matching B/C comparison artifacts. If so, ask the user whether to resume at B/C instead of rerunning Agent 0 and Agent A. Resume only if the source files and source-output artifacts listed in that round's full scope manifest are unchanged since the Agent A artifacts were written. If anything changed, start a new round from Agent 0.
+2. **Check for resumable artifacts.** Before creating a new round, check whether the newest incomplete round for the same scope can resume:
+   - Agent 0 findings exist with no blocking issues, but no matching Agent A spec exists: ask whether to resume at Agent A.
+   - Agent A spec, expected-output artifacts, expected-output notes, and restricted manifest exist, but matching B/C comparison artifacts are missing: ask whether to resume at B/C.
+   Resume only if the source files and source-output artifacts listed in that round's full scope manifest are unchanged since the last completed stage artifact was written. If anything changed, start a new round from Agent 0.
 3. **Write the full scope manifest for a new round.** If not resuming, create `correspondence/referee2/YYYY-MM-DD_roundN_scope.md`. Infer `roundN` by scanning existing `correspondence/referee2/YYYY-MM-DD_round*_*.md` files for today's date and taking max `N + 1`; if none exist, use `round1`. Include enough source-state information to support later resume checks: at minimum path, file size, and modified time for original code/config/source-output artifacts, and hashes where feasible.
 4. **Read active overrides.** If `correspondence/referee2/referee2_overrides.md` exists, read only entries with `Status: active`. If it does not exist, create it lazily only when the first override is needed.
 5. **Spawn Agent 0 (auditor).** Prompt: audit full spec-readiness across comment/code divergences, scope-bundle ambiguities, and run-state/output provenance ambiguities. Return materiality-tiered findings. Do NOT write a spec.
 6. **Gate only on material blockers.** If Agent 0 finds `blocking` issues not covered by active overrides, stop for user review and follow the blocking menu below. If Agent 0 finds only `nonblocking-clarification` or `documentation-nit` issues, proceed automatically and carry relevant `REFEREE2_FLAG[...]` assumptions into Agent A.
 7. **Spawn Agent A (translator).** Prompt: read the source code and source-of-truth outputs, treat executable code behavior as authoritative, and write the spec to `code/replication/YYYY-MM-DD_roundN_spec_<scope>.md`, expected-output extraction files, and `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md`. Agent A stops after writing these artifacts and returns a one-line status: `spec=<path> outputs=<path> notes=<path> restricted_manifest_needed=yes ready_for_BC=yes`.
 8. **Write the restricted B/C manifest.** Create `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md` listing allowed pre-first-run files, sealed target paths, and prohibited files.
-9. **Verify B/C handoff availability.** Before beginning cross-language replication, confirm that B and C can run as separate isolated subagents. If they cannot, stop with `Status: partial-audit-replication-blocked`; keep the Agent A artifacts for a later resume.
+9. **Verify B/C handoff availability.** Before beginning cross-language replication, confirm that B and C can run as separate isolated subagents. If they cannot, stop with `Status: partial-audit-replication-blocked`; keep the Agent A artifacts for a later resume at B/C.
 10. **Spawn Agents B and C in parallel.** Each receives the restricted manifest, spec path, and input data paths. Each writes and runs a first-run replication before opening expected outputs or source outputs. Each compares after first-run artifacts are saved, may make diagnostic revisions, and returns a triage table.
 11. **Run output automation check only if user requested it.** If and only if the user explicitly asked referee2 to check output automation/rerun reproducibility, the parent may run the original entrypoint and compare generated source artifacts to the pre-existing source-of-truth outputs. This is parent-owned diagnostic evidence and is separate from Agent A's expected-output extraction.
 12. **Aggregate.** The parent collects B's and C's triage tables, combines them with the other audits, and files the formal report. The triage table format and discrepancy categories are defined further down.
@@ -334,12 +353,15 @@ Agent 0 reads active overrides to avoid re-blocking adjudicated issues. Agent A 
 
 ### Required Subagent Prompt Components
 
-Use these components when spawning the code-audit subagents. Add concrete paths from the current round, but do not paraphrase code behavior in the parent prompt.
+Use these components when the parent spawns the code-audit role subagents. Add concrete paths from the current round, but do not paraphrase code behavior in the parent prompt. Every role subagent must be told: `Do not spawn further subagents; return your artifact paths and findings to the parent.`
 
 Agent 0 prompt must include:
 
 ```markdown
 Role: Agent 0 — referee2 spec-readiness auditor.
+
+You are one role subagent. The parent session is orchestrating referee2.
+Do not spawn further subagents. Do not perform Agent A, B, or C work.
 
 Read:
 - Full scope manifest: correspondence/referee2/YYYY-MM-DD_roundN_scope.md
@@ -367,6 +389,9 @@ Agent A prompt must include:
 ```markdown
 Role: Agent A — referee2 translator.
 
+You are one role subagent. The parent session is orchestrating referee2.
+Do not spawn further subagents. Do not perform Agent 0, B, or C work.
+
 Read:
 - Full scope manifest
 - Active override ledger, if present
@@ -392,6 +417,10 @@ Agents B/C prompts must include:
 
 ```markdown
 Role: Agent B/C — referee2 independent replicator.
+
+You are one role subagent. The parent session is orchestrating referee2.
+Do not spawn further subagents. Do not perform Agent 0, Agent A, or the
+other replicator's work.
 
 Read before first run:
 - Restricted manifest
@@ -700,17 +729,20 @@ You READ, RUN, and CREATE your own audit artifacts. You NEVER edit the author's 
 
 ## Subagent operationalization (when running under the tainted-session catch)
 
-When referee2 runs as a subagent (per Step -1's catch protocol), the subagent is single-shot — it cannot pause to ask the user for clarification mid-run. The Agent 0 gate is therefore materiality-based:
+When referee2 runs under Step -1's tainted-session catch, the parent session remains the orchestrator. Do not spawn one "referee2 subagent" and expect it to run the whole protocol; role subagents may not be able to spawn other subagents. The parent must spawn each fresh role subagent directly and wait for that role's return before deciding the next step.
 
-- No blockers: the fresh referee2 subagent acts as orchestrator and proceeds by spawning isolated Agent A, B, and C contexts when available.
-- Active overrides: proceed, but carry override flags into Agent A's spec.
-- Nonblocking flags: proceed and carry relevant flags into Agent A's spec.
-- Blocking findings not covered by active overrides: terminate with `Status: blocked-on-user-review`.
-- B/C handoff unavailable: terminate with `Status: partial-audit-replication-blocked` after preserving Agent A artifacts. Do not let Agent A or the subagent's current context write the replication scripts.
+The Agent 0 gate is materiality-based:
 
-If the subagent terminates on blockers, return Agent 0's findings plus the blocking menu. The user can fix code/comments outside referee2, add overrides, cancel, or rerun after changes. A later fresh subagent re-runs Agent 0 against the current source; it never relies on prior audit narrative.
+- No blockers: parent spawns Agent A next.
+- Active overrides: parent proceeds to Agent A, and Agent A carries override flags into the spec.
+- Nonblocking flags: parent proceeds to Agent A, and Agent A carries relevant flags into the spec.
+- Blocking findings not covered by active overrides: parent stops with `Status: blocked-on-user-review` and reports Agent 0's findings plus the blocking menu.
+- Agent A handoff unavailable after Agent 0: parent stops with `Status: partial-audit-replication-blocked` after preserving Agent 0 findings. A later invocation may resume at Agent A if source state is unchanged.
+- B/C handoff unavailable after Agent A: parent stops with `Status: partial-audit-replication-blocked` after preserving Agent A artifacts. A later invocation may resume at B/C if source state is unchanged.
 
-If the subagent terminates after Agent A because B/C could not be spawned, return only the resumable artifact paths: scope manifest, spec, expected-output artifacts, expected-output notes, and restricted manifest if already written. On a later invocation, the parent may offer to resume from B/C if those artifacts are the newest matching round for the same scope and the source files/source-output artifacts listed in the full scope manifest have not changed. If source state changed, start over at Agent 0.
+If the parent stops on blockers, the user can fix code/comments outside referee2, add overrides, cancel, or rerun after changes. A later fresh Agent 0 subagent re-runs against the current source; it never relies on prior audit narrative.
+
+If the parent stops because a role handoff is unavailable, return only the resumable artifact paths for completed stages. On a later invocation, the parent may offer to resume from the next missing role if those artifacts are the newest matching round for the same scope and the source files/source-output artifacts listed in the full scope manifest have not changed. If source state changed, start over at Agent 0.
 
 ### Liberal gap-flagging in Agent A
 
@@ -729,7 +761,7 @@ Even after Agent 0's audit is clean, Agent A may find the original code is silen
    for the user" in the final report.
    ```
 
-The subagent proceeds with documented assumptions. Refusing to proceed because of gaps would make the audit unactionable.
+Agent A proceeds with documented assumptions. Refusing to proceed because of gaps would make the audit unactionable.
 
 **The triage table is the report format, not mid-run dialogue.** Classify each discrepancy yourself, include reasoning, present the three categories distinctly in the final report.
 
@@ -755,9 +787,9 @@ The subagent proceeds with documented assumptions. Refusing to proceed because o
 [Code audit, directory audit, output automation audit, econometrics audit findings]
 ```
 
-**Resolution loop.** After the subagent returns, the parent surfaces the report to the user. If the user wants to resolve open questions, they update the code and/or provide spec answers, then re-invoke referee2 in the same parent session. A new fresh subagent runs against the updated state. Per Step -1's "Iterative re-invocation" rule: the new subagent's prompt must NOT include the prior audit's findings — only the current code, current spec, and scope.
+**Resolution loop.** After the parent aggregates role-subagent results, the parent surfaces the report to the user. If the user wants to resolve open questions, they update the code and/or provide spec answers, then re-invoke referee2 in the same parent session. New fresh role subagents run against the updated state. Per Step -1's "Iterative re-invocation" rule: new role-subagent prompts must NOT include the prior audit's findings — only the current code, current spec, and scope.
 
-**Resume loop.** If a prior round stopped after Agent A with `partial-audit-replication-blocked`, a later invocation may resume at B/C rather than rerun Agent 0 and Agent A. The parent must ask the user before resuming and must verify unchanged source state using file paths and timestamps or hashes from the prior scope/spec artifacts. The B/C prompt receives only the restricted manifest, spec path, and allowed input paths; it does not receive the prior report narrative or the reason the handoff failed.
+**Resume loop.** If a prior round stopped with `partial-audit-replication-blocked`, a later invocation may resume from the next missing role rather than rerun completed stages. If Agent 0 completed but Agent A did not, resume at Agent A. If Agent A completed but B/C did not, resume at B/C. The parent must ask the user before resuming and must verify unchanged source state using file paths and timestamps or hashes from the prior scope/spec artifacts. Resume prompts receive only the artifacts needed for the next role; they do not receive prior report narrative or the reason the handoff failed.
 
 ---
 
