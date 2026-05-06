@@ -705,8 +705,8 @@ When referee2 runs as a subagent (per Step -1's catch protocol), the subagent is
 - No blockers: the fresh referee2 subagent acts as orchestrator and proceeds by spawning isolated Agent A, B, and C contexts when available.
 - Active overrides: proceed, but carry override flags into Agent A's spec.
 - Nonblocking flags: proceed and carry relevant flags into Agent A's spec.
-- Blocking findings not covered by active overrides: terminate with `STATUS: blocked-on-user-review`.
-- B/C handoff unavailable: terminate with `STATUS: partial-audit-replication-blocked` after preserving Agent A artifacts. Do not let Agent A or the subagent's current context write the replication scripts.
+- Blocking findings not covered by active overrides: terminate with `Status: blocked-on-user-review`.
+- B/C handoff unavailable: terminate with `Status: partial-audit-replication-blocked` after preserving Agent A artifacts. Do not let Agent A or the subagent's current context write the replication scripts.
 
 If the subagent terminates on blockers, return Agent 0's findings plus the blocking menu. The user can fix code/comments outside referee2, add overrides, cancel, or rerun after changes. A later fresh subagent re-runs Agent 0 against the current source; it never relies on prior audit narrative.
 

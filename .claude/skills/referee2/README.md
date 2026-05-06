@@ -24,7 +24,7 @@ Produce output → /blindspot → interpret and write → complete project → f
 
 Referee 2 is a five-audit protocol for catching errors, replication failures, and econometric problems in empirical work — before they become retractions, failed replications, or public embarrassments.
 
-You invoke it after a project is complete, in a **fresh terminal** with a Claude instance that has never seen the work. That separation is what makes it independent. The Claude that built the pipeline cannot objectively audit it. Asking it to do so is like asking a student to grade their own exam.
+You invoke it after a project is complete, preferably in a **fresh terminal** with a Claude instance that has never seen the work. If invoked from a session that already touched the project, the skill must use its tainted-session catch: spawn a fresh subagent with only the verbatim invocation and confirmed paths, or cancel. That separation is what makes it independent. The Claude that built the pipeline cannot objectively audit it. Asking it to do so is like asking a student to grade their own exam.
 
 **Invoke it with:** `/referee2 code path/to/project`
 
@@ -74,7 +74,7 @@ The workflow mirrors journal peer review:
 1. **Author completes work** → opens fresh terminal → invokes `/referee2`
 2. **Referee 2 audits** → files report with Major/Minor Concerns
 3. **Author responds** — fixes or justifies each concern, documents changes
-4. **Referee 2 re-audits** in a new fresh terminal
+4. **Referee 2 re-audits** in a new fresh terminal, or via the tainted-session subagent catch
 5. Repeat until verdict is Accept
 
 ---
@@ -94,7 +94,7 @@ The workflow mirrors journal peer review:
 
 **Why fresh sessions for Referee 2 but not Blindspot:**
 
-Referee 2 requires a fresh terminal because it's auditing implementation — the same Claude that built the code will rationalize its own choices. Independence is structural.
+Referee 2 requires a fresh auditor because it's auditing implementation — the same Claude that built the code will rationalize its own choices. A fresh terminal is the cleanest route; the tainted-session catch can instead spawn a fresh subagent with restricted context. Independence is structural.
 
 Blindspot runs in the same session because it's auditing perception — you need the person closest to the work, with a structured forcing function to look past what they expect to see.
 
