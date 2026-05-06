@@ -211,7 +211,7 @@ Referee2 may write only its own audit artifacts:
 
 Referee2 must never edit author code, comments, data-cleaning scripts, analysis scripts, project documentation, or source output artifacts. This remains true even if the user asks for fixes during the referee2 interaction. If the user wants fixes, stop the audit, run a normal coding session or feature branch outside referee2, then rerun referee2.
 
-Agent A treats current executable code behavior as authoritative. Comments help with labels and interpretation, but comments never override code behavior. If the user decides a comment reflects intent and code is wrong, stop the audit until author code is fixed outside referee2.
+Agent A treats current executable code behavior as authoritative. Comments help with labels and interpretation, but comments never override code behavior. If the user decides a comment reflects intent and code is wrong, stop the audit until author code is fixed outside referee2. Agent A is a translator/extractor only: it never writes, runs, debugs, or compares replication scripts.
 
 ### The Core Principle: Cross-Language Replication
 
@@ -230,6 +230,8 @@ Cross-language replication exploits this orthogonality:
 
 **Why telling one agent to "set the original code aside" doesn't work.** Context cannot be unread. A single Claude that sees the original code and then writes the spec and then writes the replication is implementing from-the-code, not from-the-spec — the spec becomes a side channel while the original code drives the translation. To enforce the bottleneck, the agent that reads the original code and the agents that write the replications must be **separate subagents with isolated contexts**.
 
+**If the handoff cannot happen, stop the replication audit.** Agent A writing B/C's R, Python, or Stata scripts invalidates the cross-language replication. If true isolated B/C subagents are unavailable, or if orchestration cannot pass only the restricted manifest/spec/input paths to B/C, do not continue in the same context. File the spec and expected-output artifacts as partial progress and report `Status: partial-audit-replication-blocked`.
+
 **Four-agent architecture:**
 
 | Agent | Reads | Produces |
@@ -239,21 +241,24 @@ Cross-language replication exploits this orthogonality:
 | **B — Replicator (language 1)** | Restricted manifest, spec, input data, path-assignment config only. Expected outputs and source outputs are sealed until first-run artifacts are saved. **Never sees the original code.** | First-run replication script/output, optional revised script/output, comparison table. |
 | **C — Replicator (language 2)** | Same as B; never sees original code. | First-run replication script/output, optional revised script/output, comparison table. |
 
-The parent session orchestrates by spawning subagents and aggregating their reports. **The parent does not read spec content** — it only passes file paths to B and C. The parent's own context is contaminated (it has the user's invocation and Step -1's enumeration); if it summarizes the spec into B/C's prompts, that contaminated paraphrase replaces the clean spec. Hand off via `Read these files before doing anything: <restricted manifest path>, <spec path>, <input data paths>` and let B/C read the files themselves.
+The parent session orchestrates by spawning subagents and aggregating their reports. **The parent does not read spec content** — it only passes file paths to B and C. The parent's own context is contaminated (it has the user's invocation and Step -1's enumeration); if it summarizes the spec into B/C's prompts, that contaminated paraphrase replaces the clean spec. Hand off via `Read these files before doing anything: <restricted manifest path>, <spec path>, <input data paths>` and let B/C read the files themselves. If B/C cannot be spawned, the parent must not ask Agent A or itself to "just do the replication."
 
 **Why split Agent 0 from Agent A.** A single agent that does "audit, and if clean write the spec" judges its own gate. Splitting prevents Agent 0's comment/code read from becoming the spec-writing voice. Agent 0 gates only material blockers; nonblocking clarifications and documentation nits proceed as flagged audit state.
 
 **The protocol:**
 
 1. **Discover and confirm the scope bundle.** Default to the audited entrypoint(s), sourced/imported code, configs, required inputs, and source-of-truth output artifacts. If the user explicitly narrows scope, honor that guardrail and record it.
-2. **Write the full scope manifest.** Create `correspondence/referee2/YYYY-MM-DD_roundN_scope.md`. Infer `roundN` by scanning existing `correspondence/referee2/YYYY-MM-DD_round*_*.md` files for today's date and taking max `N + 1`; if none exist, use `round1`.
-3. **Read active overrides.** If `correspondence/referee2/referee2_overrides.md` exists, read only entries with `Status: active`. If it does not exist, create it lazily only when the first override is needed.
-4. **Spawn Agent 0 (auditor).** Prompt: audit full spec-readiness across comment/code divergences, scope-bundle ambiguities, and run-state/output provenance ambiguities. Return materiality-tiered findings. Do NOT write a spec.
-5. **Gate only on material blockers.** If Agent 0 finds `blocking` issues not covered by active overrides, stop for user review and follow the blocking menu below. If Agent 0 finds only `nonblocking-clarification` or `documentation-nit` issues, proceed automatically and carry relevant `REFEREE2_FLAG[...]` assumptions into Agent A.
-6. **Spawn Agent A (translator).** Prompt: read the source code and source-of-truth outputs, treat executable code behavior as authoritative, and write the spec to `code/replication/YYYY-MM-DD_roundN_spec_<scope>.md`, expected-output extraction files, and `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md`. Return a one-line status: `spec=<path> outputs=<path> notes=<path> restricted_manifest_needed=yes`.
-7. **Write the restricted B/C manifest.** Create `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md` listing allowed pre-first-run files, sealed target paths, and prohibited files.
-8. **Spawn Agents B and C in parallel.** Each receives the restricted manifest, spec path, and input data paths. Each writes and runs a first-run replication before opening expected outputs or source outputs. Each compares after first-run artifacts are saved, may make diagnostic revisions, and returns a triage table.
-9. **Aggregate.** The parent collects B's and C's triage tables, combines them with the other four audits, and files the formal report. The triage table format and discrepancy categories are defined further down.
+2. **Check for resumable Agent A artifacts.** Before creating a new round, check whether the newest completed round for the same scope has a full scope manifest, spec, expected-output artifacts, expected-output notes, and a restricted manifest, but lacks matching B/C comparison artifacts. If so, ask the user whether to resume at B/C instead of rerunning Agent 0 and Agent A. Resume only if the source files and source-output artifacts listed in that round's full scope manifest are unchanged since the Agent A artifacts were written. If anything changed, start a new round from Agent 0.
+3. **Write the full scope manifest for a new round.** If not resuming, create `correspondence/referee2/YYYY-MM-DD_roundN_scope.md`. Infer `roundN` by scanning existing `correspondence/referee2/YYYY-MM-DD_round*_*.md` files for today's date and taking max `N + 1`; if none exist, use `round1`. Include enough source-state information to support later resume checks: at minimum path, file size, and modified time for original code/config/source-output artifacts, and hashes where feasible.
+4. **Read active overrides.** If `correspondence/referee2/referee2_overrides.md` exists, read only entries with `Status: active`. If it does not exist, create it lazily only when the first override is needed.
+5. **Spawn Agent 0 (auditor).** Prompt: audit full spec-readiness across comment/code divergences, scope-bundle ambiguities, and run-state/output provenance ambiguities. Return materiality-tiered findings. Do NOT write a spec.
+6. **Gate only on material blockers.** If Agent 0 finds `blocking` issues not covered by active overrides, stop for user review and follow the blocking menu below. If Agent 0 finds only `nonblocking-clarification` or `documentation-nit` issues, proceed automatically and carry relevant `REFEREE2_FLAG[...]` assumptions into Agent A.
+7. **Spawn Agent A (translator).** Prompt: read the source code and source-of-truth outputs, treat executable code behavior as authoritative, and write the spec to `code/replication/YYYY-MM-DD_roundN_spec_<scope>.md`, expected-output extraction files, and `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md`. Agent A stops after writing these artifacts and returns a one-line status: `spec=<path> outputs=<path> notes=<path> restricted_manifest_needed=yes ready_for_BC=yes`.
+8. **Write the restricted B/C manifest.** Create `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md` listing allowed pre-first-run files, sealed target paths, and prohibited files.
+9. **Verify B/C handoff availability.** Before beginning cross-language replication, confirm that B and C can run as separate isolated subagents. If they cannot, stop with `Status: partial-audit-replication-blocked`; keep the Agent A artifacts for a later resume.
+10. **Spawn Agents B and C in parallel.** Each receives the restricted manifest, spec path, and input data paths. Each writes and runs a first-run replication before opening expected outputs or source outputs. Each compares after first-run artifacts are saved, may make diagnostic revisions, and returns a triage table.
+11. **Run output automation check only if user requested it.** If and only if the user explicitly asked referee2 to check output automation/rerun reproducibility, the parent may run the original entrypoint and compare generated source artifacts to the pre-existing source-of-truth outputs. This is parent-owned diagnostic evidence and is separate from Agent A's expected-output extraction.
+12. **Aggregate.** The parent collects B's and C's triage tables, combines them with the other audits, and files the formal report. The triage table format and discrepancy categories are defined further down.
 
 ### Agent 0 Materiality Tiers
 
@@ -373,10 +378,12 @@ Task:
 - Write expected-output extraction file(s) and `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md`.
 - Include only sanitized B/C-facing `REFEREE2_FLAG[...]` replication assumptions in the spec.
 - Do not copy Agent 0 evidence, materiality rationale, user decision text, override ledger text, or full provenance narrative into the spec.
+- Do not write, edit, run, debug, or compare any R/Python/Stata replication scripts. That is exclusively B/C's job.
+- Do not rerun author code to regenerate or refresh source outputs. Existing source-of-truth artifacts are the extraction target unless no meaningful target exists.
 - Do not edit author code.
 
 Return:
-- `spec=<path> outputs=<path(s)> notes=<path>`
+- `spec=<path> outputs=<path(s)> notes=<path> ready_for_BC=yes`
 - Input data paths B/C need.
 - Sealed source-output paths B/C may open only after first-run outputs are saved.
 ```
@@ -403,7 +410,8 @@ Do not read before first-run outputs are saved:
 Task:
 - Implement from the spec only.
 - Save first-run script and first-run outputs.
-- Write the round-specific first-run lock file in `correspondence/referee2/`.
+- Write the round-specific first-run lock file in `correspondence/referee2/` only after the first-run script completes and creates first-run output artifacts.
+- If the first attempt fails before output creation, preserve the failed script and a failure log, do not write a first-run lock, fix only referee-owned replication code or environment-access artifacts as needed, and try again without opening expected outputs or source outputs.
 - Only then open expected-output extracts and source outputs.
 - Compare substantive outputs, not formatting.
 - Preserve first-run artifacts if you make diagnostic revisions.
@@ -514,7 +522,7 @@ Agent A always writes the spec from executable code behavior. If the user says c
 
 ### Expected Outputs and Sealed Targets
 
-Existing output artifacts are the source of truth by default. Expected-output files should usually be structured extractions from the project's existing tables, figures, or result files, not newly generated outputs. Rerunning original code is optional diagnostic evidence for the Output Automation Audit; it is not a prerequisite for B/C replication.
+Existing output artifacts are the source of truth by default. Expected-output files should usually be structured extractions from the project's existing tables, figures, or result files, not newly generated outputs. Agent A must not rerun original code to refresh, regenerate, or validate source outputs before extraction. Rerunning original code is allowed only when the user explicitly requested an Output Automation Audit rerun/reproducibility check, and that check is parent-owned diagnostic evidence rather than Agent A work.
 
 Agent A writes:
 
@@ -531,12 +539,18 @@ output_id,model,term,statistic,value,unit,source_artifact,source_location,notes
 The notes file documents:
 
 - source artifact(s)
-- provenance: existing artifact treated as source of truth; rerun not attempted / rerun attempted and matched / rerun attempted and differed
+- provenance: existing artifact treated as source of truth; rerun not requested / user-requested rerun attempted and matched / user-requested rerun attempted and differed
 - extraction choices
 - stale-output concerns, if any
 - sealed-output instructions for B/C
 
-Stale-output checks are separate from expected-output extraction. Agent A should not block B/C merely because output artifacts may be stale. Block B/C only if no meaningful source-of-truth expected values can be extracted or defined for the target output.
+Stale-output checks are separate from expected-output extraction. Agent A should not block B/C merely because output artifacts may be stale and should not regenerate outputs to resolve staleness. Block B/C only if no meaningful source-of-truth expected values can be extracted or defined for the target output. If artifacts appear stale, record the concern in the expected-output notes and final report.
+
+### Optional Output Automation Rerun
+
+Run the author's original entrypoint for bytewise or numeric output-regeneration checks only when the user explicitly asks for that check in the referee2 invocation or follow-up. Do not infer this from ordinary code-audit mode.
+
+When requested, the parent owns the rerun check after Agent A has extracted expected outputs from existing artifacts. The parent may run the original entrypoint and compare pre-existing source artifacts against regenerated artifacts or post-run hashes. Record the result in the final report and expected-output notes as parent-owned Output Automation Audit evidence. A rerun mismatch is an audit finding; it does not authorize Agent A, B, C, or the parent to edit author code.
 
 Parent writes a physical restricted manifest for B/C at `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`. It contains:
 
@@ -561,14 +575,14 @@ Parent writes a physical restricted manifest for B/C at `correspondence/referee2
 - full scope manifest
 ```
 
-B/C may receive sealed target paths up front, but must not open them until after writing the replication script, running it, and saving first-run outputs. Each B/C report must state:
+B/C may receive sealed target paths up front, but must not open them until after writing the replication script, running it to completion, and saving first-run outputs. Each B/C report must state:
 
 ```markdown
 Expected outputs opened after first-run outputs saved: yes/no
 First-run output path: <path>
 ```
 
-B/C must also write a round-specific first-run lock file before opening expected outputs or source outputs:
+B/C must also write a round-specific first-run lock file after first-run outputs are created and before opening expected outputs or source outputs:
 
 ```markdown
 correspondence/referee2/YYYY-MM-DD_roundN_<language>_first_run_lock.md
@@ -600,7 +614,7 @@ code/replication/referee2_R_revised_outputs.csv
 code/replication/referee2_R_revision_log.md
 ```
 
-Revision logs classify each change as `spec misread`, `package default mismatch`, `spec gap`, `original-code discrepancy`, or `numerical/formatting issue`.
+If a replication attempt fails before creating first-run outputs, do not write the first-run lock. Preserve the failed script and a failure log, then make diagnostic changes only to referee-owned replication artifacts or environment-access helpers while expected/source outputs remain sealed. The first successful run that creates outputs becomes the first-run artifact and receives the lock. Revision logs classify each change as `spec misread`, `package default mismatch`, `spec gap`, `original-code discrepancy`, or `numerical/formatting issue`.
 
 Formatting differences are immaterial unless they change substantive results. Do not revise solely to match table layout, labels, stars, decimal display, column order, LaTeX formatting, or file naming.
 
@@ -688,12 +702,15 @@ You READ, RUN, and CREATE your own audit artifacts. You NEVER edit the author's 
 
 When referee2 runs as a subagent (per Step -1's catch protocol), the subagent is single-shot — it cannot pause to ask the user for clarification mid-run. The Agent 0 gate is therefore materiality-based:
 
-- No blockers: proceed through Agent A -> B/C automatically in the same fresh subagent.
+- No blockers: the fresh referee2 subagent acts as orchestrator and proceeds by spawning isolated Agent A, B, and C contexts when available.
 - Active overrides: proceed, but carry override flags into Agent A's spec.
 - Nonblocking flags: proceed and carry relevant flags into Agent A's spec.
 - Blocking findings not covered by active overrides: terminate with `STATUS: blocked-on-user-review`.
+- B/C handoff unavailable: terminate with `STATUS: partial-audit-replication-blocked` after preserving Agent A artifacts. Do not let Agent A or the subagent's current context write the replication scripts.
 
 If the subagent terminates on blockers, return Agent 0's findings plus the blocking menu. The user can fix code/comments outside referee2, add overrides, cancel, or rerun after changes. A later fresh subagent re-runs Agent 0 against the current source; it never relies on prior audit narrative.
+
+If the subagent terminates after Agent A because B/C could not be spawned, return only the resumable artifact paths: scope manifest, spec, expected-output artifacts, expected-output notes, and restricted manifest if already written. On a later invocation, the parent may offer to resume from B/C if those artifacts are the newest matching round for the same scope and the source files/source-output artifacts listed in the full scope manifest have not changed. If source state changed, start over at Agent 0.
 
 ### Liberal gap-flagging in Agent A
 
@@ -716,11 +733,11 @@ The subagent proceeds with documented assumptions. Refusing to proceed because o
 
 **The triage table is the report format, not mid-run dialogue.** Classify each discrepancy yourself, include reasoning, present the three categories distinctly in the final report.
 
-**Final report structure (subagent return value):**
+**Final report structure (subagent return value after a completed B/C handoff):**
 
 ```markdown
 ## Spec
-[Seven-section spec, with any "ORIGINAL CODE SILENT" gaps marked + assumed defaults]
+[Path to the seven-section spec; do not paste the full spec unless the user asked for inline detail]
 
 ## Substantive discrepancies (likely real findings)
 [List with deep-dive diagnosis]
@@ -739,6 +756,8 @@ The subagent proceeds with documented assumptions. Refusing to proceed because o
 ```
 
 **Resolution loop.** After the subagent returns, the parent surfaces the report to the user. If the user wants to resolve open questions, they update the code and/or provide spec answers, then re-invoke referee2 in the same parent session. A new fresh subagent runs against the updated state. Per Step -1's "Iterative re-invocation" rule: the new subagent's prompt must NOT include the prior audit's findings — only the current code, current spec, and scope.
+
+**Resume loop.** If a prior round stopped after Agent A with `partial-audit-replication-blocked`, a later invocation may resume at B/C rather than rerun Agent 0 and Agent A. The parent must ask the user before resuming and must verify unchanged source state using file paths and timestamps or hashes from the prior scope/spec artifacts. The B/C prompt receives only the restricted manifest, spec path, and allowed input paths; it does not receive the prior report narrative or the reason the handoff failed.
 
 ---
 
