@@ -2,7 +2,7 @@
 name: referee2
 description: Implementation audit by Referee 2. Run in a fresh session after a project is complete. Two modes — "deck" reviews slide presentations for rhetoric, visual quality, and compile cleanliness; "code" performs cross-language replication and econometric audit of empirical pipelines. Complements `/blindspot`, which is a perception audit run during analysis. Use when reviewing slides, auditing code, or verifying replication.
 allowed-tools: Bash(pdflatex*), Bash(latexmk*), Bash(python*), Bash(Rscript*), Bash(stata*), Bash(ls*), Bash(wc*), Bash(grep*), Bash(head*), Bash(tail*), Bash(mkdir:*), Read, Write, Edit, Glob, Grep, Agent
-argument-hint: '[mode: deck|code] [path-to-project-or-file] [--Agent0=model] [--AgentA=model] [--AgentA-script=model] [--BC=model]'
+argument-hint: '[mode: deck|code] [path-to-project-or-file] [--Agent0=model] [--AgentA=model] [--AgentA-script=model] [--BC=model] [--parallel]'
 ---
 
 # Referee 2: Systematic Audit & Replication Protocol
@@ -72,7 +72,7 @@ When the user picks subagents, you (the parent) do not delegate the whole refere
 4. If Agent 0 blocks, parent reports blockers to the user and stops.
 5. If Agent 0 does not block, parent spawns Agent A and waits for `ready_for_BC=yes`. For large multi-script projects, the parent may instead fan out bounded per-script Agent A extraction workers, then spawn or retain a lead Agent A to synthesize their artifacts into the final spec and expected-output extracts. This fanout is parent-owned; per-script workers must not spawn subagents. The parent passes extraction artifact paths to the lead Agent A, not parent-written summaries of those artifacts.
 6. Parent writes the restricted B/C manifest.
-7. Parent spawns Agents B and C in parallel and waits for their triage results. If the parent used Agent A fanout, B/C should be fanned out on the same script or script-group units: each Agent A extraction unit gets one B replicator and one C replicator in the assigned replication languages.
+7. Parent spawns Agents B and C and waits for their triage results. By default, fanout subagents run sequentially to reduce usage-cap risk; if the user supplied `--parallel`, the parent may run same-stage fanout subagents in parallel. If the parent used Agent A fanout, B/C should be fanned out on the same script or script-group units: each Agent A extraction unit gets one B replicator and one C replicator in the assigned replication languages.
 8. Parent aggregates role-subagent reports and writes the final report.
 
 The discipline is still **transcription, not interpretation**. Quote verbatim. Do not paraphrase substantive project behavior in any role prompt.
@@ -97,9 +97,12 @@ Respect explicit user model choices. The user may add optional flags to the `/re
 --AgentA=<model>
 --AgentA-script=<model>
 --BC=<model>
+--parallel
 ```
 
 `--BC=<model>` applies to both B and C. B and C exist only to run different replication languages, so they use the same model selection. Exact model names are host-dependent; accept common aliases when unambiguous, such as `opus`, `sonnet`, `gpt5.5`, `gpt-5.5`, `gpt5.4`, `gpt-5.4`, `gpt5.3-codex`, `gpt-5.3-codex`, `gpt5.4-mini`, and `gpt-5.4-mini`.
+
+By default, parent-owned fanout runs sequentially: complete one per-script Agent A worker before starting the next, and complete each B/C replication unit before starting the next unit. This avoids spending large amounts of tokens on multiple one-shot subagents that may all fail if the user hits a usage cap mid-stage. If the user supplies `--parallel`, the parent may run same-stage fanout workers concurrently when the host supports it. `--parallel` does not change the isolation rule: each subagent still gets only its assigned role context and must not spawn further subagents.
 
 If the requested model is unavailable, tell the user which role cannot use it and fall back to the nearest available model in the same tier. Do not silently ignore user model choices.
 
@@ -301,7 +304,7 @@ The parent session orchestrates by spawning role subagents and aggregating their
 7. **Spawn Agent A (translator).** Prompt: read the source code and source-of-truth outputs, treat executable code behavior as authoritative, and write the spec to `code/replication/YYYY-MM-DD_roundN_spec_<scope>.md`, expected-output extraction files, and `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md`. Agent A stops after writing these artifacts and returns a one-line status: `spec=<path> outputs=<path> notes=<path> restricted_manifest_needed=yes ready_for_BC=yes`. For large multi-script projects, the parent may first spawn bounded per-script Agent A extraction workers and then give their artifact paths to the lead Agent A. The parent, not any subagent, decides whether to use this fanout.
 8. **Write the restricted B/C manifest.** Create `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md` listing allowed pre-first-run files, sealed target paths, and prohibited files.
 9. **Verify B/C handoff availability.** Before beginning cross-language replication, confirm that B and C can run as separate isolated subagents. If they cannot, stop with `Status: partial-audit-replication-blocked`; keep the Agent A artifacts for a later resume at B/C.
-10. **Spawn Agents B and C in parallel.** Each receives the restricted manifest, spec path, and input data paths. Each writes and runs a first-run replication before opening expected outputs or source outputs. Each compares after first-run artifacts are saved, may make diagnostic revisions, and returns a triage table. If Agent A was fanned out by script or script group, fan out B/C on the same units so every extraction unit gets one B-language replication and one C-language replication.
+10. **Spawn Agents B and C.** Each receives the restricted manifest, spec path, and input data paths. Each writes and runs a first-run replication before opening expected outputs or source outputs. Each compares after first-run artifacts are saved, may make diagnostic revisions, and returns a triage table. If Agent A was fanned out by script or script group, fan out B/C on the same units so every extraction unit gets one B-language replication and one C-language replication. Run fanout units sequentially by default; run same-stage units in parallel only when the user supplied `--parallel`.
 11. **Run output automation check only if user requested it.** If and only if the user explicitly asked referee2 to check output automation/rerun reproducibility, the parent may run the original entrypoint and compare generated source artifacts to the pre-existing source-of-truth outputs. This is parent-owned diagnostic evidence and is separate from Agent A's expected-output extraction.
 12. **Aggregate.** The parent collects B's and C's triage tables, combines them with the other audits, and files the formal report. The triage table format and discrepancy categories are defined further down.
 
@@ -787,7 +790,7 @@ You READ, RUN, and CREATE your own audit artifacts. You NEVER edit the author's 
 
 When referee2 runs under Step -1's tainted-session catch, the parent session remains the orchestrator. Do not spawn one "referee2 subagent" and expect it to run the whole protocol; role subagents may not be able to spawn other subagents. The parent must spawn each fresh role subagent directly and wait for that role's return before deciding the next step.
 
-For large multi-script code audits, the parent may choose a fanout Agent A pattern: spawn one bounded extraction worker per script or coherent script group, then have a lead Agent A synthesize the final seven-section spec and expected-output artifacts from those extraction artifacts. Use this only when it reduces context bloat or cost without weakening the spec bottleneck. Per-script workers write extraction notes only; they do not write the final spec, run replications, compare outputs, or spawn further subagents. The parent passes extraction artifact paths to lead Agent A rather than summarizing the workers' findings. If Agent A is fanned out, B/C should be fanned out on the same script or script-group units.
+For large multi-script code audits, the parent may choose a fanout Agent A pattern: spawn one bounded extraction worker per script or coherent script group, then have a lead Agent A synthesize the final seven-section spec and expected-output artifacts from those extraction artifacts. Use this only when it reduces context bloat or cost without weakening the spec bottleneck. Per-script workers write extraction notes only; they do not write the final spec, run replications, compare outputs, or spawn further subagents. The parent passes extraction artifact paths to lead Agent A rather than summarizing the workers' findings. If Agent A is fanned out, B/C should be fanned out on the same script or script-group units. Run fanout units sequentially by default; use parallel fanout only when the user supplied `--parallel`.
 
 The Agent 0 gate is materiality-based:
 
