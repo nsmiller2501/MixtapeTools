@@ -28,6 +28,14 @@ You invoke it after a project is complete, in a **fresh terminal** with a Claude
 
 **Invoke it with:** `/referee2 code path/to/project`
 
+For code audits, the parent session may override default subagent model choices:
+
+```text
+/referee2 code path/to/project --Agent0=opus --AgentA=gpt-5.5 --AgentA-script=sonnet --BC=gpt-5.4
+```
+
+By default, Agent 0 and a single lead Agent A use a frontier reasoning model; bounded per-script Agent A extraction workers and B/C replicators use a strong mid-tier model. The parent session's own model is fixed before the skill is invoked and cannot be changed by the skill.
+
 ---
 
 ## The Five Audits
@@ -39,6 +47,8 @@ Scrutinizes implementation for coding errors, missing value handling, merge diag
 Creates independent replication scripts in two additional languages (R → Stata + Python, or Stata → R + Python, etc.) and compares results to 6+ decimal places. The key insight: if Claude wrote R code with a subtle bug, asking the same Claude to write Stata will likely produce a *different* bug — cross-language comparison exploits that orthogonality to surface errors that single-language audit misses.
 
 Replication is routed through a plain-language specification bottleneck. Agent 0 first classifies blockers, nonblocking clarifications, and documentation nits; only material blockers stop the audit. Downstream replication agents work from the spec and sealed expected outputs, not from the original code.
+
+For large multi-script projects, the parent orchestrator may fan out bounded per-script Agent A extraction workers before a lead Agent A synthesizes the final spec. This is an orchestration choice made by the parent; subagents should not be expected to spawn their own subagents. If Agent A is fanned out, B/C should be fanned out on the same script or script-group units.
 
 ### Audit 3: Directory & Replication Package Audit
 Checks folder structure, relative paths, naming conventions, master script, README, and dependencies. Scores replication readiness on a 1–10 scale. The standard: can a stranger reproduce this from scratch?

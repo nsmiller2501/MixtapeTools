@@ -2,7 +2,7 @@
 name: referee2
 description: Implementation audit by Referee 2. Run in a fresh session after a project is complete. Two modes — "deck" reviews slide presentations for rhetoric, visual quality, and compile cleanliness; "code" performs cross-language replication and econometric audit of empirical pipelines. Complements `/blindspot`, which is a perception audit run during analysis. Use when reviewing slides, auditing code, or verifying replication.
 allowed-tools: Bash(pdflatex*), Bash(latexmk*), Bash(python*), Bash(Rscript*), Bash(stata*), Bash(ls*), Bash(wc*), Bash(grep*), Bash(head*), Bash(tail*), Bash(mkdir:*), Read, Write, Edit, Glob, Grep, Agent
-argument-hint: '[mode: deck|code] [path-to-project-or-file]'
+argument-hint: '[mode: deck|code] [path-to-project-or-file] [--Agent0=model] [--AgentA=model] [--AgentA-script=model] [--BC=model]'
 ---
 
 # Referee 2: Systematic Audit & Replication Protocol
@@ -70,12 +70,38 @@ When the user picks subagents, you (the parent) do not delegate the whole refere
 2. Parent writes or reuses the full scope manifest and reads active override ledger state.
 3. Parent spawns Agent 0 and waits for the gate result.
 4. If Agent 0 blocks, parent reports blockers to the user and stops.
-5. If Agent 0 does not block, parent spawns Agent A and waits for `ready_for_BC=yes`.
+5. If Agent 0 does not block, parent spawns Agent A and waits for `ready_for_BC=yes`. For large multi-script projects, the parent may instead fan out bounded per-script Agent A extraction workers, then spawn or retain a lead Agent A to synthesize their artifacts into the final spec and expected-output extracts. This fanout is parent-owned; per-script workers must not spawn subagents. The parent passes extraction artifact paths to the lead Agent A, not parent-written summaries of those artifacts.
 6. Parent writes the restricted B/C manifest.
-7. Parent spawns Agents B and C in parallel and waits for their triage results.
+7. Parent spawns Agents B and C in parallel and waits for their triage results. If the parent used Agent A fanout, B/C should be fanned out on the same script or script-group units: each Agent A extraction unit gets one B replicator and one C replicator in the assigned replication languages.
 8. Parent aggregates role-subagent reports and writes the final report.
 
 The discipline is still **transcription, not interpretation**. Quote verbatim. Do not paraphrase substantive project behavior in any role prompt.
+
+#### Subagent model defaults and user overrides
+
+The parent session's model is already fixed when the user invokes the skill; the skill cannot downgrade or upgrade the parent. It can choose model tiers only when spawning role subagents, subject to the host tool's available model names.
+
+Default subagent model tiers:
+
+| Role | Default model tier | Rationale |
+|---|---|---|
+| Agent 0 | frontier reasoning model, e.g. Opus or GPT-5.5 | Materiality judgments, econometric stakes, comment/code divergence, and scope ambiguity are high-risk. |
+| Agent A, single lead translator | frontier reasoning model, e.g. Opus or GPT-5.5 | Full-pipeline compression into a prose/math spec is high-risk when one agent handles the whole scope. |
+| Per-script Agent A extraction workers | strong mid-tier model, e.g. Sonnet or GPT-5.4 | Bounded script transcription is mostly extraction; the lead Agent A owns synthesis. |
+| Agents B/C | strong mid-tier model, e.g. Sonnet, GPT-5.4, or GPT-5.3-Codex | Replication work needs coding reliability more than frontier judgment. |
+
+Respect explicit user model choices. The user may add optional flags to the `/referee2` invocation:
+
+```text
+--Agent0=<model>
+--AgentA=<model>
+--AgentA-script=<model>
+--BC=<model>
+```
+
+`--BC=<model>` applies to both B and C. B and C exist only to run different replication languages, so they use the same model selection. Exact model names are host-dependent; accept common aliases when unambiguous, such as `opus`, `sonnet`, `gpt5.5`, `gpt-5.5`, `gpt5.4`, `gpt-5.4`, `gpt5.3-codex`, `gpt-5.3-codex`, `gpt5.4-mini`, and `gpt-5.4-mini`.
+
+If the requested model is unavailable, tell the user which role cannot use it and fall back to the nearest available model in the same tier. Do not silently ignore user model choices.
 
 Role-subagent prompt header template:
 
@@ -272,10 +298,10 @@ The parent session orchestrates by spawning role subagents and aggregating their
 4. **Read active overrides.** If `correspondence/referee2/referee2_overrides.md` exists, read only entries with `Status: active`. If it does not exist, create it lazily only when the first override is needed.
 5. **Spawn Agent 0 (auditor).** Prompt: audit full spec-readiness across comment/code divergences, scope-bundle ambiguities, and run-state/output provenance ambiguities. Return materiality-tiered findings. Do NOT write a spec.
 6. **Gate only on material blockers.** If Agent 0 finds `blocking` issues not covered by active overrides, stop for user review and follow the blocking menu below. If Agent 0 finds only `nonblocking-clarification` or `documentation-nit` issues, proceed automatically and carry relevant `REFEREE2_FLAG[...]` assumptions into Agent A.
-7. **Spawn Agent A (translator).** Prompt: read the source code and source-of-truth outputs, treat executable code behavior as authoritative, and write the spec to `code/replication/YYYY-MM-DD_roundN_spec_<scope>.md`, expected-output extraction files, and `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md`. Agent A stops after writing these artifacts and returns a one-line status: `spec=<path> outputs=<path> notes=<path> restricted_manifest_needed=yes ready_for_BC=yes`.
+7. **Spawn Agent A (translator).** Prompt: read the source code and source-of-truth outputs, treat executable code behavior as authoritative, and write the spec to `code/replication/YYYY-MM-DD_roundN_spec_<scope>.md`, expected-output extraction files, and `YYYY-MM-DD_roundN_expected_outputs_<scope>_notes.md`. Agent A stops after writing these artifacts and returns a one-line status: `spec=<path> outputs=<path> notes=<path> restricted_manifest_needed=yes ready_for_BC=yes`. For large multi-script projects, the parent may first spawn bounded per-script Agent A extraction workers and then give their artifact paths to the lead Agent A. The parent, not any subagent, decides whether to use this fanout.
 8. **Write the restricted B/C manifest.** Create `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md` listing allowed pre-first-run files, sealed target paths, and prohibited files.
 9. **Verify B/C handoff availability.** Before beginning cross-language replication, confirm that B and C can run as separate isolated subagents. If they cannot, stop with `Status: partial-audit-replication-blocked`; keep the Agent A artifacts for a later resume at B/C.
-10. **Spawn Agents B and C in parallel.** Each receives the restricted manifest, spec path, and input data paths. Each writes and runs a first-run replication before opening expected outputs or source outputs. Each compares after first-run artifacts are saved, may make diagnostic revisions, and returns a triage table.
+10. **Spawn Agents B and C in parallel.** Each receives the restricted manifest, spec path, and input data paths. Each writes and runs a first-run replication before opening expected outputs or source outputs. Each compares after first-run artifacts are saved, may make diagnostic revisions, and returns a triage table. If Agent A was fanned out by script or script group, fan out B/C on the same units so every extraction unit gets one B-language replication and one C-language replication.
 11. **Run output automation check only if user requested it.** If and only if the user explicitly asked referee2 to check output automation/rerun reproducibility, the parent may run the original entrypoint and compare generated source artifacts to the pre-existing source-of-truth outputs. This is parent-owned diagnostic evidence and is separate from Agent A's expected-output extraction.
 12. **Aggregate.** The parent collects B's and C's triage tables, combines them with the other audits, and files the formal report. The triage table format and discrepancy categories are defined further down.
 
@@ -412,6 +438,36 @@ Return:
 - Input data paths B/C need.
 - Sealed source-output paths B/C may open only after first-run outputs are saved.
 ```
+
+Optional per-script Agent A extraction worker prompt, used only when the parent chooses fanout:
+
+```markdown
+Role: Agent A extraction worker — referee2 bounded script extractor.
+
+You are one role subagent. The parent session is orchestrating referee2.
+Do not spawn further subagents. Do not perform Agent 0, lead Agent A, B, or C work.
+
+Read:
+- Full scope manifest
+- Active override ledger, if present
+- Assigned original script(s) only: <paths>
+- Source outputs only if needed to understand this script's output targets
+
+Task:
+- Extract this script's executable behavior into structured notes for lead Agent A.
+- Treat executable code behavior as authoritative; comments are claims to check.
+- Record inputs, outputs, transformations, model terms, sample restrictions, missingness behavior, path dependencies, and any local ambiguities.
+- Do not write the final seven-section spec.
+- Do not write expected-output extraction files.
+- Do not write, edit, run, debug, or compare replication scripts.
+- Do not edit author code.
+
+Return:
+- Extraction artifact path: `correspondence/referee2/YYYY-MM-DD_roundN_agentA_extract_<script-slug>.md`
+- Any local warnings the lead Agent A should inspect.
+```
+
+Lead Agent A in a fanout run receives the full scope manifest, active override ledger if present, original code and source outputs as needed, and the per-script extraction artifact paths. The parent must not summarize those extraction artifacts in the prompt; the lead Agent A reads them directly and remains responsible for the final spec and expected-output artifacts.
 
 Agents B/C prompts must include:
 
@@ -730,6 +786,8 @@ You READ, RUN, and CREATE your own audit artifacts. You NEVER edit the author's 
 ## Subagent operationalization (when running under the tainted-session catch)
 
 When referee2 runs under Step -1's tainted-session catch, the parent session remains the orchestrator. Do not spawn one "referee2 subagent" and expect it to run the whole protocol; role subagents may not be able to spawn other subagents. The parent must spawn each fresh role subagent directly and wait for that role's return before deciding the next step.
+
+For large multi-script code audits, the parent may choose a fanout Agent A pattern: spawn one bounded extraction worker per script or coherent script group, then have a lead Agent A synthesize the final seven-section spec and expected-output artifacts from those extraction artifacts. Use this only when it reduces context bloat or cost without weakening the spec bottleneck. Per-script workers write extraction notes only; they do not write the final spec, run replications, compare outputs, or spawn further subagents. The parent passes extraction artifact paths to lead Agent A rather than summarizing the workers' findings. If Agent A is fanned out, B/C should be fanned out on the same script or script-group units.
 
 The Agent 0 gate is materiality-based:
 
