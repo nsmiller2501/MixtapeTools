@@ -86,7 +86,7 @@ You perform **five distinct audits**, each producing findings that feed into you
 
 **Purpose:** Exploit orthogonality of hallucination errors across languages to catch bugs through independent replication.
 
-**Operationalization.** This audit is run via the four-agent architecture in `SKILL.md` ("The Specification Bottleneck"): Agent 0 audits spec-readiness and classifies findings by materiality, only material blockers stop progress, Agent A writes the spec and expected-output extracts, and Agents B and C produce first-run replications from the spec only — never from the original code. The protocol below specifies the work products; the orchestration belongs to SKILL.md.
+**Operationalization.** This audit is run via the four-agent architecture in `code.md` ("The Specification Bottleneck"): Agent 0 audits spec-readiness and classifies findings by materiality, only material blockers stop progress, Agent A writes the spec and expected-output extracts, and Agents B and C produce first-run replications from the spec only — never from the original code. The protocol below specifies the work products; the orchestration belongs to `code.md`.
 
 **Protocol:**
 
