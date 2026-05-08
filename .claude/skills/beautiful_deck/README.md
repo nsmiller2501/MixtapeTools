@@ -23,6 +23,8 @@
 
 The skill also reads [`style_preferences.md`](style_preferences.md) for user-specific stylistic defaults. These are separate from the rhetorical principles in `rhetoric_of_decks.md`: rhetoric decides what the deck must accomplish; style preferences capture durable visual tastes that should carry across decks when they fit the audience and content. The file is currently populated with an example preference for reference; keep, edit, or delete it at the user's discretion.
 
+The included [`preamble_warm_professional.tex`](preamble_warm_professional.tex) is Scott's house style for outward-facing academic decks. It is useful as an opt-in reference preamble, but it should not anchor the palette or layout of original audience-specific designs unless the user asks for that house style.
+
 ## Audience first — the load-bearing decision
 
 The very first thing the skill resolves is **who the audience is**. Audience determines the rhetorical balance, the aesthetic direction, the act proportions, and the pacing — every other decision in the skill depends on it. The skill will not proceed to source-content discussion, theme work, or anything else until audience is committed.

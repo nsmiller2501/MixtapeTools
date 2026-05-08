@@ -77,7 +77,7 @@ Why this bucket only: the other 4 buckets have natural sub-variants (undergrad v
 
 Two paths. Pick ONE:
 
-**Path A: Scott's house style (Professional/Academic).** Use the Warm Professional palette from `~/.claude/skills/beautiful_deck/preamble_warm_professional.tex` (DeepNavy, Teal, WarmOrange, Gold). Scott uses this for outward-facing academic work.
+**Path A: Scott's house style (Professional/Academic).** Use `~/.claude/skills/beautiful_deck/preamble_warm_professional.tex`. This is a ready-to-copy house-style preamble for outward-facing academic work, not a default palette for every deck.
 
 **Path B: Original, audience-specific design.** You design something new — a palette, a frame-title style, a TikZ accent system — tuned to this specific audience. This is the default when Scott says "design for me an original Beamer style." Do NOT reuse a previous deck's theme. You are creating something new.
 
@@ -124,7 +124,7 @@ The goal is: something truly effective for *this* audience, *this* content, and 
 
 ### How to approach it
 
-**If Path A (Scott's house style):** Copy the Warm Professional preamble from `~/.claude/skills/beautiful_deck/preamble_warm_professional.tex` — this IS Scott's house style and is not boilerplate for outward-facing academic work. Proceed to Step 2.
+**If Path A (Scott's house style):** Copy the Warm Professional preamble from `~/.claude/skills/beautiful_deck/preamble_warm_professional.tex` — this IS Scott's house style and is not boilerplate for outward-facing academic work. Proceed to Step 2. Do not use this file as inspiration for Path B unless the user explicitly asks for a deck in that house style.
 
 **If Path B (original design — the default when Scott says "design for me an original Beamer style"):** You are designing an original aesthetic. Follow this process:
 
@@ -132,7 +132,7 @@ Before implementing either path, read `~/.claude/skills/beautiful_deck/style_pre
 
 ### 1.1 Palette construction
 
-Pick a core accent (one color, not an ensemble). This is the emotional anchor of the deck. Examples that have worked:
+Pick a core accent (one color, not an ensemble). This is the emotional anchor of the deck. The examples below illustrate audience-to-color reasoning; they are not a house palette to reuse by default.
 
 | Audience | Core accent | Why |
 |---|---|---|
