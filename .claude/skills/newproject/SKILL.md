@@ -45,6 +45,8 @@ Templates use `{{PROJECT_ROOT}}` and `{{PROJECT_NAME}}` placeholders that this s
 │   ├── tables/
 │   └── logs/                          # Log files from all scripts
 ├── documents/                         # Outside PDFs, papers
+├── references/
+│   └── raw/                           # PDFs for split-pdf/read-pdf/wiki-update/bib-update
 ├── decks/                             # Beamer presentations
 ├── notes/                            # Personal scratch notes; ignored by git in git-enabled projects
 ├── agent_memory/                      # Shared Claude/Codex reference files for this project
@@ -68,7 +70,7 @@ Set `PROJECT_ROOT` = `[location]/[project-name]` as an absolute path.
 ### Step 3 — Create all directories
 
 ```bash
-mkdir -p [project-name]/{code/{download,data/validation,analysis/{stata,R,python}},data/{raw,clean},output/{figures,tables,logs},documents,decks,notes,agent_memory,correspondence,progress_logs}
+mkdir -p [project-name]/{code/{download,data/validation,analysis/{stata,R,python}},data/{raw,clean},output/{figures,tables,logs},documents,references/raw,decks,notes,agent_memory,correspondence,progress_logs}
 ```
 
 ### Step 4 — Render config files from templates
@@ -132,6 +134,7 @@ Include:
 - Project title and one-line description placeholder
 - Visual directory tree (fenced code block matching structure above)
 - Explanation of each folder's purpose
+- Note that `references/raw/` stores paper PDFs for `/split-pdf`, `/read-pdf`, `/bib-update`, and `/wiki-update`; `references/wiki/` and `references/references.bib` are created lazily by those skills
 - Note that `CLAUDE.md` is from a permanent template — edit per-project
 - Note that `code/config.*` files define all paths — update `root` if project moves
 - Note that `progress_logs/` maintains continuity across Claude sessions
