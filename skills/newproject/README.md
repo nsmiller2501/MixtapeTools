@@ -25,6 +25,8 @@ my-project-name/
 │   ├── tables/            # Generated tables (LaTeX, CSV)
 │   └── figures/           # Generated figures (PDF, PNG)
 ├── documents/             # Outside papers and PDFs (split with /split-pdf)
+├── references/
+│   └── raw/               # Paper PDFs for reference-ingest skills
 ├── decks/                 # Beamer presentations (rhetoric of decks philosophy)
 ├── notes/                 # Scratch notes, ideas, miscellaneous
 └── progress_logs/         # Session logs for continuity across Claude conversations
@@ -47,6 +49,8 @@ The `progress_logs/` directory solves a real problem: Claude Code sessions don't
 ### Documents and Decks
 
 - `documents/` holds outside PDFs — papers you're reading, referee reports, data documentation. These are candidates for the `/split-pdf` skill, which splits large PDFs into safe 4-page chunks for reading.
+
+- `references/raw/` holds PDFs of papers and other sources you want to process with `/split-pdf`, `/read-pdf`, `/bib-update`, and/or `/wiki-update`. `/wiki-update` creates `references/wiki/` when needed; `/bib-update` creates `references/references.bib` when needed.
 
 - `decks/` holds Beamer presentations built following the rhetoric of decks philosophy (`~/mixtapetools/presentations/rhetoric_of_decks.md`). Titles are assertions, one idea per slide, beauty is function.
 

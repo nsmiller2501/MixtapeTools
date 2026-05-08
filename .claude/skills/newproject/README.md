@@ -34,6 +34,8 @@ my-project-name/
 │   ├── tables/
 │   └── logs/                          # Log files from all scripts
 ├── documents/                         # Outside PDFs, papers (split with /split-pdf)
+├── references/
+│   └── raw/                           # Paper PDFs for reference-ingest skills
 ├── decks/                             # Beamer presentations
 ├── notes/                             # Personal scratch notes; ignored by git in git-enabled projects
 └── agent_memory/                      # Shared Claude/Codex reference files
@@ -47,7 +49,7 @@ my-project-name/
 └── progress_logs/                     # Session logs for continuity across Claude conversations
 ```
 
-If you also use `/wiki-update` to ingest external papers, that skill will lazy-create a `references/` directory the first time you invoke it. See [`/wiki-update`'s README](../wiki-update/README.md) for details.
+Use `references/raw/` for PDFs of papers or other sources you want to process with `/split-pdf`, `/read-pdf`, `/bib-update`, and/or `/wiki-update`. `/wiki-update` still lazy-creates `references/wiki/`, and `/bib-update` still lazy-creates `references/references.bib`. See [`/wiki-update`'s README](../wiki-update/README.md) for details.
 
 If wanting to link your project to Obsidian, simply go to `Obsidian → Manage vaults → Open folder as vault` and select your project folder as a new vault. This allows each project to be cleanly differentiated and you won't have to worry about backlink-collision across projects.
 

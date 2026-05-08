@@ -47,7 +47,8 @@
 - **Data cleaning**: `path/to/cleaning.R`
 - **Paper draft**: `path/to/paper.tex`
 - **Presentation**: `path/to/slides.tex`
-- **References and BibTeX**: if this project uses reference ingestion, `/wiki-update` and `/bib-update` lazy-create `references/` and `references/references.bib`; do not create or maintain those files here unless the reference skills have initialized them.
+- **Reference PDFs**: `references/raw/` stores papers and other PDFs for `/split-pdf`, `/read-pdf`, `/bib-update`, and `/wiki-update`.
+- **Reference wiki and BibTeX**: `/wiki-update` lazy-creates `references/wiki/`; `/bib-update` lazy-creates `references/references.bib`. Do not create or maintain those files here unless the reference skills have initialized them.
 
 ### Conventions
 
