@@ -90,7 +90,9 @@ Bold: +10%. Monospace: +15%.
 
 If estimated label width > usable space: collision guaranteed. Move the label above/below or shorten it.
 
-For short arrows between boxes, the gap calculation is not enough. A label can fit horizontally and still crowd the arrow or touch the endpoint boxes. When the usable gap is less than 2.5cm, or when the label uses more than half of the usable gap, prefer a standalone label node with explicit coordinates and dimensions. Draw the arrow separately.
+For short arrows between boxes, the gap calculation is not enough. A label can fit horizontally and still crowd the arrow or touch the endpoint boxes. When the usable gap is less than 2.5cm, or when the label uses more than half of the usable gap, use a standalone label node with explicit coordinates and dimensions. Draw the arrow separately.
+
+For arrows between adjacent boxes or circles in presentation diagrams, the default is standalone labels. Inline `node[midway, above]` labels are allowed only after you explicitly compute the endpoint-box clearance and confirm at least 0.3cm of margin from both endpoints and the arrow line. If you did not compute that clearance, the inline label is a violation.
 
 ```latex
 % Preferred for short arrows between boxes
@@ -120,7 +122,7 @@ Horizontal arrows: `above` or `below`.
 Vertical arrows: `left` or `right`.
 Diagonal: whichever side has more space.
 
-For short arrows, prefer the standalone-node pattern from Pass 2. Positional keywords are necessary but not sufficient: `node[midway, above]` can still collide with endpoint boxes when the arrow is short or the label is long.
+For short arrows, use the standalone-node pattern from Pass 2. Positional keywords are necessary but not sufficient: `node[midway, above]` can still collide with endpoint boxes when the arrow is short or the label is long.
 
 ### Pass 4: Labels vs. drawn shapes (the Boundary Rule)
 
@@ -209,6 +211,7 @@ ax.text(x, box_mid_y - 0.15, r'$math$',       va='top', ...)     # grows DOWN
 | Label ↔ axis line | 0.3cm |
 | Label ↔ arrow | 0.3cm |
 | Arrow origin ↔ box edge | 0.15cm |
+| Line segment ↔ circle interior | 0.15cm outside fill, or connect to a named anchor |
 | Label ↔ drawn shape boundary | 0.4cm (see Pass 4) |
 | Any object ↔ slide edge | 0.5cm |
 
