@@ -255,6 +255,8 @@ When line breaks are unavoidable, break only between words whenever possible. Do
 
 This applies everywhere text appears, including TikZ nodes, table cells, callout boxes, captions, and screenshot placeholders. Short labels are especially sensitive: a two-word label such as "paper extraction" may wrap between words, but an ordinary word like "paper" or "sessions" must not be split across lines. If a word breaks inside a constrained box, widen the box or column, shorten the phrase, reduce only that local font size, or redesign the layout.
 
+**Table and node word-break check.** Before compiling, scan every narrow table column and every TikZ node with `text width`. If LaTeX may hyphenate an ordinary word inside the available width, force a better break at the phrase boundary with a manual line break, protect the word with `\mbox{...}`, widen the column/node, or rephrase. Never ship a table cell where a normal word breaks mid-word, even if the compile has zero box warnings.
+
 ### The outline checkpoint
 
 Write the outline as:
@@ -397,6 +399,8 @@ These rules exist because `/tikz` (Step 6) is a repair tool, not a safety net. I
 **Rule 1 — Always set explicit node dimensions.** Every `\node` must declare `minimum width` and `minimum height`. Never let TikZ autosize a box. Autosized boxes make arrow endpoints unpredictable and cause downstream collisions that `/tikz` cannot reliably repair. Example: `\node[draw, minimum width=3cm, minimum height=1cm] (A) {Label};`
 
 **Rule 2 — Every edge label must carry a directional keyword.** Any `node[...]` placed on an arrow without `above`, `below`, `left`, `right`, `sloped`, `anchor=`, `pos=`, or `midway` will render ON the arrow line. This is never what you want. No exceptions.
+
+**Rule 2a — Adjacent-box arrows use standalone labels.** For arrows between nearby boxes, do not use inline `node[midway, above]` or `node[midway, below]` labels. Put the label in its own `\node` with explicit coordinates, `minimum width`, `minimum height`, and `align=center`, then draw the arrow separately. The standalone label must clear both endpoint boxes and the arrow line by at least 0.3cm.
 
 **Rule 3 — Write a coordinate map comment before every tikzpicture.** Before the first `\node`, write a commented block listing every node name, its coordinates, and its intended dimensions. This forces spatial planning before drawing and makes `/tikz` audit passes faster. Example:
 
