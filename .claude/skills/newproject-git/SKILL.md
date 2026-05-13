@@ -1,3 +1,10 @@
+---
+name: newproject-git
+description: Initialize git versioning for a new research project. Handles git init, Dropbox exclusion, .gitignore creation, and the initial legacy-import commit.
+allowed-tools: Bash(git*), Bash(xattr*), Bash(ls*), Read, Write, Edit
+argument-hint: ''
+---
+
 # Skill: newproject-git
 
 Initialize git versioning for a new research project. Handles git init, Dropbox exclusion, .gitignore creation, and the initial legacy-import commit.
