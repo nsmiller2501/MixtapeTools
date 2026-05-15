@@ -17,10 +17,10 @@ This directory contains documentation, methodology, and example output for the s
 | [**Referee 2**](referee2/) | `/referee2` | A five-audit systematic review protocol — code correctness, cross-language replication, directory structure, output automation, and econometrics. Runs in a fresh terminal after project completion. Creates independent replication scripts in two additional languages and files a formal referee report with verdict. [See documentation →](referee2/) |
 | [**Blindspot**](blindspot/) | `/blindspot` | A peripheral vision audit for empirical output. Finds what the author cannot see — problems hiding in plain sight (**vices**: the unexplained feature, the convenient absence) and opportunities being overlooked (**virtues**: the unasked question, the unexploited strength). Inspired by Viktor Shklovsky's defamiliarization principle: art exists to make the stone stony again. [See documentation →](blindspot/) |
 | [**Beautiful Deck**](beautiful_deck/) | `/beautiful_deck` | End-to-end beautiful deck creation. Designs an original Beamer `.sty` (or Quarto/Typst style) per audience, restructures content via the Rhetoric of Decks with the pedagogical movement Narrative → Application → Picture → Codeblock → Technical, generates figures code-first, **writes safe TikZ from the start** using explicit node dimensions, coordinate maps, and canonical templates (Step 4.4), compiles to zero warnings, runs `/tikz` for residual collision repair, and dispatches rhetoric + graphics audit sub-agents. The key insight: prevention in Step 4.4 is worth ten repair passes in Step 6. [See documentation →](beautiful_deck/) |
-| [**Compile Deck**](compiledeck/) | `/compiledeck` | The mechanical compile loop — preamble templates, palette reference, and TikZ rules. Called by `/beautiful_deck` for compile mechanics. Use directly when editing an existing deck rather than building from scratch. [See documentation →](compiledeck/) |
 | [**TikZ Audit**](tikz/) | `/tikz` | **A repair tool, not a safety net.** Finds and fixes residual visual collisions in TikZ figures using measurement, not intuition — six-pass protocol covering Bézier curve depths, edge-label gap calculations, boundary clearances, and cross-slide consistency. Catches what `pdflatex` misses. But it cannot reliably fix diagrams that were never built with measurement in mind. The upstream defense is `/beautiful_deck` Step 4.4, which writes safe TikZ from the start. `/tikz` is the downstream check. [See documentation →](tikz/) |
 | [**Split-PDF**](split-pdf/) | `/split-pdf` | Downloads and deep-reads academic PDFs without crashing the session. Uses the PDF in place (no centralized `articles/` folder), splits into 4-page chunks in a `_build/` directory, reads in batches of ~12 pages, writes structured notes, and saves a persistent `_text.md` extraction so future invocations skip re-reading. When called by another skill, reads inside a subagent to prevent context bloat. [See full walkthrough →](split-pdf/) |
 | [**New Project**](newproject/) | `/newproject` | Scaffolds a new research project with standard directory structure, CLAUDE.md template, and documented README. [See documentation →](newproject/) |
+| [**New Project Git**](newproject-git/) | `/newproject-git` | Initializes git versioning for a newly scaffolded or legacy research project, including Dropbox exclusion, `.gitignore`, and the initial import commit. [See documentation →](newproject-git/) |
 
 ---
 
@@ -61,10 +61,13 @@ Each skill is a markdown file at `.claude/skills/<name>/SKILL.md`. It has a smal
 │   └── SKILL.md           # The instructions Claude follows
 ├── blindspot/
 │   └── SKILL.md           # The instructions Claude follows
-├── compiledeck/
+├── beautiful_deck/
 │   ├── SKILL.md           # The instructions Claude follows
-│   ├── domain_patterns.md # Audience-specific guidance
-│   ├── palette_reference.md # Color palette options
+│   ├── scripts/           # Compile helpers
+│   └── rhetoric_of_decks.md # Deck design methodology
+├── tikz/
+│   ├── SKILL.md           # The instructions Claude follows
+│   ├── scripts/           # Audit helpers
 │   └── tikz_rules.md      # TikZ collision-prevention protocol
 ├── split-pdf/
 │   ├── SKILL.md           # The instructions Claude follows
@@ -77,8 +80,10 @@ skills/
 │   └── README.md          # Five audits, the R&R process, how it works
 ├── blindspot/
 │   └── README.md          # Shklovsky, the vice/virtue grid, origin story
-├── compiledeck/
+├── beautiful_deck/
 │   └── README.md          # The Rhetoric of Decks, palettes, TikZ rules
+├── tikz/
+│   └── README.md          # Collision-audit overview
 ├── split-pdf/
 │   └── README.md          # Full documentation and examples (for humans)
 └── newproject/

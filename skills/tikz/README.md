@@ -112,7 +112,7 @@ Catalog of the collision patterns Scott has seen most often in his own decks:
 
 - **Always after `/beautiful_deck`** — the skill invokes `/tikz` automatically as part of the visual cleanup step (Step 7). Because Step 4.4 now writes safe TikZ from the start, `/tikz` should find few or no issues in new decks. Re-run manually after any significant edit to a diagram.
 - **After any TikZ edit** — adding a new node, changing a bend angle, repositioning a label. Don't trust visual inspection alone; run the math.
-- **Before shipping a deck** — final pre-flight check alongside `/compiledeck`'s zero-warning compile loop.
+- **Before shipping a deck** — final pre-flight check alongside `/beautiful_deck`'s zero-warning compile loop.
 - **When a diagram "looks wrong" but you can't say why** — `/tikz` will find the exact measurement causing the discomfort.
 - **On TikZ written outside of `/beautiful_deck`** — legacy diagrams, inherited decks, or hand-written TikZ. These are the cases where `/tikz` works hardest, because the upstream prevention rules (Step 4.4) were not applied. Expect more findings and more iteration.
 
@@ -124,7 +124,6 @@ Catalog of the collision patterns Scott has seen most often in his own decks:
 
 ## Related skills
 
-- **`/compiledeck`** — houses the full `tikz_rules.md` reference file that `/tikz` reads for formulas and patterns. `/compiledeck` also handles the overall compile loop that `/tikz` plugs into.
 - **`/beautiful_deck`** — invokes `/tikz` automatically as part of the visual cleanup step during end-to-end deck creation.
 
 ## The philosophy
@@ -137,8 +136,8 @@ The current architecture reflects this: `/beautiful_deck` Step 4.4 is the upstre
 
 ## Full reference
 
-The canonical formula reference (shared with `/compiledeck`):
-- [`.claude/skills/compiledeck/tikz_rules.md`](../../.claude/skills/compiledeck/tikz_rules.md) — every formula, every clearance, every worked example
+The canonical formula reference shared with `/beautiful_deck`:
+- [`.claude/skills/tikz/tikz_rules.md`](../../.claude/skills/tikz/tikz_rules.md) — every formula, every clearance, every worked example
 - [`.claude/skills/tikz/SKILL.md`](../../.claude/skills/tikz/SKILL.md) — the operational checklist Claude follows when you invoke `/tikz`
 
 

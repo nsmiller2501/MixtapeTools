@@ -125,18 +125,26 @@ The skill will ask clarifying questions if anything in the triage step is missin
     └── ...
 ```
 
+## Dependencies
+
+**`/beautiful_deck` depends on `/tikz` being installed.** Two specific dependencies:
+
+1. **Step 4.4 (TikZ generation rules)** reads `.claude/skills/tikz/tikz_rules.md` for the canonical formula reference: gap calculations, Bezier curve depths, and clearance tables.
+2. **Visual cleanup** invokes `/tikz` directly to audit residual collisions after the slides are written.
+
+If you install `/beautiful_deck` without `/tikz`, both steps will fail. Install them as a pair.
+
 ## Related skills
 
-- **`/compiledeck`** — the mechanical compile loop and preamble templates. `/beautiful_deck` calls this for compile mechanics and palette references rather than duplicating them.
-- **`/tikz`** — the measurement-based TikZ collision audit. Invoked during the visual cleanup step.
+- **`/tikz`** — the measurement-based TikZ collision audit. Invoked during the visual cleanup step. Required dependency; see above.
 - **`/referee2`** — the full five-audit protocol. `/beautiful_deck` uses a rhetoric-scoped variant of it in the audit step.
 - **`/split-pdf`** — if the source content is a paper Scott is reading, split it first and work from the summaries.
 
 ## The philosophy behind it
 
 Full essays:
-- [`presentations/rhetoric_of_decks.md`](../../presentations/rhetoric_of_decks.md) — the operational principles
-- [`presentations/rhetoric_of_decks_full_essay.md`](../../presentations/rhetoric_of_decks_full_essay.md) — the 600-line intellectual genealogy from Aristotle through LLMs
+- [`.claude/skills/beautiful_deck/rhetoric_of_decks.md`](../../.claude/skills/beautiful_deck/rhetoric_of_decks.md) — the operational principles
+- [`.claude/skills/beautiful_deck/rhetoric_of_decks_full_essay.md`](../../.claude/skills/beautiful_deck/rhetoric_of_decks_full_essay.md) — the 600-line intellectual genealogy from Aristotle through LLMs
 
 `/beautiful_deck` is the operational skill version of those essays. You don't need to re-read them to invoke it — the skill handles the workflow — but the essays explain *why* the principles work.
 
