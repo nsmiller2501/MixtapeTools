@@ -1,7 +1,7 @@
 ---
 name: bibcheck
 description: Many-agent bibliography audit. Verify each citation in a .bib file by spawning narrow-focus agents that confirm DOI/URL and cross-check that all fields belong to the same paper. Catches mixed-up entries (one paper's title with another's authors), wrong years, journal misattributions, and unverifiable references. Use when reviewing a manuscript's bibliography for accuracy before submission, after literature review, or when inheriting a .bib from a coauthor.
-allowed-tools: Bash(claude*), Bash(ls*), Bash(cat*), Bash(wc*), Bash(grep*), Bash(mkdir*), Bash(cp*), Read, Write, Edit, WebSearch, WebFetch, Agent
+allowed-tools: Bash(claude*), Bash(ls*), Bash(cat*), Bash(wc*), Bash(grep*), Bash(mkdir*), Bash(cp*), Bash(~/.claude/skills/bibcheck/scripts/split_bib.py:*), Read, Write, Edit, WebSearch, WebFetch, Agent
 argument-hint: '[--by-citation|--by-field] <path-to-bib-or-tex> [--max-parallel N]'
 ---
 
@@ -11,9 +11,7 @@ You are running `/bibcheck` — a verification routine that audits a bibliograph
 
 ## Why narrow agents
 
-A single agent asked to audit 80 citations in one pass tends to drift: early entries get careful treatment; later entries get pattern-matched. Splitting the work — one agent per entry, or one specialist per field across all entries — keeps each agent focused on something small and verifiable. The bottleneck shifts from agent attention to orchestration, which is what cheap parallel agents are for.
-
-See `methodology.md` for the full rationale.
+See `methodology.md` for the full gradient-decay rationale and audit standard.
 
 ## Step 0: Read your full methodology
 
@@ -42,7 +40,13 @@ Do not guess.
 
 ## Step 2: Set up the run directory
 
-Create a working folder next to the input file:
+For `.bib` input, run the splitter:
+
+```bash
+~/.claude/skills/bibcheck/scripts/split_bib.py path/to/references.bib
+```
+
+It creates:
 
 ```
 <bib_dir>/bibcheck_<timestamp>/
@@ -55,11 +59,11 @@ Create a working folder next to the input file:
 
 The timestamped folder means re-runs do not clobber prior audits.
 
+For `.tex` input, first resolve the linked `.bib` or extract `\bibitem{}` blocks into `input.bib`, then use the same run directory shape.
+
 ## Step 3a: Per-citation mode
 
-1. **Split the .bib into per-entry files.** A robust splitter: read the .bib, walk for `@type{key,` openers, balance braces to find each entry's close, write to `entries/<key>.bib`.
-
-2. **Launch agents in waves of `--max-parallel`.** For each entry, dispatch one Agent subagent (subagent_type: general-purpose) with this brief:
+1. **Launch agents in waves of `--max-parallel`.** For each `entries/*.bib` file, dispatch one Agent subagent (subagent_type: general-purpose) with this brief:
 
    ```
    You are auditing one bibliography entry. The entry is:
@@ -82,7 +86,7 @@ The timestamped folder means re-runs do not clobber prior audits.
    You do NOT modify the input file. You only write the report and the corrected entry.
    ```
 
-3. **Final reviewer pass.** When all entries are done, dispatch a single reviewer agent that:
+2. **Final reviewer pass.** When all entries are done, dispatch a single reviewer agent that:
    - Reads every `reports/*.json`.
    - Spot-checks any entry marked "unverifiable" (does a quick second WebSearch).
    - Adjudicates conflicts where a corrected field looks suspicious.
