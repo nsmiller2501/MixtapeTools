@@ -1,7 +1,7 @@
 ---
 name: newproject
 description: Scaffold a new research project with standard directory structure, CLAUDE.md template, and language-agnostic config files (Stata/Python/R). Use this at the start of every new project to ensure consistent organization.
-allowed-tools: Bash(mkdir*), Bash(cp*), Bash(ls*), Write, Read
+allowed-tools: Bash(ls*), Bash(~/.claude/skills/newproject/scripts/scaffold.sh:*), Read
 argument-hint: [project-name]
 ---
 
@@ -56,97 +56,23 @@ Templates use `{{PROJECT_ROOT}}` and `{{PROJECT_NAME}}` placeholders that this s
 
 ## Execution
 
-### Step 1 — Get project name
+### Step 1 — Get project name and location
 If no argument was provided, ask:
 > "What should I name this project? (will be used as the folder name and in templates)"
 
-Normalize: lowercase, spaces → hyphens.
-
-### Step 2 — Determine location
 Default to current working directory. If unclear, confirm with the user.
 
-Set `PROJECT_ROOT` = `[location]/[project-name]` as an absolute path.
+### Step 2 — Run scaffold script
 
-### Step 3 — Create all directories
+Run:
 
 ```bash
-mkdir -p [project-name]/{code/{download,data/validation,analysis/{stata,R,python}},data/{raw,clean},output/{figures,tables,logs},documents,references/raw,decks,notes,agent_memory,correspondence,progress_logs}
+~/.claude/skills/newproject/scripts/scaffold.sh "[project-name]" "[parent-directory]"
 ```
 
-### Step 4 — Render config files from templates
+The script normalizes the project name, creates the directory tree, renders templates, writes agent-memory stubs, generates `README.md`, and creates the initial setup log. It prints the absolute project root.
 
-For each of `config.do`, `config.py`, `config.R`, `requirements.txt`:
-1. Read `~/.claude/skills/newproject/templates/<filename>`
-2. Substitute `{{PROJECT_ROOT}}` with the absolute project root path, and `{{PROJECT_NAME}}` with the normalized project name
-3. Write to `[project-name]/code/<filename>`
-
-### Step 5 — Create `CLAUDE.md` from template
-
-Read `~/.claude/skills/newproject/templates/project_CLAUDE.md`.
-Write it to `[project-name]/CLAUDE.md` as-is.
-Update the Project Overview section heading to reference the project name.
-
-### Step 5b — Create index stubs in `agent_memory/`
-
-CLAUDE.md points to these files rather than embedding their content. Create each as an empty stub so Claude and the user have a known location to append to.
-
-**`agent_memory/key_decisions.md`**:
-```markdown
-# Key Decisions — [project-name]
-
-Running log of methodological decisions. Append new rows; do not edit prior entries.
-
-| Date | Decision | Rationale |
-|------|----------|-----------|
-```
-
-**`agent_memory/dropped_analyses.md`**:
-```markdown
-# Dropped Analyses — [project-name]
-
-Analyses tried and abandoned — so they don't get re-suggested.
-
-- **[Analysis name]** ([YYYY-MM-DD]): [Why dropped]
-```
-
-**`agent_memory/codebook.md`**:
-```markdown
-# Codebook — [project-name]
-
-Definitions of key variables, especially constructed ones.
-
-| Variable | Definition | Source |
-|----------|------------|--------|
-```
-
-**`agent_memory/sample_restrictions.md`**:
-```markdown
-# Sample Restrictions — [project-name]
-
-Who's in the sample and why. Document exclusions with counts.
-
-- [Restriction]: [Rationale] ([N excluded])
-```
-
-### Step 6 — Generate `README.md`
-
-Include:
-- Project title and one-line description placeholder
-- Visual directory tree (fenced code block matching structure above)
-- Explanation of each folder's purpose
-- Note that `references/raw/` stores paper PDFs for `/split-pdf`, `/read-pdf`, `/bib-update`, and `/wiki-update`; `references/wiki/` and `references/references.bib` are created lazily by those skills
-- Note that `CLAUDE.md` is from a permanent template — edit per-project
-- Note that `code/config.*` files define all paths — update `root` if project moves
-- Note that `progress_logs/` maintains continuity across Claude sessions
-- Placeholder sections: Overview, Collaborators, Status, Key Files
-
-### Step 7 — Create initial progress log
-
-Write `progress_logs/[YYYY-MM-DD]_setup.md`:
-- Creation date
-- Checklist of standard next steps (add data sources, fill in CLAUDE.md, etc.)
-
-### Step 8 — Report success
+### Step 3 — Report success
 
 Show the created structure with `ls -R [project-name] | head -60`.
 Remind the user to:
