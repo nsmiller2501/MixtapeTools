@@ -9,7 +9,7 @@ description: >-
   collision cleanup, and dispatches a graphics-only audit agent for label and
   coordinate checks. Use when creating a presentation from scratch or
   restructuring existing content into a new beautiful deck.
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task
+allowed-tools: Bash, Bash(~/.claude/skills/beautiful_deck/scripts/compile_loop.sh:*), Read, Write, Edit, Glob, Grep, Task
 argument-hint: "[audience] [content-path-or-description]"
 ---
 
@@ -444,27 +444,16 @@ Inside frames, USE the styles but never DEFINE them with `#1`. This is not optio
 ### The compile check — run this verbatim after every edit
 
 ```bash
-pdflatex -interaction=nonstopmode <deck>.tex
+~/.claude/skills/beautiful_deck/scripts/compile_loop.sh <deck>.tex
 ```
 
-Then, **in this order**:
+The script runs `pdflatex`, reads the `.log`, prints counts and line-numbered details for fatal errors, Overfull/Underfull boxes, font warnings, and reference/label/citation warnings, and exits nonzero unless all counts are zero.
 
-1. **Fatal errors.**
-   ```bash
-   grep "^!" <deck>.log
-   ```
-   Must return nothing. If anything, fix and recompile before moving on.
-
-2. **Overfull / underfull box warnings.**
-   ```bash
-   grep -cE "Overfull|Underfull" <deck>.log
-   ```
-   **Must return exactly `0`.** Not "close to zero." Not "just a few small ones." Exactly zero. If the count is nonzero:
-   - Run `grep -nE "Overfull|Underfull" <deck>.log` to see every instance with line numbers
-   - For each warning, read the line number from the log (it tells you which line of the `.tex` file triggered it)
-   - Apply the appropriate fix from the table below
-   - Recompile
-   - Re-run the count. Repeat until it is zero.
+If the Overfull / Underfull count is nonzero, fix every instance:
+- For each warning, read the line number from the log (it tells you which line of the `.tex` file triggered it)
+- Apply the appropriate fix from the table below
+- Recompile
+- Re-run `compile_loop.sh`. Repeat until it exits cleanly.
 
    | Warning type | Fix |
    |---|---|
@@ -475,19 +464,9 @@ Then, **in this order**:
 
    **Even 0.1pt overfull must be fixed.** LaTeX reports warnings for a reason — they indicate the compiler is making layout compromises you did not authorize. Letting "just one small one" through is the broken-windows failure mode.
 
-3. **Font warnings.**
-   ```bash
-   grep -i "warning" <deck>.log | grep -i "font"
-   ```
-   Must return nothing. If any appear, it usually means a required font package is missing — install it and recompile.
+Font warnings usually mean a required font package is missing — install it and recompile. Any `LaTeX Warning: Reference ... undefined` or `There were undefined references` must be resolved — either by defining the missing label, removing the reference, or running the compile script again to pick up forward references.
 
-4. **Missing references and labels.**
-   ```bash
-   grep -i "warning" <deck>.log | grep -iE "reference|label|citation"
-   ```
-   Must return nothing. Any `LaTeX Warning: Reference ... undefined` or `There were undefined references` must be resolved — either by defining the missing label, removing the reference, or running pdflatex a second time to pick up forward references.
-
-5. **Open the PDF and visually inspect.**
+After the script exits cleanly, **open the PDF and visually inspect.**
    ```bash
    open <deck>.pdf
    ```
