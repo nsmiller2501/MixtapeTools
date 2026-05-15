@@ -158,7 +158,7 @@ The skill will ask clarifying questions if anything in the triage step is missin
 **`/beautiful_deck` depends on `/tikz` being installed.** Two specific dependencies:
 
 1. **Step 4.4 (TikZ generation rules)** reads `~/.claude/skills/tikz/tikz_rules.md` for the canonical formula reference (gap calculations, Bézier curve depths, clearance tables). This file lives in the `tikz` skill folder so that both `/beautiful_deck` (generation-time) and `/tikz` (audit-time) read from a single source of truth.
-2. **Step 6 (visual cleanup)** invokes `/tikz` directly to audit residual collisions after the slides are written.
+2. **Step 6 (visual cleanup)** invokes `/tikz` directly to audit residual collisions after the slides are written. `/tikz` uses `~/.claude/skills/tikz/scripts/audit_passes.sh` as a deterministic precheck/index wrapper, but the geometry still comes from `tikz_rules.md`.
 
 If you install `/beautiful_deck` without `/tikz`, both steps will fail. Always install them as a pair.
 
