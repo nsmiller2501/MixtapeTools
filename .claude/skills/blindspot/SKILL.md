@@ -195,10 +195,6 @@ Report template:
 
 ## Origin and Inspiration
 
-This skill was inspired by conversations with Jason Fletcher (University of Wisconsin), who commented on Scott Cunningham's Substack post (Claude Code 35, March 2026) and asked about the spikes at t=1 and t=3 in a figure where Scott had focused entirely on the spike at t=2. The spike at t=1 was the tell — it was inconsistent with the p-hacking interpretation and pointed immediately to rounding.
-
-Fletcher described this as a habit from graduate training — stepping back from the main coefficient and asking about something else in the table. He wrote about it publicly in ["Owning All the Numbers"](https://jasonmfletcher.substack.com/p/owning-all-the-numbers) (March 2026).
+This skill was inspired by a conversation with Jason Fletcher (University of Wisconsin), who looked at a figure where the author had focused entirely on a spike at t=2 and asked instead about the spikes at t=1 and t=3. The spike at t=1 was the tell — it was inconsistent with the p-hacking interpretation and pointed immediately to rounding. Fletcher described this as a habit from graduate training: stepping back from the main coefficient and asking about something else in the table. He wrote about it in ["Owning All the Numbers"](https://jasonmfletcher.substack.com/p/owning-all-the-numbers).
 
 The theoretical frame comes from Viktor Shklovsky's "Art as Device" (1917): the purpose of art is to restore perception, to make the stone stony again. Blindspot applies that principle to empirical research — forcing you to see your own output as a stranger would, before the story you want to tell has automated your perception.
-
-See the [full origin story on Substack](https://causalinf.substack.com) for the account of how this skill came to exist.
