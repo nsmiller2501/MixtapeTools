@@ -1,7 +1,7 @@
 ---
 name: tikz
 description: Audits and fixes residual TikZ visual collisions in any `.tex` file using mathematical gap calculations and Bézier depth formulas — no eyeballing. A downstream repair tool; the upstream defense (writing safe TikZ from the start) lives in `/beautiful_deck`. Use when labels overlap arrows, text sits on boxes, arrows cross each other, or a `.tex` file needs a visual-collision pass before compile.
-allowed-tools: Bash(pdflatex*), Bash(grep*), Bash(ls*), Read, Edit, Glob
+allowed-tools: Bash(pdflatex*), Bash(grep*), Bash(ls*), Bash(~/.claude/skills/tikz/scripts/audit_passes.sh:*), Read, Edit, Glob
 argument-hint: [path/to/file.tex]
 ---
 
@@ -38,20 +38,14 @@ The same rule book is read by `/beautiful_deck` Step 4.4 (generation-time preven
 If the user specified a file, use it. If not, ask. Then:
 
 ```bash
-grep -n "tikzpicture\|begin{frame}\|node\|draw\|bend\|foreach" [file].tex | head -100
+~/.claude/skills/tikz/scripts/audit_passes.sh [file].tex
 ```
 
 Get a sense of scope: how many TikZ diagrams, how many frames, how many arrows.
 
 ### Pre-check: were the generation rules followed?
 
-Quickly assess whether the TikZ was written safely:
-
-```bash
-grep -n "\\\\node" [file].tex | grep -v "minimum"   # autosized nodes
-grep -n "scale=" [file].tex                          # scale on tikzpicture
-grep -n "% Coordinate map\|% Node map\|% Layout" [file].tex   # coordinate maps
-```
+Quickly assess whether the TikZ was written safely using the autosized-node, scale, and coordinate-map sections from `audit_passes.sh`.
 
 - **Autosized nodes widespread** → repair reliability is lower. Upstream fix: add explicit dimensions. Consider doing that first.
 - **`scale` on complex diagram** → coordinates compress but text does not. Compensation in Passes 2–5 is fragile. Upstream fix: redesign at intended size.
@@ -72,13 +66,7 @@ For each `tikzpicture` in the file, run all six passes **in order**. Follow the 
 | **4** | Boundary Rule (labels vs drawn shapes) | `tikz_rules.md` § Pass 4 |
 | **5** | Margin spacing | `tikz_rules.md` § Pass 5 |
 
-Useful greps for each pass:
-
-```bash
-grep -n "node.*{" [file].tex | grep -v "^[[:space:]]*%"        # Pass 0 candidates
-grep -n "bend" [file].tex                                       # Pass 1 — every curve
-grep -n "node\[" [file].tex | grep -v "above\|below\|left\|right\|anchor\|pos\|midway\|near"   # Pass 3 violations
-```
+Use the candidate sections from `audit_passes.sh` as the starting index for Passes 0, 1, and 3.
 
 ---
 
@@ -107,7 +95,7 @@ This pass is unique to `/tikz` (it does not appear in `tikz_rules.md` because it
 After making fixes:
 
 ```bash
-pdflatex -interaction=nonstopmode [file].tex 2>&1 | grep -E "Overfull|Underfull|Error|Warning"
+~/.claude/skills/tikz/scripts/audit_passes.sh [file].tex --compile
 ```
 
 Must return zero lines. Fix any new warnings introduced by repositioning. Repeat until clean.
@@ -118,11 +106,7 @@ Must return zero lines. Fix any new warnings introduced by repositioning. Repeat
 
 One collision fix often reveals a second one nearby, or introduces a new label that crowds a different object. After every change, re-run Passes 1–5 on **all** TikZ figures in the file — not just the one you just touched.
 
-```bash
-grep -c "tikzpicture" [file].tex
-```
-
-That count is how many diagrams need a clean bill of health.
+Use the TikZ picture count from `audit_passes.sh` to confirm how many diagrams need a clean bill of health.
 
 ---
 
