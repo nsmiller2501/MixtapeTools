@@ -140,3 +140,8 @@ The current architecture reflects this: `/beautiful_deck` Step 4.4 is the upstre
 The canonical formula reference (shared with `/compiledeck`):
 - [`.claude/skills/compiledeck/tikz_rules.md`](../../.claude/skills/compiledeck/tikz_rules.md) — every formula, every clearance, every worked example
 - [`.claude/skills/tikz/SKILL.md`](../../.claude/skills/tikz/SKILL.md) — the operational checklist Claude follows when you invoke `/tikz`
+
+
+---
+
+*This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.*

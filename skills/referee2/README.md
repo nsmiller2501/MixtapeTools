@@ -121,3 +121,8 @@ The skill lives at `.claude/skills/referee2/SKILL.md` in this repo. Shared perso
 To use it, ensure this repo is on your Claude Code skills path. Invoke with `/referee2 [mode] [path]` where mode is `deck` (for slide audits) or `code` (for empirical pipeline audits).
 
 See the [skills README](../README.md) for general installation instructions.
+
+
+---
+
+*This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.*

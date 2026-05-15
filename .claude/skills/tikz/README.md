@@ -90,3 +90,8 @@ The common failure mode in academic decks is not "I couldn't make this figure" â
 `/tikz` was originally written as the sole defense against these overlaps. Experience showed that a repair-only approach is insufficient â€” Claude reads the formulas and *simulates* having done the calculation, but doesn't always execute them rigorously. The breakthrough was recognizing that **prevention is worth ten repair passes**: writing safe TikZ from the start (explicit dimensions, coordinate maps, no `scale`) eliminates most collision classes before `/tikz` ever runs.
 
 The current architecture reflects this: `/beautiful_deck` Step 4.4 is the upstream defense (using the same `tikz_rules.md` reference). `/tikz` is the downstream check. Together they catch what either alone would miss.
+
+
+---
+
+*This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.*

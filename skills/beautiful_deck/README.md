@@ -139,3 +139,8 @@ Full essays:
 - [`presentations/rhetoric_of_decks_full_essay.md`](../../presentations/rhetoric_of_decks_full_essay.md) — the 600-line intellectual genealogy from Aristotle through LLMs
 
 `/beautiful_deck` is the operational skill version of those essays. You don't need to re-read them to invoke it — the skill handles the workflow — but the essays explain *why* the principles work.
+
+
+---
+
+*This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.*

@@ -91,3 +91,8 @@ The theoretical frame comes from Viktor Shklovsky's "Art as Device" (1917): the 
 
 - **`/referee2`** — the correctness audit. Blindspot checks perception; Referee 2 checks implementation. Run both.
 - **`/beautiful_deck`** — invokes a rhetoric audit sub-agent during deck creation. Blindspot is for empirical output, not slides.
+
+
+---
+
+*This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.*

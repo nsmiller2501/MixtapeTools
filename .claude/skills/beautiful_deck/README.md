@@ -176,3 +176,8 @@ Full essays (in this skill directory):
 - [`style_preferences.md`](style_preferences.md) — user-specific stylistic defaults, including functional slide-header progress indicators.
 
 `/beautiful_deck` is the operational skill version of those essays. You don't need to re-read them to invoke it — the skill handles the workflow — but the essays explain *why* the principles work.
+
+
+---
+
+*This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.*

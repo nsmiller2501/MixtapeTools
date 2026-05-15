@@ -123,3 +123,5 @@ Each paper is ingested by a dedicated subagent so that converted markdown and ex
 Inspired by Andrej Karpathy's [LLM Wiki](https://karpathy.bearblog.dev/llm-wiki/) pattern — a structured, interlinked knowledge base maintained by an LLM, curated by a human. The Tier A / Tier B figure protocol, the project-relevance gate, and the substantive-change rule are workflow refinements specific to academic-paper ingest at scale.
 
 The local-conversion path (Protocol M) relies on [docling](https://github.com/docling-project/docling) and [marker](https://github.com/VikParuchuri/marker) — open-source layout-aware PDF parsers whose authors did the actual hard work.
+
+This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.

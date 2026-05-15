@@ -38,18 +38,24 @@ wiki-update-readme     local   upstream  main  skills/wiki-update
 # --- local-only skills (not present upstream; source/ref are placeholders) ---
 newproject-git-core    local   upstream  main  .claude/skills/newproject-git
 session-core           local   upstream  main  .claude/skills/session
+session-readme         local   upstream  main  skills/session
 
 # --- skills cherry-picked from mattpocock/skills (one-time copy; paths differ so track is not viable) ---
 # origin: mattpocock main skills/productivity/grill-me  (identical to local at time of cherry-pick 2026-05-15)
 grill-me-core          local   mattpocock  main  .claude/skills/grill-me
+grill-me-readme        local   mattpocock  main  skills/grill-me
 # origin: mattpocock main skills/productivity/caveman
 caveman-core           local   mattpocock  main  .claude/skills/caveman
+caveman-readme         local   mattpocock  main  skills/caveman
 # origin: mattpocock main skills/productivity/handoff
 handoff-core           local   mattpocock  main  .claude/skills/handoff
+handoff-readme         local   mattpocock  main  skills/handoff
 # origin: mattpocock main skills/productivity/write-a-skill
 write-a-skill-core     local   mattpocock  main  .claude/skills/write-a-skill
+write-a-skill-readme   local   mattpocock  main  skills/write-a-skill
 # origin: mattpocock main skills/engineering/grill-with-docs
 grill-with-docs-core   local   mattpocock  main  .claude/skills/grill-with-docs
+grill-with-docs-readme local   mattpocock  main  skills/grill-with-docs
 
 # --- skills tracked from upstream (scunning1975/MixtapeTools) ---
 bibcheck-core          track   upstream  main  .claude/skills/bibcheck

@@ -89,3 +89,8 @@ Before using a generated project, fill in the placeholders in its root `CLAUDE.m
 ## Installation
 
 This skill lives at `~/.claude/skills/newproject/SKILL.md`. Invoke with `/newproject`.
+
+
+---
+
+*This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.*

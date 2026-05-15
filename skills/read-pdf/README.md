@@ -122,3 +122,5 @@ Hard fail. If the backend errors on a given PDF (encrypted, malformed, OCR fails
 ## Acknowledgments
 
 The design — layout-aware local conversion, content-hashed caching, an isolated venv, and pixel-accurate figure clipping — is shaped by the realities of academic-paper ingestion at scale. The two candidate backends ([docling](https://github.com/docling-project/docling) and [marker](https://github.com/VikParuchuri/marker)) are open-source projects whose authors did the actual hard work of making layout-aware PDF parsing tractable.
+
+This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.

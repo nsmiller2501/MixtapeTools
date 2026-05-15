@@ -122,3 +122,5 @@ The fetch cascade is conservative: prefer DOI matches, fall back to fuzzy title 
 ## Acknowledgments
 
 The conceptual foundation for this skill — maintaining a project-specific LLM-readable wiki that grows alongside the research and is consumed by future LLM sessions as compressed institutional memory — is owed to [Andrej Karpathy's LLMwiki concept](https://x.com/karpathy). `/wiki-update` operationalizes that idea for empirical-economics workflows: relevance-gated ingestion of new papers into a structured wiki that the project's `CLAUDE.md` indexes.
+
+This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.

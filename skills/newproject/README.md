@@ -64,3 +64,8 @@ The `progress_logs/` directory solves a real problem: Claude Code sessions don't
 This command lives at `~/mixtapetools/.claude/commands/newproject.md` and is also available as a skill at `~/mixtapetools/.claude/skills/newproject/SKILL.md`. Both are identical in behavior.
 
 To make it available in any project, ensure `~/mixtapetools` is in your Claude Code skill search path, or symlink the `.claude` directory.
+
+
+---
+
+*This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.*

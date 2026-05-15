@@ -192,3 +192,5 @@ Open [`notes.md`](gentskow_shapiro_competition/notes.md) to see the full output.
 ## Acknowledgments
 
 The in-place PDF handling, persistent `_text.md` extraction, split reuse, build directory convention, and agent isolation protocol were inspired by improvements identified by [Ben Bentzin](https://www.mccombs.utexas.edu) (Associate Professor of Instruction, McCombs School of Business, University of Texas at Austin), who adapted the original skill for his own workflows and shared his findings (April 2026). His version demonstrated that subagent isolation prevents context bloat when reading multiple large PDFs in a single session — a critical reliability improvement. The implementation here is independently written but the ideas are his.
+
+This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.
