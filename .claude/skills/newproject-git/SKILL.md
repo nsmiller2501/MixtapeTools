@@ -39,78 +39,7 @@ xattr -w com.dropbox.ignored 1 .git
 
 ### 3. Create .gitignore
 
-Write the following `.gitignore` to the project root. **If `.gitignore` already exists, review it rather than overwriting — ask the user before making changes.**
-
-```
-# macOS
-.DS_Store
-
-# Claude Code project settings
-.claude/
-
-# Obsidian vault settings
-.obsidian/
-
-# Personal scratch notes
-notes/
-
-# Correspondence: ignore internal read-only artifact folders only.
-# Add project-specific subdirs here (e.g. correspondence/referee2/).
-# Submission/journal correspondence should be tracked.
-# Also ignore internal replication check code etc.
-correspondence/referee2/
-correspondence/blindspot/
-code/replication/
-
-# Data (raw, intermediate, clean — not versioned; reproduce from pipeline)
-/data/
-
-# Decks: track only .tex source files
-decks/**
-!decks/**/
-!decks/**/*.tex
-
-# Documents: track only .tex source files
-documents/**
-!documents/**/
-!documents/**/*.tex
-
-# Meeting notes
-meetings/
-
-# All pipeline/analysis output (logs, tables, figures)
-output/
-
-# Progress logs
-progress_logs/
-
-# Reference PDFs (track .bib, not raw PDFs); 
-# articles catches this directory in case it's accidentally created by split-pdf/read-pdf
-references/raw/
-references/wiki/
-references/CLAUDE.md
-articles/
-
-# Scratch (holds any files temporarily while I decide where they go)
-scratch/
-
-# Log files (Stata, Python, R)
-*.log
-
-# LaTeX build artifacts
-*.aux
-*.bbl
-*.bcf
-*.blg
-*.fdb_latexmk
-*.fls
-*.run.xml
-*.synctex.gz
-*.toc
-*.out
-*.lof
-*.lot
-```
+Read `~/.claude/skills/newproject-git/templates/.gitignore` and write those exact contents to `.gitignore` in the project root. **If `.gitignore` already exists, review it rather than overwriting — ask the user before making changes.**
 
 After writing, show the user what will be tracked (`git status`) and flag anything that looks unexpected (large binaries, sensitive files, etc.). Ask before proceeding.
 

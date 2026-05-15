@@ -24,7 +24,7 @@ Run it from the project root, the directory that contains `CLAUDE.md`.
 
 The intended tracked surface is source code, text, LaTeX source, BibTeX, project documentation, and other reproducible inputs. Generated output, raw data, large PDFs, local notes, scratch files, Claude internals, and LaTeX build artifacts are excluded by default.
 
-For the exact `.gitignore` contents and safety checks, read [`SKILL.md`](SKILL.md).
+For the exact `.gitignore` contents, see [`templates/.gitignore`](templates/.gitignore). For safety checks, read [`SKILL.md`](SKILL.md).
 
 ## Related Skills
 
