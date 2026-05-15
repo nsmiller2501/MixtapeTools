@@ -60,4 +60,4 @@ This template exists because:
 
 ## Related Tools
 
-Looking for the audit protocol itself? See `personas/referee2.md` — that's the systematic audit protocol with five audits, cross-language replication, and formal referee reports.
+Looking for the audit protocol itself? See `.claude/skills/referee2/SKILL.md` and the mode-specific files in `.claude/skills/referee2/`.

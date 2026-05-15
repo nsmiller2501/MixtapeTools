@@ -30,7 +30,7 @@ As I develop new approaches, I'll add them here. Anyone is free to use them.
 
 ## Start Here: My Workflow
 
-**Location:** [`workflow.md`](workflow.md) | **Deck:** [`presentations/examples/workflow_deck/`](presentations/examples/workflow_deck/)
+**Location:** [`workflow.md`](workflow.md)
 
 Before diving into specific tools, read my workflow document. It explains **how I think about using Claude Code for empirical research**—not just the tools, but the philosophy behind them.
 
@@ -53,7 +53,7 @@ Everything else in this repo implements these principles.
 
 ### 1. Referee 2 (Systematic Audit & Replication Protocol)
 
-**Location:** [`skills/referee2/`](skills/referee2/) | `personas/referee2.md` (full protocol)
+**Location:** [`skills/referee2/`](skills/referee2/) | `.claude/skills/referee2/SKILL.md` (actual skill)
 
 Referee 2 is a **health inspector for empirical research** — a systematic five-audit protocol with cross-language replication, formal referee reports, and a revise & resubmit process. It runs after a project is complete, in a **fresh terminal**, by a Claude instance that has never seen the work. The separation is what makes it independent: the Claude that built the pipeline cannot objectively audit it.
 
@@ -126,9 +126,9 @@ Blindspot doesn't need separation because it's auditing *perception* — your ow
 
 ### 3. The Rhetoric of Decks
 
-**Location:** `presentations/`
+**Location:** [`skills/beautiful_deck/`](skills/beautiful_deck/) | `.claude/skills/beautiful_deck/rhetoric_of_decks.md`
 
-My philosophy of slide design, plus a tested prompt for generating Beamer presentations. The key insight: aim for MB/MC equivalence across slides (smoothness), not maximum density.
+My philosophy of slide design, implemented by `/beautiful_deck`. The key insight: aim for MB/MC equivalence across slides (smoothness), not maximum density.
 
 **Core principles:**
 - Beauty earns attention; attention enables communication
@@ -161,7 +161,7 @@ Read the full documentation: [`skills/split-pdf/README.md`](skills/split-pdf/REA
 
 **Location:** [`skills/beautiful_deck/`](skills/beautiful_deck/) | `.claude/skills/beautiful_deck/SKILL.md` (actual skill)
 
-A Claude Code **skill** — invoke with `/beautiful_deck` — that runs the full deck-generation pipeline. This is the operational version of the prompt that used to live at `presentations/deck_generation_prompt.md`.
+A Claude Code **skill** — invoke with `/beautiful_deck` — that runs the full deck-generation pipeline.
 
 **What the skill enforces:**
 
@@ -177,36 +177,7 @@ A Claude Code **skill** — invoke with `/beautiful_deck` — that runs the full
 
 **Usage:** `/beautiful_deck [optional content path or description]`
 
-### 4. Compile Deck (Beamer Presentations with the Rhetoric of Decks)
-
-**Location:** `.claude/commands/compiledeck.md`
-
-A Claude Code **command** — invoke with `/compiledeck` — that embeds the full Rhetoric of Decks philosophy so you don't have to explain it each time.
-
-**The skill asks two questions:**
-
-1. **Who is the audience?**
-   - **External** (seminar, conference, teaching) — sparse, performative, one idea per slide
-   - **Working** (coauthors, yourself) — can be more detailed, documents reasoning
-
-2. **What's the tone?**
-   - **Professional/Academic** — your consistent "house style" for outward-facing work
-   - **Colorful/Expressive** — unique, creative design each time
-
-**Why separate these?** External presentations need polish and restraint. Working decks can be messier—they're thinking tools. Some people want the same style for both; others want creative freedom internally while maintaining a professional brand externally.
-
-**House style:** Define your preferred "Professional/Academic" palette in your CLAUDE.md. The skill checks for it. If none is defined, it uses a sensible default.
-
-**What's embedded:**
-- The Three Laws (Beauty is Function, Cognitive Load is Enemy, Slide Serves Spoken Word)
-- Titles as assertions, not labels
-- MB/MC equivalence across slides
-- The compile loop (compile → fix errors → fix warnings → visual check → repeat)
-- TikZ coordinate checking and figure label verification
-
-**Usage:** Type `/compiledeck` when creating or editing a Beamer deck.
-
-### 5. TikZ Collision Audit
+### 4. TikZ Collision Audit
 
 **Location:** [`skills/tikz/`](skills/tikz/) | `.claude/skills/tikz/SKILL.md` (actual skill)
 
@@ -227,20 +198,11 @@ A Claude Code **skill** — invoke with `/tikz path/to/file.tex` — that system
 
 **Most common pattern it catches:** Step labels on flow diagrams that are wider than the arrow between boxes — they look right in code but overlap box text when rendered.
 
-**Full formulas and reference tables:** `compiledeck/tikz_rules.md`
+**Full formulas and reference tables:** `.claude/skills/tikz/tikz_rules.md`
 
 **Usage:** `/tikz path/to/deck.tex`
 
-### 6. Additional Commands
-
-**Location:** `.claude/commands/`
-
-| Command | Description |
-|---------|-------------|
-| `/compiletex [file.tex]` | Compile any LaTeX file and report errors/warnings. Aims for zero warnings. |
-| `/newproject [name]` | Scaffold a new research project with standard folder structure and CLAUDE.md. Also available as a [skill](skills/newproject/). |
-
-### 6. CLAUDE.md Template
+### 5. CLAUDE.md Template
 
 **Location:** `claude/CLAUDE.md`
 
@@ -258,41 +220,25 @@ MixtapeTools/
 │   ├── README.md            # What skills are, how to use them, how to install
 │   ├── blindspot/           # Blindspot: peripheral vision audit for output
 │   │   └── README.md        # Full essay, origin story, six steps
+│   ├── beautiful_deck/      # End-to-end deck creation
+│   │   └── README.md        # Rhetoric, compile loop, TikZ dependency
 │   ├── split-pdf/           # Documentation and examples for the split-pdf skill
 │   │   └── README.md        # Detailed guide with methodology and examples
 │   ├── newproject/          # Documentation for the new-project scaffold skill
+│   ├── newproject-git/      # Documentation for git initialization
 │   └── tikz/                # Documentation for the TikZ collision audit skill
-│       └── README.md        # Philosophy, folder purposes, installation
 ├── .claude/
-│   ├── commands/             # Slash commands (invoke with /command-name)
-│   │   ├── compiledeck.md   # /compiledeck — Beamer presentations with Rhetoric of Decks
-│   │   ├── compiletex.md    # /compiletex — Compile LaTeX, report errors/warnings
-│   │   └── newproject.md    # /newproject — Scaffold new research project
-│   └── skills/
-│       ├── blindspot/        # Skill: make the stone stony again
-│       │   └── SKILL.md     # Instructions Claude follows (invoke with /blindspot)
-│       ├── tikz/             # Skill: audit and fix TikZ visual collisions
-│       │   └── SKILL.md     # Instructions Claude follows (invoke with /tikz)
-│       ├── split-pdf/        # Skill: download, split, and deep-read PDFs
-│       │   ├── SKILL.md     # Instructions Claude follows
-│       │   └── methodology.md # Why this method works (for humans)
-│       └── newproject/       # Skill: scaffold new research projects
-│           └── SKILL.md     # Instructions Claude follows
+│   └── skills/               # Executable skill instructions
+│       ├── beautiful_deck/
+│       ├── blindspot/
+│       ├── newproject/
+│       ├── newproject-git/
+│       ├── split-pdf/
+│       └── tikz/
 ├── claude/                   # Templates for working with Claude
 │   ├── CLAUDE.md            # Project context template (copy to your projects)
 │   └── README.md
-├── personas/                 # Systematic audit & replication protocols
-│   ├── referee2.md          # The 5-audit protocol for empirical research
-│   └── README.md
-└── presentations/            # Everything about slide decks
-    ├── rhetoric_of_decks.md           # Practical principles (condensed)
-    ├── rhetoric_of_decks_full_essay.md # Full intellectual framework (600+ lines)
-    ├── deck_generation_prompt.md      # The prompt + iterative workflow
-    ├── README.md
-    └── examples/
-        ├── workflow_deck/             # Visual presentation of the workflow
-        ├── rhetoric_of_decks/         # The philosophy deck (45 slides)
-        └── gov2001_probability/       # A lecture deck
+└── deprecated/               # Legacy command/persona/presentation material
 ```
 
 ---
@@ -344,8 +290,8 @@ Work with Claude as a thinking partner, not a code generator. Ask it to explain 
 When you have results worth checking:
 
 1. Open a **new terminal** (fresh context is essential)
-2. Paste the contents of `personas/referee2.md`
-3. Say: "Please audit and replicate the project at [path]. Primary language is [R/Stata/Python]."
+2. Invoke `/referee2 code [path]`
+3. Specify the primary language when asked: R, Stata, or Python
 4. Respond to the referee report (fix or justify each concern)
 5. Iterate until verdict is Accept
 
@@ -400,5 +346,3 @@ Inspired by [Boris Cherny's ChernyCode](https://github.com/meleantonio/ChernyCod
 Use freely. Attribution appreciated but not required.
 
 ---
-
-*Last updated: March 2026*

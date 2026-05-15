@@ -2,7 +2,7 @@
 
 > **End-to-end beautiful deck creation, from blank slate to audited, compiled PDF with accompanying scripts for students.**
 
-`/beautiful_deck` is the operational version of the deck-generation prompt that used to live at [`presentations/deck_generation_prompt.md`](../../presentations/). Rather than re-pasting the prompt each time, invoke the skill.
+`/beautiful_deck` is the operational skill for the Rhetoric of Decks workflow. Rather than re-pasting a deck-generation prompt each time, invoke the skill.
 
 ---
 
