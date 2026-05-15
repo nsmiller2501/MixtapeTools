@@ -43,46 +43,17 @@ If found, ask:
 
 This prevents redundant re-reading of papers you have already processed. The `_text.md` file is a structured plain-text extraction that is far cheaper to read than re-processing the PDF page images.
 
-**If no extract exists, check for existing splits.** Determine the build directory:
-
-```python
-import os
-folder_path = os.path.dirname(os.path.abspath(pdf_path))
-foldername  = os.path.basename(folder_path)
-pdf_basename = os.path.splitext(os.path.basename(pdf_path))[0]
-build_dir = os.path.join(folder_path, foldername + '_build')
-split_dir = os.path.join(build_dir, 'split_' + pdf_basename)
-```
+**If no extract exists, check for existing splits.** Use the build directory convention `<foldername>_build/split_<pdf-basename>/`.
 
 If `split_dir` already exists and contains `.pdf` files, ask:
 > "Splits already exist for `<pdf-basename>` (N chunks in `<foldername>_build/split_<pdf-basename>/`). Reuse existing splits, or re-split from scratch?"
 - **Reuse**: skip splitting, proceed to Step 3 using the existing files in `split_dir`
 - **Re-split**: delete the existing split folder, then proceed with splitting below
 
-Create splits in `<foldername>_build/split_<pdf-basename>/` and run the splitting script:
+Create splits by running:
 
-```python
-from PyPDF2 import PdfReader, PdfWriter
-import os, sys
-
-def split_pdf(input_path, output_dir, pages_per_chunk=4):
-    os.makedirs(output_dir, exist_ok=True)
-    reader = PdfReader(input_path)
-    total = len(reader.pages)
-    prefix = os.path.splitext(os.path.basename(input_path))[0]
-
-    for start in range(0, total, pages_per_chunk):
-        end = min(start + pages_per_chunk, total)
-        writer = PdfWriter()
-        for i in range(start, end):
-            writer.add_page(reader.pages[i])
-
-        out_name = f"{prefix}_pp{start+1}-{end}.pdf"
-        out_path = os.path.join(output_dir, out_name)
-        with open(out_path, "wb") as f:
-            writer.write(f)
-
-    print(f"Split {total} pages into {-(-total // pages_per_chunk)} chunks in {output_dir}")
+```bash
+python3 ~/.claude/skills/split-pdf/scripts/split.py path/to/paper.pdf
 ```
 
 **Directory convention:**
