@@ -526,11 +526,14 @@ LaTeX warnings catch box overflow. They do NOT catch:
 - Text bleeding into patches or shapes
 
 Run `/tikz <deck>.tex` to audit every TikZ figure in the deck using the measurement-based collision-prevention protocol. The skill will:
+- Run `~/.claude/skills/tikz/scripts/audit_passes.sh <deck>.tex` to collect deterministic scope, precheck, candidate-pass, and compile-warning inputs
 - Compute Bézier curve depths and check for label overlaps
 - Calculate text-width vs. node-gap for every edge label
 - Verify boundary clearances for labels near shapes
 - Check cross-slide consistency if the same diagram appears on multiple slides
 - Report every collision with exact line numbers
+
+`audit_passes.sh` is only an index/precheck wrapper. The canonical geometry and clearance rules remain in `~/.claude/skills/tikz/tikz_rules.md`, which this skill reads before writing TikZ in Step 4.4 and `/tikz` reads before repairing TikZ in Step 6.
 
 Apply all fixes the skill suggests, then recompile. Go back to Step 5 if any new warnings appear.
 
@@ -665,6 +668,7 @@ All in this skill directory (`~/.claude/skills/beautiful_deck/`):
 - `palette_reference.md` — alternative palettes with selection guidance for Path B (original-design) decks.
 - `domain_patterns.md` — detailed structural patterns by audience (academic seminar, teaching lecture, working deck, etc.).
 - `~/.claude/skills/tikz/tikz_rules.md` — measurement-based collision-prevention rules (lives in the `tikz` skill folder; this skill **depends on `/tikz` being installed**). READ before writing any TikZ figure (Step 4.4).
+- `~/.claude/skills/tikz/scripts/audit_passes.sh` — deterministic `/tikz` precheck and compile-warning wrapper used during Step 6. It indexes likely collision candidates but does not replace `tikz_rules.md`.
 
 ## Supporting skills
 
