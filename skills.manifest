@@ -1,0 +1,54 @@
+# Skills sync manifest
+# Format: <id>  <mode>  <remote>  <ref>  <source_path>
+#   id          : a label for this entry (not a path) — used in logs and uniqueness checks
+#   mode=track  : sync overwrites <source_path>/ in your tree from <remote>/<ref>:<source_path>
+#   mode=local  : sync never touches this path (your fork owns it; auto-flipped from `track` when local commits appear)
+#   mode=ignore : sync skips this entry entirely; silences discovery warnings
+#
+# Convention here: each skill has TWO directories tracked separately because the repo mirrors content:
+#   .claude/skills/<name>/   ← canonical SKILL.md + assets (the one that matters)
+#   skills/<name>/           ← human-facing README mirror
+# A skill is usually classified the same way in both rows, but they're independent — if you only edit
+# one, only that one auto-flips to local.
+#
+# Discovery: sync warns about directories in <remote>:.claude/skills/ or <remote>:skills/ that have no
+# row here. Classify them with a row (track/local/ignore).
+# Deletion is never automatic. To drop a skill, mark its rows `ignore` and `git rm` manually.
+
+# --- skills owned by this fork (your edits win) ---
+beautiful_deck-core    local   upstream  main  .claude/skills/beautiful_deck
+beautiful_deck-readme  local   upstream  main  skills/beautiful_deck
+bib-update-core        local   upstream  main  .claude/skills/bib-update
+bib-update-readme      local   upstream  main  skills/bib-update
+blindspot-core         local   upstream  main  .claude/skills/blindspot
+blindspot-readme       local   upstream  main  skills/blindspot
+newproject-core        local   upstream  main  .claude/skills/newproject
+newproject-readme      local   upstream  main  skills/newproject
+read-pdf-core          local   upstream  main  .claude/skills/read-pdf
+read-pdf-readme        local   upstream  main  skills/read-pdf
+referee2-core          local   upstream  main  .claude/skills/referee2
+referee2-readme        local   upstream  main  skills/referee2
+split-pdf-core         local   upstream  main  .claude/skills/split-pdf
+split-pdf-readme       local   upstream  main  skills/split-pdf
+tikz-core              local   upstream  main  .claude/skills/tikz
+tikz-readme            local   upstream  main  skills/tikz
+wiki-update-core       local   upstream  main  .claude/skills/wiki-update
+wiki-update-readme     local   upstream  main  skills/wiki-update
+
+# --- local-only skills (not present upstream; source/ref are placeholders) ---
+grill-me-core          local   upstream  main  .claude/skills/grill-me
+newproject-git-core    local   upstream  main  .claude/skills/newproject-git
+
+# --- skills tracked from upstream (scunning1975/MixtapeTools) ---
+bibcheck-core          track   upstream  main  .claude/skills/bibcheck
+bibcheck-readme        track   upstream  main  skills/bibcheck
+
+# --- skills you have explicitly declined ---
+compiledeck-core       ignore  upstream  main  .claude/skills/compiledeck   # deprecated in this fork
+compiledeck-readme     ignore  upstream  main  skills/compiledeck           # delete via git rm when ready
+newbook-core           ignore  upstream  main  .claude/skills/newbook       # not needed
+newbook-readme         ignore  upstream  main  skills/newbook
+
+# --- examples for cherry-picking from other repos (add the remote first) ---
+# git remote add mattpocock https://github.com/mattpocock/skills.git
+# some-skill           track   mattpocock  main  .claude/skills/some-skill
