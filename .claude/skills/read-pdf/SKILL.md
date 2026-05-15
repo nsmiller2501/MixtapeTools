@@ -43,7 +43,17 @@ The user wants to read, review, or summarize an academic paper and either: (a) w
 python3 ~/.claude/skills/read-pdf/install.py
 ```
 
-Idempotent. First run creates a venv at `~/.cache/claude-pdf-converter/venv-marker/` and downloads marker models (~500 MB, 1–3 min). Later runs reuse that venv if `marker` imports cleanly; they do **not** check PyPI or auto-upgrade marker. Surface the "First run" message to the user verbatim if it appears — they should know why this invocation is slow.
+Idempotent. First run creates a venv at `~/.cache/claude-pdf-converter/venv-marker/` and downloads marker models (~500 MB, 1–3 min). Later runs reuse that venv if `marker` imports cleanly; they do **not** auto-upgrade marker.
+
+Once every 30 days, `install.py` performs a lazy PyPI check for marker major-version updates. If it prints a `read-pdf notice: marker-pdf has a major update available` advisory, pause and surface it to the user. Ask whether they want to upgrade now with:
+
+```bash
+python3 ~/.claude/skills/read-pdf/install.py --upgrade-marker
+```
+
+Do not purge caches automatically. Explain that existing cached conversions remain valid but were produced by the older marker version. If the user wants fresh conversions after upgrading, delete selected cache entries under `~/.cache/claude-pdf-converter/cache/marker/`, or delete that whole directory; rebuilding a large cache can be very time-consuming.
+
+Surface the "First run" message to the user verbatim if it appears — they should know why this invocation is slow.
 
 ## Step 3: Convert
 
@@ -154,7 +164,7 @@ After the agent returns, the parent reads `_text.md` (plain text, not the large 
 | Step | Action |
 |------|--------|
 | **Acquire** | Download via web search or use local file in place |
-| **Install** | `python3 ~/.claude/skills/read-pdf/install.py` (idempotent; downloads models on first run, then reuses the venv without checking for updates) |
+| **Install** | `python3 ~/.claude/skills/read-pdf/install.py` (idempotent; downloads models on first run, then reuses the venv; monthly advisory check for marker major updates) |
 | **Check cache** | SHA-256 → `~/.cache/claude-pdf-converter/cache/marker/<hash>/markdown.md` |
 | **Convert** | `python3 ~/.claude/skills/read-pdf/convert.py <pdf>` if not cached |
 | **Collision** | Ask overwrite vs `_text2.md` if `_text.md` already exists |

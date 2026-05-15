@@ -48,7 +48,7 @@ Local layout-aware conversion fixes all three: TableFormer-style models reproduc
 
 | Step | Action |
 |------|--------|
-| **Install** | `python3 ~/.claude/skills/read-pdf/install.py` (idempotent; downloads models on first run only, then reuses the venv without checking for updates) |
+| **Install** | `python3 ~/.claude/skills/read-pdf/install.py` (idempotent; downloads models on first run only, then reuses the venv; monthly advisory check for marker major updates) |
 | **Convert** | `python3 ~/.claude/skills/read-pdf/convert.py <pdf>` (cache check → backend → write markdown + figures) |
 | **Hand off** | The script prints the absolute path to `markdown.md`; the caller reads it |
 
@@ -62,7 +62,7 @@ When called by another skill, the caller invokes `convert.py` directly via bash 
 
 ### First-run cost
 
-The first invocation on a fresh machine creates a venv at `~/.cache/claude-pdf-converter/venv-marker/` and downloads the backend's layout/OCR models (~500 MB, 1–3 min). The skill prints a one-line warning so the user knows why it's slow. Every subsequent invocation reuses that venv if `marker` imports cleanly; it does not check PyPI or auto-upgrade marker.
+The first invocation on a fresh machine creates a venv at `~/.cache/claude-pdf-converter/venv-marker/` and downloads the backend's layout/OCR models (~500 MB, 1–3 min). The skill prints a one-line warning so the user knows why it's slow. Every subsequent invocation reuses that venv if `marker` imports cleanly; it does not auto-upgrade marker.
 
 The venv lives **outside any git repo** so the model files do not pollute a checkout.
 
@@ -78,7 +78,15 @@ Marker emits equations as LaTeX math mode (`$...$` / `$$...$$`) inline in the ma
 
 `convert.py` uses marker (`marker-pdf`). Backend selection is fixed in code; there is no runtime backend override. If a future bake-off chooses a different backend, edit the `BACKEND` constant so the cache namespace and venv are regenerated cleanly.
 
-`install.py` installs the current PyPI `marker-pdf` release only when the marker venv is first created. If marker already imports cleanly, setup exits without checking PyPI or upgrading. This keeps cached conversions stable; the conversion cache is keyed by backend name and PDF hash, not by marker package version.
+`install.py` installs the current PyPI `marker-pdf` release only when the marker venv is first created. If marker already imports cleanly, setup reuses it and performs at most one lightweight PyPI check every 30 days. It warns only when PyPI has crossed a marker major-version boundary, and it never auto-upgrades.
+
+If you opt into a major upgrade, run:
+
+```bash
+python3 ~/.claude/skills/read-pdf/install.py --upgrade-marker
+```
+
+Existing cached conversions remain in place. To force fresh conversions after upgrading, delete selected cache entries under `~/.cache/claude-pdf-converter/cache/marker/`, or delete that whole directory. Rebuilding a large cache can be very time-consuming.
 
 ---
 

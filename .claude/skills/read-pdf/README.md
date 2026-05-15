@@ -33,7 +33,7 @@ Convert the PDF to markdown with python:marker (layout-aware, GPU-accelerated), 
 | Step | Action |
 |------|--------|
 | **Acquire** | Download the PDF (via web search) or use a local file in place |
-| **Install** | `install.py` sets up the marker venv on first run (~500 MB, one-time), then reuses it without checking for updates |
+| **Install** | `install.py` sets up the marker venv on first run (~500 MB, one-time), then reuses it; monthly advisory check for marker major updates |
 | **Check cache** | SHA-256 hash check — skip re-conversion if markdown already cached |
 | **Convert** | `convert.py` runs marker and writes `markdown.md` to a content-hash cache |
 | **Collision** | If `_text.md` already exists, ask: overwrite or save as `_text2.md`? |
@@ -82,7 +82,15 @@ The conversion backend is **marker** (`marker-pdf`). Selected after a head-to-he
 
 Backend selection is fixed in `convert.py`. There is no runtime override — if the bake-off needs to be redone for a future backend candidate, edit the `BACKEND` constant in `convert.py` explicitly so the cache namespace and venv are regenerated cleanly.
 
-`install.py` installs the current PyPI `marker-pdf` release only when the marker venv is first created. If marker already imports cleanly, setup exits without checking PyPI or upgrading. This keeps cached conversions stable; the conversion cache is keyed by backend name and PDF hash, not by marker package version.
+`install.py` installs the current PyPI `marker-pdf` release only when the marker venv is first created. If marker already imports cleanly, setup reuses it and performs at most one lightweight PyPI check every 30 days. It warns only when PyPI has crossed a marker major-version boundary, and it never auto-upgrades.
+
+If the user opts into a major upgrade, run:
+
+```bash
+python3 ~/.claude/skills/read-pdf/install.py --upgrade-marker
+```
+
+Existing cached conversions remain in place. To force fresh conversions after upgrading, delete selected cache entries under `~/.cache/claude-pdf-converter/cache/marker/`, or delete that whole directory. Rebuilding a large cache can be very time-consuming.
 
 ### Born-digital PDFs and OCR
 
@@ -100,7 +108,7 @@ Cache entries are not auto-evicted. To force a re-conversion:
 ```bash
 rm -rf ~/.cache/claude-pdf-converter/cache/marker/<hash>/
 ```
-To wipe the entire cache (e.g., after a backend upgrade):
+To wipe the entire cache (e.g., after a marker upgrade, if you explicitly want all conversions rerun):
 ```bash
 rm -rf ~/.cache/claude-pdf-converter/cache/
 ```
