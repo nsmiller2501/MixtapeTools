@@ -1,6 +1,6 @@
 ---
 name: blindspot
-description: Peripheral vision audit for empirical output. Finds what the author cannot see — problems hiding in plain sight (vices) and opportunities being overlooked (virtues). Inspired by Viktor Shklovsky's defamiliarization and conversations with Jason Fletcher. Use when output exists and interpretation is about to happen.
+description: Peripheral vision audit for empirical output. Finds what the author cannot see — problems hiding in plain sight (vices) and opportunities being overlooked (virtues). Use when a figure, table, or results file exists and interpretation is about to happen — before drawing conclusions or writing them up.
 allowed-tools: Read, Write, Bash(ls*), Bash(cat*), Bash(mkdir:*), Glob, Grep
 argument-hint: '[path-to-figure, table, or results file] [brief description of what you think the main finding is]'
 ---

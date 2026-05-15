@@ -1,6 +1,6 @@
 ---
 name: read-pdf
-description: Download or use a local academic PDF, convert to clean markdown locally (python:marker, layout-aware), then extract structured reading notes into `_text.md`. Same output contract as /split-pdf — bibliographic metadata block + 8-dimension research notes — but uses local conversion instead of Claude vision-reading PDF images. Preserves equation fidelity, table structure, and figure references. Use when you want higher-fidelity math/table extraction, or when you already have a local file.
+description: Downloads or uses a local academic PDF, converts to clean markdown via a local layout-aware converter, then extracts structured reading notes into `_text.md`. Same output contract as `/split-pdf` but preserves equation fidelity, table structure, and figure references machine-readably. Use when the paper contains tables, equations, or figures that need to be captured (not just described); when batch-processing multiple papers and avoiding repeated vision-read token cost; or when the PDF is already saved locally. Prefer this over `/split-pdf` whenever layout fidelity matters.
 allowed-tools: Bash(python3:*), Bash(curl:*), Bash(wget:*), Bash(mkdir:*), Read, Write, WebSearch, WebFetch, Agent
 argument-hint: [pdf-path-or-search-query]
 ---

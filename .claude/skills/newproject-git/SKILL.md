@@ -1,6 +1,6 @@
 ---
 name: newproject-git
-description: Initialize git versioning for a new research project. Handles git init, Dropbox exclusion, .gitignore creation, and the initial legacy-import commit.
+description: Initializes git versioning for a new research project. Handles `git init`, Dropbox sync exclusion, `.gitignore` creation, and the initial legacy-import commit. Use when starting version control on a freshly scaffolded project or on an existing project that has no `.git` directory yet.
 allowed-tools: Bash(git*), Bash(xattr*), Bash(ls*), Read, Write, Edit
 argument-hint: ''
 ---

@@ -1,14 +1,6 @@
 ---
 name: beautiful_deck
-description: >-
-  End-to-end beautiful Beamer deck creation. Designs an original Beamer theme
-  tailored to a specific audience, restructures existing content via the
-  Rhetoric of Decks (ethos / pathos / logos), generates figures and tables from
-  R/Python/Stata code first, embeds code blocks in the deck, produces standalone
-  walkthrough scripts, compiles to zero warnings, runs /tikz for visual
-  collision cleanup, and dispatches a graphics-only audit agent for label and
-  coordinate checks. Use when creating a presentation from scratch or
-  restructuring existing content into a new beautiful deck.
+description: End-to-end creation of beautiful Beamer decks. Designs an original theme for a specific audience, restructures content via the Rhetoric of Decks (ethos / pathos / logos), generates figures and tables from R/Python/Stata code first, embeds code in slides, produces standalone walkthrough scripts, compiles to zero warnings, runs `/tikz` for collision cleanup, and dispatches a graphics-only audit agent. Use when asked to build a Beamer presentation, design a custom slide theme, or convert lecture notes or paper drafts into a polished talk.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task
 argument-hint: "[audience] [content-path-or-description]"
 ---

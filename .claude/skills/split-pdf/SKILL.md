@@ -1,6 +1,6 @@
 ---
 name: split-pdf
-description: Download, split, and deeply read academic PDFs. Use when asked to read, review, or summarize an academic paper. Splits PDFs into 4-page chunks, reads them in small batches, and produces structured reading notes — avoiding context window crashes and shallow comprehension.
+description: Downloads, splits, and deeply reads academic PDFs by splitting into 4-page chunks and reading them in small batches — avoiding context-window crashes and shallow comprehension. Use when asked to read, review, or summarize an academic paper without specialized layout needs. Prefer `/read-pdf` instead when the paper contains tables, equations, or figures that need machine-readable capture rather than vision-read description.
 allowed-tools: Bash(python*), Bash(pip*), Bash(curl*), Bash(wget*), Bash(mkdir*), Bash(ls*), Read, Write, Edit, WebSearch, WebFetch, Agent
 argument-hint: [pdf-path-or-search-query]
 ---

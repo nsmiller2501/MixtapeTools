@@ -1,6 +1,6 @@
 ---
 name: session
-description: Session lifecycle management for research and coding projects. `start`: activates terse mode and reads the latest progress log and key files to orient for the session. `end`: writes a dated progress log and updates agent_memory/ files. Use when user says /session start or /session end.
+description: Manages start-of-session and end-of-session lifecycle for research and coding projects. On `start`, activates terse mode and orients by reading the latest progress log and key files; on `end`, writes a dated progress log and updates `agent_memory/` files. Use when the user says `/session start`, `/session end`, "start a session", "wrap up the session", or similar — pass `start` or `end` as the sub-command.
 ---
 
 ## Args

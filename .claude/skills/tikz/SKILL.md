@@ -1,6 +1,6 @@
 ---
 name: tikz
-description: Audit and fix residual TikZ visual collisions in any .tex file. A downstream repair tool — not a safety net. The upstream defense is /beautiful_deck Step 4.4, which writes safe TikZ from the start. Use /tikz when labels overlap arrows, text sits on boxes, or arrows cross each other. Applies mathematical gap calculations and Bézier depth formulas — no eyeballing.
+description: Audits and fixes residual TikZ visual collisions in any `.tex` file using mathematical gap calculations and Bézier depth formulas — no eyeballing. A downstream repair tool; the upstream defense (writing safe TikZ from the start) lives in `/beautiful_deck`. Use when labels overlap arrows, text sits on boxes, arrows cross each other, or a `.tex` file needs a visual-collision pass before compile.
 allowed-tools: Bash(pdflatex*), Bash(grep*), Bash(ls*), Read, Edit, Glob
 argument-hint: [path/to/file.tex]
 ---

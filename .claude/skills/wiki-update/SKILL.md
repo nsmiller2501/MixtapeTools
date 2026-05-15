@@ -1,16 +1,6 @@
 ---
 name: wiki-update
-description: >-
-  Ingest new PDFs from a project's references/raw/ folder into the project's wiki,
-  following the project's wiki conventions and filtering for relevance to the
-  project's research focus. Auto-detects the best ingest path: converted markdown
-  (via read-pdf's converter, if installed) for high-fidelity tables, figures, and
-  equations; cached structured extract (_text.md) if available; or full split-PDF
-  pipeline as fallback. Creates `references/raw/`, `references/wiki/`, and
-  `references/CLAUDE.md` on first invocation if absent. Calls `/bib-update`
-  automatically at the end to refresh `references/references.bib`. Use when the
-  user adds new papers to references/raw/ and asks to update the wiki, or says
-  "ingest new references", "update the wiki", or similar.
+description: Ingests new PDFs from a project's `references/raw/` folder into the project's wiki, summarizing each through the lens of the project's research focus and auto-detecting the best conversion path (marker → cached `_text.md` → split-pdf fallback). Scaffolds `references/raw/`, `references/wiki/`, and `references/CLAUDE.md` on first run, and calls `/bib-update` at the end to refresh `references/references.bib`. Use when the user adds new PDFs to `references/raw/` and says "ingest new references", "update the wiki", or similar.
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash(ls*), Bash(pdftotext:*), Bash(python3:*), Bash(mv:*), Bash(cp:*), Bash(mkdir:*), Bash(touch:*), Agent
 argument-hint: [optional focus or theme for this batch]
 ---
