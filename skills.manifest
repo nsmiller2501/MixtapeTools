@@ -36,8 +36,19 @@ wiki-update-core       local   upstream  main  .claude/skills/wiki-update
 wiki-update-readme     local   upstream  main  skills/wiki-update
 
 # --- local-only skills (not present upstream; source/ref are placeholders) ---
-grill-me-core          local   upstream  main  .claude/skills/grill-me
 newproject-git-core    local   upstream  main  .claude/skills/newproject-git
+
+# --- skills cherry-picked from mattpocock/skills (one-time copy; paths differ so track is not viable) ---
+# origin: mattpocock main skills/productivity/grill-me  (identical to local at time of cherry-pick 2026-05-15)
+grill-me-core          local   mattpocock  main  .claude/skills/grill-me
+# origin: mattpocock main skills/productivity/caveman
+caveman-core           local   mattpocock  main  .claude/skills/caveman
+# origin: mattpocock main skills/productivity/handoff
+handoff-core           local   mattpocock  main  .claude/skills/handoff
+# origin: mattpocock main skills/productivity/write-a-skill
+write-a-skill-core     local   mattpocock  main  .claude/skills/write-a-skill
+# origin: mattpocock main skills/engineering/grill-with-docs
+grill-with-docs-core   local   mattpocock  main  .claude/skills/grill-with-docs
 
 # --- skills tracked from upstream (scunning1975/MixtapeTools) ---
 bibcheck-core          track   upstream  main  .claude/skills/bibcheck
@@ -49,6 +60,7 @@ compiledeck-readme     ignore  upstream  main  skills/compiledeck           # de
 newbook-core           ignore  upstream  main  .claude/skills/newbook       # not needed
 newbook-readme         ignore  upstream  main  skills/newbook
 
-# --- examples for cherry-picking from other repos (add the remote first) ---
-# git remote add mattpocock https://github.com/mattpocock/skills.git
-# some-skill           track   mattpocock  main  .claude/skills/some-skill
+# --- notes on cherry-picking from mattpocock ---
+# Remote added: git remote add mattpocock https://github.com/mattpocock/skills.git
+# mattpocock uses skills/<category>/<name>/ paths, not .claude/skills/<name>/, so `track` mode
+# cannot mirror them automatically. Cherry-picks are one-time manual copies (mode=local).
