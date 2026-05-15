@@ -33,7 +33,7 @@ Convert the PDF to markdown with python:marker (layout-aware, GPU-accelerated), 
 | Step | Action |
 |------|--------|
 | **Acquire** | Download the PDF (via web search) or use a local file in place |
-| **Install** | `install.py` sets up the marker venv on first run (~500 MB, one-time) |
+| **Install** | `install.py` sets up the marker venv on first run (~500 MB, one-time), then reuses it without checking for updates |
 | **Check cache** | SHA-256 hash check — skip re-conversion if markdown already cached |
 | **Convert** | `convert.py` runs marker and writes `markdown.md` to a content-hash cache |
 | **Collision** | If `_text.md` already exists, ask: overwrite or save as `_text2.md`? |
@@ -81,6 +81,8 @@ venue_type: journal | working_paper | book_chapter | other
 The conversion backend is **marker** (`marker-pdf`). Selected after a head-to-head bake-off against docling on a representative set of empirical-economics PDFs; marker won on equation fidelity, table structure, and figure extraction quality.
 
 Backend selection is fixed in `convert.py`. There is no runtime override — if the bake-off needs to be redone for a future backend candidate, edit the `BACKEND` constant in `convert.py` explicitly so the cache namespace and venv are regenerated cleanly.
+
+`install.py` installs the current PyPI `marker-pdf` release only when the marker venv is first created. If marker already imports cleanly, setup exits without checking PyPI or upgrading. This keeps cached conversions stable; the conversion cache is keyed by backend name and PDF hash, not by marker package version.
 
 ### Born-digital PDFs and OCR
 

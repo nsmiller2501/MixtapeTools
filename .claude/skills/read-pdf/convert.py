@@ -18,6 +18,7 @@ Cache layout:
 """
 
 import hashlib
+import importlib.metadata
 import json
 import os
 import re
@@ -199,6 +200,8 @@ def convert_with_marker(pdf_path: Path, out_dir: Path) -> dict:
 
     return {
         "backend": "marker",
+        "backend_package": "marker-pdf",
+        "backend_package_version": importlib.metadata.version("marker-pdf"),
         "page_count": None,
         "figure_count": fig_count,
         "text_layer_chars_sample": text_chars,

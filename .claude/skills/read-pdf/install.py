@@ -3,8 +3,9 @@
 read-pdf installer — sets up the local PDF→markdown converter (marker backend).
 
 Idempotent. First run creates a venv at ~/.cache/claude-pdf-converter/venv-marker/,
-installs marker-pdf, and warms up model downloads. Subsequent runs short-circuit
-if marker imports cleanly under the venv.
+installs marker-pdf, and warms up model downloads. Subsequent runs reuse the
+existing install if marker imports cleanly. They do not check PyPI or
+auto-upgrade marker.
 
 The venv lives outside any git repo so that backend models (~hundreds of MB)
 do not pollute the skills checkout.
@@ -21,7 +22,7 @@ import sys
 from pathlib import Path
 
 BACKEND = "marker"
-PINS = ["marker-pdf"]  # latest; pin a version after a regression is observed
+PINS = ["marker-pdf"]  # unpinned first install; no automatic upgrades after setup
 
 PY_MIN = (3, 10)
 
@@ -149,6 +150,11 @@ def warmup_models() -> None:
 
 def main() -> int:
     if backend_imports():
+        print(
+            "read-pdf setup already present. Reusing existing marker install "
+            "(no update check).",
+            flush=True,
+        )
         return 0
     if not venv_exists():
         create_venv()
