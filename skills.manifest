@@ -37,6 +37,7 @@ wiki-update-readme     local   upstream  main  skills/wiki-update
 
 # --- local-only skills (not present upstream; source/ref are placeholders) ---
 newproject-git-core    local   upstream  main  .claude/skills/newproject-git
+session-core           local   upstream  main  .claude/skills/session
 
 # --- skills cherry-picked from mattpocock/skills (one-time copy; paths differ so track is not viable) ---
 # origin: mattpocock main skills/productivity/grill-me  (identical to local at time of cherry-pick 2026-05-15)
