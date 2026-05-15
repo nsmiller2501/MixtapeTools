@@ -12,7 +12,7 @@ description: Manages start-of-session and end-of-session lifecycle for research 
 ## start
 
 1. Switch to caveman mode: drop articles, filler, pleasantries. Terse fragments OK. Technical terms stay exact.
-2. Find most recent file in `progress_logs/` (sort by filename date descending).
+2. Run `~/.claude/skills/session/scripts/latest_progress_log.sh` to find the most recent file in `progress_logs/`.
 3. Read it. Then read every file (at the line ranges) listed under `## Key Files` in that log.
 4. Report in 3–5 bullets: current state, blockers, next priorities.
 

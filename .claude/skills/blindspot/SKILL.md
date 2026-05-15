@@ -1,7 +1,7 @@
 ---
 name: blindspot
 description: Peripheral vision audit for empirical output. Finds what the author cannot see — problems hiding in plain sight (vices) and opportunities being overlooked (virtues). Use when a figure, table, or results file exists and interpretation is about to happen — before drawing conclusions or writing them up.
-allowed-tools: Read, Write, Bash(ls*), Bash(cat*), Bash(mkdir:*), Glob, Grep
+allowed-tools: Read, Write, Bash(ls*), Bash(cat*), Bash(mkdir:*), Bash(~/.claude/skills/blindspot/scripts/init_report.sh:*), Glob, Grep
 argument-hint: '[path-to-figure, table, or results file] [brief description of what you think the main finding is]'
 ---
 
@@ -152,7 +152,7 @@ Natural variation they haven't leveraged. A falsification test that would demoli
 
 ## The Report
 
-After working through all four quadrants, produce a Blindspot Report. **Write the report to `correspondence/blindspot/YYYY-MM-DD_<output-slug>.md`** in the project root, where `<output-slug>` is a short kebab-case description of the audited output (e.g., `event-study-fig`, `table-3`). If `correspondence/blindspot/` does not exist yet, create it lazily: `mkdir -p correspondence/blindspot`. Also surface the report inline in the chat so the user can react in real time.
+After working through all four quadrants, produce a Blindspot Report. Run `~/.claude/skills/blindspot/scripts/init_report.sh "<output slug>"` from the project root to create the dated report file, then write the report to the path it prints. Use a short description of the audited output for `<output slug>` (e.g., `event-study-fig`, `table-3`). Also surface the report inline in the chat so the user can react in real time.
 
 Report template:
 
