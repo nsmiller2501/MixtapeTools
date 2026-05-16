@@ -296,7 +296,25 @@ The fundamental problem: Claude cannot eyeball where a curve passes. The formula
 
 A curved return arrow bending downward WILL cross any vertical arrow in the middle of the diagram. Fix: route the return arrow above (`bend right` instead of `bend left` when going right-to-left).
 
-### Rule 9: Full-Deck Re-Audit
+### Rule 9: Beamer parameterized styles must live in the preamble
+
+**Problem this solves**: In Beamer, `#` inside a frame body is consumed by the frame's argument parser before TikZ sees it. Defining a parameterized `\tikzset{... #1 ...}` style inside a `\begin{frame}` body causes "Illegal parameter number" errors that cascade through the entire compile and resist all downstream fixes (`##1`, `[fragile]`, `\catcode` hacks — none work reliably).
+
+**The rule**: Define ALL parameterized `\tikzset{}` styles in the preamble, before `\begin{document}`. Inside frames, USE the styles but never DEFINE them with `#1`.
+
+```latex
+% In the preamble:
+\tikzset{
+  mybox/.style={rectangle, draw=charcoal, thick, fill=lightbg,
+                minimum width=3.5cm, minimum height=1cm,
+                align=center, font=\small},
+  myarrow/.style={->, thick, #1},
+}
+```
+
+This is not optional — it is a hard constraint of the Beamer/TikZ interaction. Applies to `/beautiful_deck` (where TikZ is generated inside Beamer frames) and to any other deck workflow.
+
+### Rule 10: Full-Deck Re-Audit
 
 After ANY TikZ fix, re-audit EVERY TikZ figure in the deck. The same error pattern repeats across slides because the same code structure was reused. `grep -n "bend"` finds all curves. Check each one. This takes 2 minutes. Skipping it costs the user's trust.
 
@@ -348,3 +366,17 @@ def bezier_y_at_t(t, y1, cy, y2):
 ```
 
 **When to use:** Every time a matplotlib figure has `connectionstyle='arc3'` AND labels near those arrows. For straight arrows (`rad=0`), the curve position is just linear interpolation — but still compute it, don't guess.
+
+---
+
+## Known Limitations
+
+Cases where audit-time repair is least reliable. The better fix is almost always upstream (rewrite safely using Rules 1–10) rather than downstream.
+
+| Limitation | Why it's hard | Upstream fix |
+|---|---|---|
+| **Autosized nodes** (no `minimum width`/`minimum height`) | Rendered dimensions depend on text + font — audit can only estimate | Add explicit dimensions (Rule 1) |
+| **`scale` on complex diagrams** | Coordinates shrink but text does not; gap-calc compensation is fragile | Redesign at intended size (Rule 5) |
+| **Math-mode label widths** | `$\hat{\beta}_{it}$` is wider than character-count × width/char suggests | Overestimate by 20–30% or measure with a test compile |
+| **Nested `tikzpicture` environments** | Coordinate systems interact unpredictably | Flatten into a single environment |
+| **`\foreach` loops generating many nodes** | Per-iteration gap checks; easy to miss one | Write explicit nodes for small counts; check loop bounds for large counts |
