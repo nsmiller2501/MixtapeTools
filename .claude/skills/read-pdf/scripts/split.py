@@ -7,7 +7,7 @@ import argparse
 import math
 from pathlib import Path
 
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 
 
 def default_split_dir(pdf_path: Path) -> Path:

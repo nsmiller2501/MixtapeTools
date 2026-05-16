@@ -31,7 +31,7 @@ The user wants to read, review, or summarize an academic paper. The input is eit
 - **Python ≥ 3.10** must be available. `install.py` refuses to proceed on Python 3.9 or older. If needed: `brew install python@3.12`, `apt install python3.11`, or python.org installer.
 - **Optional GPU acceleration** is auto-detected: NVIDIA CUDA → CPU. (MPS on Apple Silicon is excluded — surya's layout model crashes on MPS at runtime.)
 
-These prerequisites apply only to default marker mode. `--split` mode requires PyPDF2 for `scripts/split.py`; if missing, install it with `python3 -m pip install PyPDF2`.
+These prerequisites apply only to default marker mode. `--split` mode requires pypdf for `scripts/split.py`; if missing, install it with `python3 -m pip install pypdf`.
 
 ## Step 1: Acquire the PDF
 
@@ -168,5 +168,5 @@ When `/read-pdf` is invoked by another skill or workflow, the heavy reading step
 - `isolation_split.md` — split-mode isolation pattern
 - `install.py` — idempotent marker venv installer with monthly advisory check
 - `convert.py` — PDF → markdown converter (writes to SHA-256-keyed cache)
-- `scripts/split.py` — PyPDF2 4-page splitter used by `--split` mode and downstream fallbacks
+- `scripts/split.py` — pypdf 4-page splitter used by `--split` mode and downstream fallbacks
 - `README.md` — backend details, cache management, GPU notes
