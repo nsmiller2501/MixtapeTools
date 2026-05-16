@@ -61,59 +61,12 @@ The timestamped folder means re-runs do not clobber prior audits.
 
 For `.tex` input, first resolve the linked `.bib` or extract `\bibitem{}` blocks into `input.bib`, then use the same run directory shape.
 
-## Step 3a: Per-citation mode
+## Step 3: Run the selected mode
 
-1. **Launch agents in waves of `--max-parallel`.** For each `entries/*.bib` file, dispatch one Agent subagent (subagent_type: general-purpose) with this brief:
+Read the mode-specific protocol file and follow it end-to-end. Only one of these fires per invocation:
 
-   ```
-   You are auditing one bibliography entry. The entry is:
-
-   <paste the .bib block>
-
-   Your job:
-   1. Identify the cited paper. Use WebSearch (and WebFetch if needed) to find it.
-   2. Locate a canonical anchor: DOI, journal landing page URL, or author working-paper URL.
-   3. Cross-check every field in the .bib block against the canonical source:
-      - title, authors, year, journal/booktitle, volume, number, pages, publisher, DOI
-   4. Specifically test for "field mixing" — e.g., the title belongs to one paper but the authors or year belong to another. This is the most common silent error in inherited .bib files.
-   5. Output JSON to <reports/<key>.json> with:
-      - status: "clean" | "corrected" | "unverifiable"
-      - one_sentence: plain-language description of the paper (one sentence)
-      - canonical_url: DOI or URL
-      - issues: list of {field, original, corrected, reason}
-      - corrected_bib: the corrected entry (or the original if status=clean)
-
-   You do NOT modify the input file. You only write the report and the corrected entry.
-   ```
-
-2. **Final reviewer pass.** When all entries are done, dispatch a single reviewer agent that:
-   - Reads every `reports/*.json`.
-   - Spot-checks any entry marked "unverifiable" (does a quick second WebSearch).
-   - Adjudicates conflicts where a corrected field looks suspicious.
-   - Writes `bibcheck_report.md` with a summary table (Clean / Corrected / Unverifiable counts) and per-entry detail.
-   - Concatenates the corrected_bib fields into `corrected.bib`.
-
-## Step 3b: Per-field mode
-
-The point of this mode is **isolation**: each specialist agent should not see what the others are concluding. We achieve that by launching each specialist as a separate `claude -p` subprocess. Each subprocess is a fresh CLI session.
-
-For each field in the list `[title, year, journal, authors, volume_issue, pages, doi]`:
-
-1. Build a prompt for the specialist that contains:
-   - The full input.bib content
-   - The field name
-   - Instructions: "For each entry in this .bib, check ONLY the {field}. Compare against the canonical paper found via WebSearch. Output JSON to stdout: a list of {key, status, original, corrected, reason}."
-
-2. Launch the specialist via Bash:
-   ```bash
-   claude --dangerously-skip-permissions -p "<the specialist prompt>" > reports/field_<field>.json 2>reports/field_<field>.log
-   ```
-
-3. Run subprocesses in parallel up to `--max-parallel`. Wait for all to complete.
-
-4. **Final reviewer pass.** A consolidator agent reads all `field_*.json`, joins by entry key, and produces:
-   - `bibcheck_report.md` — disagreements across specialists are flagged (e.g., title-specialist says X, year-specialist disagrees about which paper is being cited)
-   - `corrected.bib` — applies a field-level fix only if the relevant specialist flagged it AND the cross-field consensus supports the fix
+- **Per-citation mode** (`--by-citation`, default): see `mode_per_citation.md`. One Agent subagent per `.bib` entry; each fully audits its single entry; final reviewer consolidates.
+- **Per-field mode** (`--by-field`): see `mode_per_field.md`. One isolated `claude -p` subprocess per field; each specialist checks only its field across the whole bibliography; consolidator joins by entry key.
 
 ## Step 4: Present the result to the user
 
