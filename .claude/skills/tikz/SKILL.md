@@ -70,23 +70,9 @@ Use the candidate sections from `audit_passes.sh` as the starting index for Pass
 
 ---
 
-## Step 4: Pass 6 — Debug bounding-box verification (skill-specific)
+## Step 4: Pass 6 — Debug bounding-box verification (skill-specific, on demand)
 
-This pass is unique to `/tikz` (it does not appear in `tikz_rules.md` because it's an audit step, not a generation rule).
-
-**Do NOT attempt to visually inspect the PDF by "eyeballing."** Claude cannot reliably see TikZ collisions in rendered PDFs. Instead:
-
-1. **Temporarily add red debug outlines** around every node:
-   ```latex
-   % DEBUG — add to preamble temporarily, remove before shipping
-   \tikzset{every node/.append style={draw=red, very thin}}
-   ```
-
-2. **Compile and inspect**: overlapping bounding boxes are now visible as overlapping red rectangles. Collisions become structurally obvious rather than visually estimated.
-
-3. **For each red-box overlap**: go back to the source, fix coordinates or dimensions, recompile.
-
-4. **Remove the debug line** before declaring the audit complete.
+When Passes 1–5 flagged collisions but the source-level fix isn't obvious from coordinate math, read `~/.claude/skills/tikz/debug_bounding_box.md` and apply the red-outline pass to force the bounding boxes into view. Last-resort localization tool; do not run by default.
 
 ---
 
@@ -112,12 +98,4 @@ Use the TikZ picture count from `audit_passes.sh` to confirm how many diagrams n
 
 ## Known limitations
 
-These are the cases where `/tikz` is least reliable. The better fix is almost always upstream (rewrite the TikZ safely) rather than downstream (try to repair it).
-
-| Limitation | Why it's hard | Upstream fix |
-|---|---|---|
-| **Autosized nodes** (no `minimum width`/`minimum height`) | Rendered dimensions depend on text + font — `/tikz` can only estimate | Add explicit dimensions (`tikz_rules.md` Rule 1) |
-| **`scale` on complex diagrams** | Coordinates shrink but text does not; gap calc compensation is fragile | Redesign at intended size (`tikz_rules.md` Rule 5) |
-| **Math-mode label widths** | `$\hat{\beta}_{it}$` is wider than character-count × width/char suggests | Overestimate by 20–30% or measure with a test compile |
-| **Nested `tikzpicture` environments** | Coordinate systems interact unpredictably | Flatten into a single environment |
-| **`\foreach` loops generating many nodes** | Per-iteration gap checks; easy to miss one | Write explicit nodes for small counts; check loop bounds for large counts |
+See `~/.claude/skills/tikz/tikz_rules.md` § Known Limitations. The summary: autosized nodes, `scale` on complex diagrams, math-mode label widths, nested `tikzpicture` environments, and `\foreach` loops are the cases where `/tikz` is least reliable. The better fix is almost always upstream (rewrite the TikZ safely per `tikz_rules.md`) rather than downstream repair.
