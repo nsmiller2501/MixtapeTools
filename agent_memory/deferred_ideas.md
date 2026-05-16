@@ -4,3 +4,4 @@ Ideas intentionally postponed, rejected, or left for a later usage window. Use t
 
 - **Remove `/split-pdf` wrapper** (defer after 2026-05-16): Keep wrapper for now to preserve slash-command muscle memory. Revisit after enough usage to know whether callers have moved to `/read-pdf --split`.
 - **Split `/referee2` into sibling skills** (open as of 2026-05-16): Compare one router skill against `referee2-deck` / `referee2-code` sibling skills sharing common persona resources.
+- **Refine `newproject` agent-memory taxonomy** (revisit after 2026-07-16): Decide whether `agent_memory/key_decisions.md` should remain a broad catch-all for all durable decisions, or split into narrower files such as methodology decisions, project conventions, workflow decisions, and naming/scope decisions. Wait until several projects have accumulated real entries, then inspect whether natural boundary definitions are obvious.
