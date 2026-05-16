@@ -78,21 +78,9 @@ R (ggplot2 + xtable/kable), Python (matplotlib/seaborn + pandas to LaTeX), or St
 
 ### Q5: Output format — Beamer (default) or something else?
 
-**The default is always Beamer.** Do not switch formats unless the user explicitly asks. This is an opinionated choice: Beamer gives the richest control over typography, TikZ, math typesetting, and precise layout — and it compiles to a single PDF that projects reliably anywhere.
+**The default is always Beamer.** Do not switch formats unless the user explicitly asks. Beamer gives the richest control over typography, TikZ, math typesetting, and precise layout — and it compiles to a single PDF that projects reliably anywhere.
 
-The user may request an alternative markdown-based presentation system. Accept these on explicit request:
-
-- **Quarto (`.qmd` → HTML / reveal.js or PDF / Beamer)** — accepted if the user says "Quarto" or "reveal.js". Produces HTML slides with live code execution, good for live coding demos.
-- **R Markdown (`.Rmd` → xaringan or ioslides)** — accepted if the user specifies. Mostly superseded by Quarto.
-- **Typst** — accepted if the user specifies. Newer, faster compiles, less mature ecosystem.
-- **Raw HTML / reveal.js** — accepted if the user specifies. Full web control, needs a browser to present.
-- **Pure markdown → Marp** — accepted if the user specifies. Lightweight, limited typographic control.
-
-Whichever format is chosen, the Three Laws and the Aristotelian balance are unchanged. The format is the medium; the rhetoric is the substance. Everything in the rest of this skill applies — one idea per slide, assertion titles, MB/MC equivalence, code-first figure generation, the rhetoric and graphics audits. Only the specific compile commands and preamble syntax change.
-
-For alternative formats, you still produce the same outline (Step 2), the same code-first scripts (Step 3), the same rhetoric audit (Step 7), and the same graphics audit (Step 8). The preamble becomes a Quarto YAML header, a Typst style block, or a reveal.js CSS file instead of a Beamer `.sty`, but the design principles below still apply.
-
-**Ask the user once at the start: "Beamer (default) or another format?" If they don't answer or answer unclearly, use Beamer.**
+**Ask the user once at the start: "Beamer (default) or another format?" If they don't answer or answer unclearly, use Beamer.** If they pick a non-Beamer format (Quarto, Typst, reveal.js, Marp, R Markdown), read `~/.claude/skills/beautiful_deck/alternative_formats.md` for the accepted list and the format-specific adjustments. Everything else in this skill still applies — the rhetorical principles do not change with the format.
 
 ### Q6: What is the ONE sentence the audience should remember?
 This goes on the closing slide and frames the entire narrative arc. If the user can't state it in one sentence, help them find it before you write any slides.
@@ -114,57 +102,13 @@ Under no circumstances ship boilerplate. The effectiveness of the deck comes fro
 
 The goal is: something truly effective for *this* audience, *this* content, and the rhetorical balance you committed to in Q2. If the audience is undergraduate data science, the aesthetic should feel different from a PhD causal inference seminar. If the audience is a policy audience, it should feel different from a conference theory talk. The palette, the typography, the frame-title treatment, the section dividers — every element should be chosen deliberately.
 
-### How to approach it
+### Pick your path
 
-**If Path A (Scott's house style):** Copy the Warm Professional preamble from `~/.claude/skills/beautiful_deck/preamble_warm_professional.tex` — this IS Scott's house style and is not boilerplate for outward-facing academic work. Proceed to Step 2. Do not use this file as inspiration for Path B unless the user explicitly asks for a deck in that house style.
+**Path A (Scott's house style).** Copy the Warm Professional preamble from `~/.claude/skills/beautiful_deck/preamble_warm_professional.tex` — this IS Scott's house style for outward-facing academic work, not boilerplate. Proceed to Step 2.
 
-**If Path B (original design — the default when Scott says "design for me an original Beamer style"):** You are designing an original aesthetic. Follow this process:
+**Path B (original design — the default when Scott says "design for me an original Beamer style").** You are designing an original aesthetic: palette, frame-title style, bullets, section dividers, typography, and the preamble itself. **Read `~/.claude/skills/beautiful_deck/theme_path_b.md`** for the full sub-steps 1.1–1.6 (palette construction, frame-title options, typography rules, etc.). Then proceed to Step 2.
 
-Before implementing either path, read `~/.claude/skills/beautiful_deck/style_preferences.md`. Treat it as user-specific stylistic guidance only: it should shape persistent visual preferences such as slide-header treatments, but it does not override audience fit, content needs, or the rhetorical principles in `rhetoric_of_decks.md`.
-
-### 1.1 Palette construction
-
-Pick a core accent (one color, not an ensemble). This is the emotional anchor of the deck. The examples below illustrate audience-to-color reasoning; they are not a house palette to reuse by default.
-
-| Audience | Core accent | Why |
-|---|---|---|
-| Undergraduate data science | Teal #048A81 | Fresh, energetic, reads as "modern" without being juvenile |
-| PhD causal inference seminar | DeepNavy #2E4057 | Serious, anchored, matches the rhetorical weight of identification |
-| Policy / applied work | WarmOrange #E85D04 | Human warmth, urgency, signals "this matters" |
-| Conference theory talk | SoftPurple #9D4EDD | Distinctive, academic, unusual enough to be remembered |
-
-Around the core, build a 10-color palette: 1 core accent, 1 secondary accent (analogous or complementary), 2 neutrals for text (one dark, one warm gray), 2 background neutrals (cream + white), 1 alert color (usually a deep red), 1 success / positive color (usually forest green or teal), 2 tertiary colors for charts. Define them all in `\definecolor{}` at the top of the preamble.
-
-Use https://www.viget.com/articles/color-contrast/ as a WCAG-AA reference — all body text must have contrast ratio ≥ 4.5:1 against background.
-
-### 1.2 Frame-title style
-
-Pick ONE visual treatment for frame titles. Options that read well:
-- **Left rule:** a thin colored vertical bar to the left of the title (2mm wide, core accent color)
-- **Underline:** a 1pt horizontal rule below the title in core accent
-- **Background tint:** a very light tint of the core accent behind the title area
-- **Simple bold:** no decoration, just bold dark text with generous white space
-
-Do NOT combine multiple. Pick one and use it consistently.
-
-### 1.3 Bullet style
-
-If bullets appear at all, use a single `\tikz\fill` circle in the core accent, sized to match the text baseline. Subitems get a smaller circle in the secondary accent. No standard Beamer triangles, no arrows, no squares.
-
-### 1.4 Section dividers
-
-Full-bleed dark background (core accent or a dark neutral), white text, one large label centered. Use `\transitionslide{Title}{Subtitle}` pattern defined in `preamble_warm_professional.tex`. This creates the "deck breathes" rhythm — a moment of rest between sections.
-
-### 1.5 Typography
-
-- `\usefonttheme{professionalfonts}` — required.
-- Body text: 24pt minimum. Title: `\huge`. Frame title: `\Large\bfseries`. Footnote floor: 18pt.
-- Sans-serif. If you want a custom font, use one already installed: `lmodern` (default), `roboto`, `fira`, or `utopia`. Do NOT require the user to install fonts.
-- Never justify text. Always ragged right (`\RaggedRight`).
-
-### 1.6 Write the preamble
-
-Output the full preamble to `<deck_name>.tex`. Include every package needed, every color, every beamer color assignment, every font setup, and the `\transitionslide` macro. The preamble is boring but load-bearing — get it right on the first pass so you don't have to revisit.
+Before either path, read `~/.claude/skills/beautiful_deck/style_preferences.md` for user-specific stylistic guidance (persistent visual preferences such as slide-header treatments). It does not override audience fit, content needs, or the rhetorical principles in `rhetoric_of_decks.md`.
 
 ---
 
@@ -386,46 +330,18 @@ After drafting the full deck, walk through it and rate each slide's MB (marginal
 
 ### 4.4 TikZ Generation Defaults — Write Safe TikZ From the Start
 
-These rules exist because `/tikz` (Step 6) is a repair tool, not a safety net. It can catch remaining collisions, but it cannot reliably fix diagrams that were never built with measurement in mind. Safe generation is the defense; `/tikz` is the check.
+Safe generation is the defense; `/tikz` (Step 6) is the check, not a safety net. Before writing any TikZ in the deck, **read `~/.claude/skills/tikz/tikz_rules.md`** — it is the single source of truth shared with `/tikz`. Rules 1–10 apply at generation time, not just at audit time.
 
-**Rule 1 — Always set explicit node dimensions.** Every `\node` must declare `minimum width` and `minimum height`. Never let TikZ autosize a box. Autosized boxes make arrow endpoints unpredictable and cause downstream collisions that `/tikz` cannot reliably repair. Example: `\node[draw, minimum width=3cm, minimum height=1cm] (A) {Label};`
+The non-negotiables at a glance (full text and examples in `tikz_rules.md`):
 
-**Rule 2 — Every edge label must carry a directional keyword.** Any `node[...]` placed on an arrow without `above`, `below`, `left`, `right`, `sloped`, `anchor=`, `pos=`, or `midway` will render ON the arrow line. This is never what you want. No exceptions.
+1. Explicit `minimum width` / `minimum height` on every `\node` (never autosize).
+2. Directional keyword (`above`, `below`, `left`, `right`, `sloped`, `pos=`, `midway`) on every edge label; standalone label nodes for adjacent-box arrows.
+3. Coordinate-map comment block before every `tikzpicture`.
+4. Canonical templates for DAGs, flow charts, RDD diagrams (`tikz_rules.md` § Templates).
+5. Never `scale` a complex diagram — redesign at intended size.
+6. **Beamer-specific (Rule 9):** define ALL parameterized `\tikzset{... #1 ...}` styles in the preamble, never inside a frame body. The Beamer argument parser eats `#` before TikZ sees it; "Illegal parameter number" errors cascade and resist every downstream fix.
 
-**Rule 2a — Adjacent-box arrows use standalone labels.** For arrows between nearby boxes, do not use inline `node[midway, above]` or `node[midway, below]` labels. Put the label in its own `\node` with explicit coordinates, `minimum width`, `minimum height`, and `align=center`, then draw the arrow separately. The standalone label must clear both endpoint boxes and the arrow line by at least 0.3cm.
-
-**Rule 3 — Write a coordinate map comment before every tikzpicture.** Before the first `\node`, write a commented block listing every node name, its coordinates, and its intended dimensions. This forces spatial planning before drawing and makes `/tikz` audit passes faster. Example:
-
-```latex
-% Coordinate map:
-% (A) at (0,0)  — 3cm x 1cm — "Start"
-% (B) at (4,0)  — 3cm x 1cm — "End"
-% Arrow: A -> B, label "Step 1" above
-```
-
-**Rule 4 — Use canonical templates for the three standard diagram types.** Rather than writing from scratch each time, start from these safe skeletons:
-
-- *DAG (causal diagram):* nodes in a grid with `circle, minimum size=0.8cm`, arrows with `above` or `below` labels, bend angles never exceeding 30 degrees.
-- *Flow chart:* nodes with explicit `minimum width=3.5cm, minimum height=1cm, text width=3cm, align=center`, vertical spacing of at least 1.5cm between node centers, labels always as standalone `\node` above arrow midpoints rather than inline edge labels.
-- *RDD threshold diagram:* x-axis as a plain `\draw` line, threshold as a `\draw[dashed]` vertical, score dots as `\filldraw` circles with labels placed `above` or `below` with explicit `yshift`.
-
-**Rule 5 — Never use `scale` on a complex diagram.** `scale` shrinks coordinates but not text, creating invisible collisions where the math looks fine but the rendered output is broken. If a diagram is too large, redesign the coordinate layout at the intended size.
-
-**Rule 6 — Never define parameterized TikZ styles inside a Beamer frame.** In Beamer, `#` inside a frame body is consumed by the frame's argument parser before TikZ sees it, causing "Illegal parameter number" errors. These errors cascade through the entire compile and resist all downstream fixes (`##1`, `[fragile]`, `\catcode` hacks — none work reliably).
-
-The fix: define ALL parameterized styles in the preamble using `\tikzset{}`:
-
-```latex
-% In the preamble — BEFORE \begin{document}:
-\tikzset{
-  mybox/.style={rectangle, draw=charcoal, thick, fill=lightbg,
-                minimum width=3.5cm, minimum height=1cm,
-                align=center, font=\small},
-  myarrow/.style={->, thick, #1},
-}
-```
-
-Inside frames, USE the styles but never DEFINE them with `#1`. This is not optional — it is a hard constraint of the Beamer/TikZ interaction. The workarounds (`##1`, `[fragile]`) are themselves fragile and create new failure modes.
+If a rule is unclear or an edge case isn't covered, consult `tikz_rules.md` directly — do not improvise.
 
 ---
 
@@ -498,65 +414,19 @@ Before handing the deck to the user in Step 10, run the compile check one last t
 
 ## Step 6: Visual Cleanup — Invoke `/tikz`
 
-LaTeX warnings catch box overflow. They do NOT catch:
-- TikZ label collisions with arrows, boxes, or other labels
-- ggplot2 / matplotlib labels clipped at figure boundaries
-- Coordinate misalignment in custom diagrams
-- Text bleeding into patches or shapes
-
-Run `/tikz <deck>.tex` to audit every TikZ figure in the deck using the measurement-based collision-prevention protocol. The skill will:
-- Run `~/.claude/skills/tikz/scripts/audit_passes.sh <deck>.tex` to collect deterministic scope, precheck, candidate-pass, and compile-warning inputs
-- Compute Bézier curve depths and check for label overlaps
-- Calculate text-width vs. node-gap for every edge label
-- Verify boundary clearances for labels near shapes
-- Check cross-slide consistency if the same diagram appears on multiple slides
-- Report every collision with exact line numbers
-
-`audit_passes.sh` is only an index/precheck wrapper. The canonical geometry and clearance rules remain in `~/.claude/skills/tikz/tikz_rules.md`, which this skill reads before writing TikZ in Step 4.4 and `/tikz` reads before repairing TikZ in Step 6.
-
-Apply all fixes the skill suggests, then recompile. Go back to Step 5 if any new warnings appear.
+LaTeX warnings catch box overflow but not TikZ collisions, clipped matplotlib labels, coordinate drift, or text bleeding into shapes. Run `/tikz <deck>.tex` to audit residual visual collisions. The `/tikz` skill describes its own protocol; it reads the same `tikz_rules.md` you used at Step 4.4. Apply all fixes it suggests, then recompile. Return to Step 5 if any new warnings appear.
 
 ---
 
 ## Step 7: Rhetoric Audit — Second Agent
 
-Dispatch a sub-agent (via the Task tool) to evaluate the deck against the Rhetoric of Decks principles. Give it the following task prompt:
-
-> You are Referee 2 in rhetoric-review mode. Audit the Beamer deck at `<deck>.tex` and its compiled PDF at `<deck>.pdf` against the principles in `~/.claude/skills/beautiful_deck/rhetoric_of_decks.md`. Check specifically:
->
-> 1. **Titles are assertions.** Read the titles in sequence. Do they tell a coherent story? List any title that is a label rather than an assertion, with a suggested rewrite.
-> 2. **Title line discipline.** Flag assertion titles that wrap or are likely to wrap. Suggest shorter one-line rewrites. Also flag avoidable word breaks or hyphenation used only to make text fit.
-> 3. **One idea per slide.** List any slide with two or more competing ideas.
-> 4. **No wall of sentences.** List any slide with more than two prose sentences stacked vertically.
-> 5. **Microtext fit.** Check TikZ nodes, table cells, callout boxes, captions, and placeholders for ordinary words split across lines. Suggest wider boxes/columns, shorter phrases, local font changes, or layout changes.
-> 6. **MB/MC equivalence.** Rate each slide's density on a 1–5 scale. Flag outliers (slides that are dramatically denser or sparser than their neighbors).
-> 7. **Narrative arc.** Does the deck have a clear Setup / Development / Resolution structure? Does the opening hook and does the closing linger?
-> 8. **Devil's Advocate.** Is there a slide addressing the strongest objection? If the context is academic or external, this is required.
-> 9. **Audience fit.** Does the rhetorical balance (ethos / pathos / logos) match the audience declared at Step 0?
->
-> Return a structured report with numbered concerns and suggested rewrites. Do NOT modify the deck source — only diagnose. The main agent will apply fixes.
-
-When the sub-agent returns, apply every Major concern and as many Minor concerns as feasible, then go back to Step 5 and recompile.
+Dispatch a sub-agent (via the Task tool) to evaluate the deck against the Rhetoric of Decks principles. The full sub-agent prompt — nine numbered checks covering assertion titles, line discipline, one-idea-per-slide, MB/MC, narrative arc, Devil's Advocate, and audience fit — lives at `~/.claude/skills/beautiful_deck/rhetoric_audit_prompt.md`. Read it, substitute `<deck>` with the actual deck name, and pass verbatim. When the sub-agent returns, apply every Major concern and as many Minor concerns as feasible, then go back to Step 5 and recompile.
 
 ---
 
 ## Step 8: Graphics Audit — Third Agent
 
-Dispatch a second sub-agent focused ONLY on graphics. This is the step most people skip. Graphics errors don't trigger LaTeX warnings and they don't show up in rhetoric audits. They must be caught by explicit coordinate verification. Task prompt:
-
-> You are a graphics auditor. Audit ONLY the figures, tables, and TikZ diagrams in the compiled PDF at `<deck>.pdf`. Do not evaluate rhetoric, narrative, or content. Check specifically:
->
-> 1. **Numerical accuracy.** For every figure or table, verify that the numbers shown match the numbers in the underlying script output. Any mismatch is a critical error.
-> 2. **Label positioning.** Are labels where they appear to be in the source code, or has the coordinate system drifted? For TikZ, verify intended coordinates match rendered positions. For ggplot2/matplotlib, verify axis labels, tick marks, legends, and annotations are not clipped or obscuring data.
-> 3. **Axis and tick coherence.** Are axis ranges sensible? Are tick marks at meaningful intervals? Are tick labels readable?
-> 4. **Color consistency.** Do figure colors match the deck palette? Are the same colors used consistently across figures for the same variables?
-> 5. **Font sizing.** Are figure fonts readable at the back of the room (minimum 18pt equivalent in rendered form)?
-> 6. **Table formatting.** Do tables use booktabs rules only? Are key coefficients highlighted? Is the decimal alignment consistent?
-> 7. **Figure captions.** Does every figure have a caption that states what to conclude, not just what the figure is?
->
-> Return a structured report with numbered concerns, each tied to a specific file path and line/coordinate. Do NOT modify any files — only diagnose.
-
-Apply every fix, then recompile (Step 5) and re-run `/tikz` (Step 6). This is typically where the last round of silent errors get caught.
+Dispatch a second sub-agent focused ONLY on graphics. This is the step most people skip. Graphics errors don't trigger LaTeX warnings and don't show up in rhetoric audits — they must be caught by explicit coordinate verification. The full sub-agent prompt — seven numbered checks covering numerical accuracy, label positioning, axis coherence, color consistency, font sizing, table formatting, and captions — lives at `~/.claude/skills/beautiful_deck/graphics_audit_prompt.md`. Read it, substitute `<deck>`, and pass verbatim. Apply every fix, then recompile (Step 5) and re-run `/tikz` (Step 6).
 
 ---
 
@@ -612,41 +482,22 @@ Report to the user:
 
 ---
 
-## Reference: The Three Laws (per `rhetoric_of_decks.md`)
+## Reference: Three Laws + Aristotelian triad
 
-These are the constants that hold across every audience, every aesthetic, every deck. Read them once and internalize:
-
-1. **Beauty is function.** Beauty in presentation is clarity made visible. Decoration without function is noise. The most beautiful slide may be three words on a blank background.
-2. **Cognitive load is the enemy.** One idea per slide. Two max for inseparable contrasts. If you need "also" or "additionally," you need a new slide.
-3. **The slide serves the spoken word.** The slide is the visual anchor for what you say — not what you say. If your slides can be understood without you speaking, you have written a document and called it a presentation.
-
-## Reference: The Aristotelian triad (per `rhetoric_of_decks.md` Part II)
-
-- **Ethos (credibility).** The audience asks: *Why should I trust this person?* Ethos lives in methodology slides, Devil's Advocate slides, honest scorecards, acknowledgment of limitations. Admitting weakness builds credibility.
-- **Pathos (emotion).** The audience asks: *Why should I care?* Pathos lives in opening hooks, stakes, human impact, aspiration. Pathos without logos is demagoguery.
-- **Logos (logic).** The audience asks: *Does this make sense?* Logos lives in data visualizations, comparison tables, causal diagrams, the logical flow from problem to conclusion. Logos without pathos is a lecture.
-
-The rhetorical balance depends on the audience — see Q2 in Step 0.
-
----
-
-## Full Philosophy Reference
-
-For the complete essay behind these principles, all in this skill directory:
-- `rhetoric_of_decks.md` — the condensed operational version
-- `rhetoric_of_decks_full_essay.md` — the 600-line intellectual genealogy from Aristotle through LLMs
-- `style_preferences.md` — user-specific stylistic defaults that persist across decks; separate from rhetorical principles.
-
-This skill operationalizes those essays. You don't need to re-read them to execute the workflow — just follow the steps above.
+The constants behind every choice in this skill — the Three Laws (beauty is function, cognitive load is the enemy, slide serves the spoken word) and the Aristotelian triad (ethos / pathos / logos) — are defined in `~/.claude/skills/beautiful_deck/rhetoric_of_decks.md` §I and §II. Read it once and internalize; the rhetorical balance per audience is the Q1 table in Step 0.
 
 ## Local reference files
 
 All in this skill directory (`~/.claude/skills/beautiful_deck/`):
 
 - `preamble_warm_professional.tex` — Scott's house-style Beamer preamble (palette, fonts, footline, `\transitionslide` macro). Copy verbatim for Path A decks.
-- `palette_reference.md` — alternative palettes with selection guidance for Path B (original-design) decks.
+- `theme_path_b.md` — Path B sub-steps 1.1–1.6 (palette, frame-title, bullets, dividers, typography, preamble). Read only when designing an original theme.
+- `palette_reference.md` — alternative palettes with selection guidance for Path B decks.
 - `domain_patterns.md` — detailed structural patterns by audience (academic seminar, teaching lecture, working deck, etc.).
-- `~/.claude/skills/tikz/tikz_rules.md` — measurement-based collision-prevention rules (lives in the `tikz` skill folder; this skill **depends on `/tikz` being installed**). READ before writing any TikZ figure (Step 4.4).
+- `alternative_formats.md` — Quarto / Typst / reveal.js / Marp / R Markdown adjustments. Read only when the user picks a non-Beamer format in Q5.
+- `rhetoric_audit_prompt.md` — verbatim sub-agent prompt for Step 7.
+- `graphics_audit_prompt.md` — verbatim sub-agent prompt for Step 8.
+- `~/.claude/skills/tikz/tikz_rules.md` — measurement-based collision-prevention rules (lives in the `tikz` skill folder; this skill **depends on `/tikz` being installed**). READ before writing any TikZ figure (Step 4.4). Rule 9 is Beamer-specific and applies to deck generation.
 - `~/.claude/skills/tikz/scripts/audit_passes.sh` — deterministic `/tikz` precheck and compile-warning wrapper used during Step 6. It indexes likely collision candidates but does not replace `tikz_rules.md`.
 
 ## Supporting skills
