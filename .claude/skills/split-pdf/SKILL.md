@@ -34,21 +34,10 @@ The user wants you to read, review, or summarize an academic paper. The input is
 
 ## Step 2: Split the PDF
 
-**Before splitting, check for an existing extract.** Look for `<basename>_text.md` in the same folder as the PDF.
+**Reuse checks (in order, before splitting):**
 
-If found, ask:
-> "An extract from a previous deep-read exists (`<basename>_text.md`). Use it for this request, or re-read the PDF from scratch?"
-- **Use extract**: read `<basename>_text.md` and use it as the source notes — skip the rest of Steps 2 and 3 entirely
-- **Re-read**: proceed with splitting below
-
-This prevents redundant re-reading of papers you have already processed. The `_text.md` file is a structured plain-text extraction that is far cheaper to read than re-processing the PDF page images.
-
-**If no extract exists, check for existing splits.** Use the build directory convention `<foldername>_build/split_<pdf-basename>/`.
-
-If `split_dir` already exists and contains `.pdf` files, ask:
-> "Splits already exist for `<pdf-basename>` (N chunks in `<foldername>_build/split_<pdf-basename>/`). Reuse existing splits, or re-split from scratch?"
-- **Reuse**: skip splitting, proceed to Step 3 using the existing files in `split_dir`
-- **Re-split**: delete the existing split folder, then proceed with splitting below
+1. **Existing extract.** Look for `<basename>_text.md` next to the PDF. If found, ask: *"An extract already exists (`<basename>_text.md`). Use it, or re-read from scratch?"* On **Use**, read `_text.md` as the source notes and skip the rest of Steps 2 and 3. On **Re-read**, continue.
+2. **Existing splits.** Look for `<foldername>_build/split_<pdf-basename>/*.pdf`. If found, ask: *"Splits already exist (N chunks). Reuse, or re-split?"* On **Reuse**, proceed to Step 3 with existing files. On **Re-split**, delete the split folder and continue.
 
 Create splits by running:
 
@@ -70,11 +59,9 @@ articles/                             # any working folder
         └── ...
 ```
 
-The build directory convention (`<foldername>_build/`) keeps split artifacts, compilation intermediates, and other working files separate from the source material and finished outputs. Multiple PDFs in the same folder share one build directory, each with its own `split_<basename>/` subdirectory inside it.
+The `<foldername>_build/` convention keeps split artifacts and other working files separate from source and finished outputs. Multiple PDFs in the same folder share one build directory.
 
-The original PDF remains permanently. The splits are working copies. If anything goes wrong, you can always re-split from the original.
-
-If PyPDF2 is not installed, install it: `pip install PyPDF2`
+If PyPDF2 is not installed: `pip install PyPDF2`.
 
 ## Step 3: Read in Batches of 3 Splits
 
@@ -92,88 +79,17 @@ Do NOT read ahead. Do NOT read all splits at once. The pause-and-confirm protoco
 
 ## Step 4: Structured Extraction
 
-As you read, collect information along these dimensions and write them into `notes.md`:
+As you read, collect notes into `notes.md` (in the split subdirectory) following the contract in `extraction_schema.md` — a `## Bibliographic metadata` block from the first split, then 8 research dimensions (research question, audience, method, data, statistical methods, findings, contributions, replication feasibility). Read `extraction_schema.md` before starting Step 3 so you know what to look for in each batch.
 
-0. **Bibliographic metadata** — From the first split (title page), extract:
-   ```
-   ## Bibliographic metadata
-   doi: <10.xxxx/yyyy if present on the title page, else null>
-   authors: [LastName1, LastName2, ...]
-   title: <verbatim title from title page>
-   year: <year>
-   venue: <journal/working paper series/etc., verbatim>
-   venue_type: journal | working_paper | book_chapter | other
-   ```
-   If a field is not visible on the title page, record `null`.
+Update `notes.md` incrementally after each batch — do not rewrite from scratch; update whichever dimensions have new information.
 
-1. **Research question** — What is the paper asking and why does it matter?
-2. **Audience** — Which sub-community of researchers cares about this?
-3. **Method** — How do they answer the question? What is the identification strategy?
-4. **Data** — What data do they use? Where precisely did they find it? What is the unit of observation? Sample size? Time period?
-5. **Statistical methods** — What econometric or statistical techniques do they use? What are the key specifications?
-6. **Findings** — What are the main results? Key coefficient estimates and standard errors?
-7. **Contributions** — What is learned from this exercise that we didn't know before?
-8. **Replication feasibility** — Is the data publicly available? Is there a replication archive? A data appendix? URLs for the underlying data?
+**After all batches are complete**, write the final notes to `<basename>_text.md` in the same folder as the source PDF (with the `## Bibliographic metadata` block first), then notify the user: *"Extract saved to `<basename>_text.md` alongside the source PDF. Future requests on this paper can reuse it without re-reading."*
 
-These questions extract what a researcher needs to **build on or replicate** the work — a structured extraction more detailed and specific than a typical summary.
+`_text.md` is the persistent artifact; `notes.md` is the working copy. Both are kept — never delete either.
 
-## The Notes File
+## Agent Isolation
 
-The working notes file is `notes.md` in the split subdirectory, updated incrementally after each batch. Structure it with clear headers for the bibliographic metadata block and each of the eight research dimensions. After each batch, update whichever dimensions have new information — do not rewrite from scratch.
-
-By the time all splits are read, the notes should contain specific data sources, variable names, equation references, sample sizes, coefficient estimates, and standard errors. Not a summary — a structured extraction.
-
-**After all batches are complete**, write the final notes to `<basename>_text.md` in the same folder as the source PDF, with the `## Bibliographic metadata` block first:
-
-```
-articles/smith_2024_text.md
-```
-
-Then notify the user:
-> "Extract saved to `smith_2024_text.md` alongside the source PDF. Future requests on this paper can reuse it without re-reading."
-
-This file is the persistent, reusable artifact. The `notes.md` in the build directory is the working copy. Both are kept — never delete either.
-
-## Agent Isolation Protocol
-
-**When split-pdf is invoked by another skill or workflow** (any process that continues working after the PDF has been read), the PDF reading MUST run inside a subagent to prevent context bloat in the parent conversation.
-
-**Why:** Each PDF page rendered by the Read tool produces image data in the conversation context. A 35-page PDF (9 chunks) can add 10-20MB of image data that accumulates permanently. After reading one or two large PDFs on top of prior work, the conversation hits the API request size limit and becomes unrecoverable: no subsequent Read calls succeed, and rewinding does not free sufficient space.
-
-**Pattern:**
-
-The parent skill handles splitting (Step 2's Python script) in its own context; this is lightweight. Then it launches an Agent to perform all the reading:
-
-```
-Read PDF split files and produce structured extraction notes.
-
-Split directory: <split_dir>
-Files (read in this order, 3 at a time): <file_list>
-Notes output: <notes_path>
-Text output: <text_path>
-
-Process:
-1. Read 3 PDF files at a time using the Read tool
-2. After each batch, update the notes file with extracted content
-3. From the first split (title page), extract a bibliographic metadata block:
-   ## Bibliographic metadata
-   doi: <10.xxxx/yyyy if present on the title page, else null>
-   authors: [LastName1, LastName2, ...]
-   title: <verbatim title from title page>
-   year: <year>
-   venue: <journal/working paper series/etc., verbatim>
-   venue_type: journal | working_paper | book_chapter | other
-4. Extract: research question, audience, method, data (sources, sample size, time period),
-   statistical methods, findings, contributions, replication feasibility
-5. Write the final structured extraction to the text output path, with the
-   ## Bibliographic metadata block first, followed by the research notes.
-
-Report when done: pages read, figures/tables found, one-sentence content summary.
-```
-
-After the agent returns, the parent reads the output files (plain markdown, not PDF images) and continues its workflow.
-
-**Standalone invocations** (user calls `/split-pdf` directly) use the interactive protocol above with reads in the main conversation and the pause-and-confirm protocol.
+When `/split-pdf` is invoked by another skill or workflow, PDF reading must run in a subagent to prevent PDF-image context bloat in the parent conversation. See `agent_isolation.md` for the launch pattern and rationale.
 
 ## When NOT to Split
 
@@ -181,16 +97,11 @@ After the agent returns, the parent reads the output files (plain markdown, not 
 - Policy briefs or non-technical documents: a rough summary is fine
 - Triage only: read just the first split (pages 1-4) for abstract and introduction
 
-## Quick Reference
+## Files in this skill
 
-| Step | Action |
-|------|--------|
-| **Acquire** | Download to the current working directory or use existing local file in place |
-| **Check** | Look for existing `_text.md` extract or existing splits — offer to reuse |
-| **Split** | 4-page chunks into `<foldername>_build/split_<pdf-basename>/` |
-| **Read** | 3 splits at a time, pause after each batch |
-| **Write** | Update `notes.md` with structured extraction |
-| **Persist** | Save final extraction to `<basename>_text.md` alongside the source PDF |
-| **Confirm** | Ask user before continuing to next batch |
-
-For detailed explanation of why the batched-reading method works, see [methodology.md](methodology.md). Acknowledgments and credits live in [README.md](README.md).
+- `SKILL.md` — this file (acquire → split → batch-read → extract workflow)
+- `extraction_schema.md` — bibliographic metadata block + 8 research dimensions (shared output contract with `/read-pdf`)
+- `agent_isolation.md` — subagent launch pattern for when this skill is invoked by another workflow
+- `methodology.md` — why batched reading works
+- `scripts/split.py` — PyPDF2 4-page splitter
+- `README.md` — human-facing overview and acknowledgments
