@@ -91,84 +91,19 @@ Proceed using whichever filename the user chooses.
 
 ## Step 5: Structured Extraction
 
-Read `markdown.md` and collect information along these dimensions:
+Read `markdown.md` and collect notes following the contract in `extraction_schema.md` — a `## Bibliographic metadata` block from the title section, then 8 research dimensions (research question, audience, method, data, statistical methods, findings, contributions, replication feasibility). Read `extraction_schema.md` before starting so you know what to look for.
 
-0. **Bibliographic metadata** — From the title section of the markdown, extract:
-   ```
-   ## Bibliographic metadata
-   doi: <10.xxxx/yyyy if present, else null>
-   authors: [LastName1, LastName2, ...]
-   title: <verbatim title>
-   year: <year>
-   venue: <journal/working paper series/etc., verbatim>
-   venue_type: journal | working_paper | book_chapter | other
-   ```
-   If a field is not visible, record `null`.
+Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first. Then notify the user: *"Extract saved to `<basename>_text.md` alongside the source PDF. Future requests on this paper can reuse it without re-reading."*
 
-1. **Research question** — What is the paper asking and why does it matter?
-2. **Audience** — Which sub-community of researchers cares about this?
-3. **Method** — How do they answer the question? What is the identification strategy?
-4. **Data** — What data do they use? Where precisely did they find it? Unit of observation? Sample size? Time period?
-5. **Statistical methods** — What econometric or statistical techniques? Key specifications?
-6. **Findings** — Main results? Key coefficient estimates and standard errors?
-7. **Contributions** — What is learned that we didn't know before?
-8. **Replication feasibility** — Public data? Replication archive? Data appendix? URLs?
+## Agent Isolation
 
-## The Output File
+When `/read-pdf` is invoked by another skill or workflow, the markdown read + extraction step must run in a subagent to prevent `markdown.md` token bloat in the parent conversation. See `agent_isolation.md` for the launch pattern and rationale.
 
-Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first, followed by the research notes.
+## Files in this skill
 
-Notify the user:
-> "Extract saved to `smith_2024_text.md` alongside the source PDF. Future requests on this paper can reuse it without re-reading."
-
-This file is the persistent, reusable artifact.
-
-## Agent Isolation Protocol
-
-**When read-pdf is invoked by another skill**, the conversion steps (Steps 2–3) run in the parent context — they are lightweight bash calls. The reading and extraction (Steps 4–5) MUST run inside a subagent. The converted `markdown.md` can be large, and reading it in the parent context of an active workflow accumulates permanent token cost. The subagent reads `markdown.md`, writes plain-text `_text.md`, and the parent reads only that.
-
-**Pattern:**
-
-The parent skill handles install.py, the SHA-256 cache check, convert.py if needed, and the `_text.md` collision check. Then it launches an Agent:
-
-```
-Read a converted markdown file and produce structured extraction notes.
-
-Markdown input: <markdown_path>
-Text output: <text_path>
-
-Process:
-1. Read <markdown_path> using the Read tool
-2. From the title section, extract a bibliographic metadata block:
-   ## Bibliographic metadata
-   doi: <10.xxxx/yyyy if present, else null>
-   authors: [LastName1, LastName2, ...]
-   title: <verbatim title>
-   year: <year>
-   venue: <journal/working paper series/etc., verbatim>
-   venue_type: journal | working_paper | book_chapter | other
-3. Extract: research question, audience, method, data (sources, sample size, time period),
-   statistical methods, findings, contributions, replication feasibility
-4. Write the final structured extraction to <text_path>, with the
-   ## Bibliographic metadata block first, followed by the research notes.
-
-Report when done: page count, figures/tables found, one-sentence content summary.
-```
-
-After the agent returns, the parent reads `_text.md` (plain text, not the large `markdown.md`) and continues its workflow.
-
-**Standalone invocations** (user calls `/read-pdf` directly) read `markdown.md` in the main conversation and write `_text.md` directly — no subagent needed for a one-off read.
-
-## Quick Reference
-
-| Step | Action |
-|------|--------|
-| **Acquire** | Download via web search or use local file in place |
-| **Install** | `python3 ~/.claude/skills/read-pdf/install.py` (idempotent; downloads models on first run, then reuses the venv; monthly advisory check for marker major updates) |
-| **Check cache** | SHA-256 → `~/.cache/claude-pdf-converter/cache/marker/<hash>/markdown.md` |
-| **Convert** | `python3 ~/.claude/skills/read-pdf/convert.py <pdf>` if not cached |
-| **Collision** | Ask overwrite vs `_text2.md` if `_text.md` already exists |
-| **Extract** | Bibliographic metadata + 8-dimension notes from `markdown.md` |
-| **Persist** | Save to `<basename>_text.md` alongside the source PDF |
-
-For backend details, cache management, and GPU notes, see [README.md](README.md).
+- `SKILL.md` — this file (acquire → install → cache-check → convert → extract workflow)
+- `extraction_schema.md` — bibliographic metadata block + 8 research dimensions (shared output contract with `/split-pdf`)
+- `agent_isolation.md` — subagent launch pattern for when this skill is invoked by another workflow
+- `install.py` — idempotent marker venv installer with monthly advisory check
+- `convert.py` — PDF → markdown converter (writes to SHA-256-keyed cache)
+- `README.md` — backend details, cache management, GPU notes
