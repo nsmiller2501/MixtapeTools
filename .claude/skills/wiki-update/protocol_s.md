@@ -1,12 +1,8 @@
 # Protocol S — Split-PDF Pipeline
 
-*Input:* absolute path to the PDF, absolute path to the splits directory (`references/raw/raw_build/split_<basename>/`), `splits_exist` boolean.
+*Input:* absolute path to the PDF, absolute path to the splits directory (`references/raw/raw_build/split_<basename>/`). The main session has already run the splitter — the splits directory is populated with `<basename>_pp<X>-<Y>.pdf` chunks before this subagent is spawned. Do not attempt to split the PDF yourself.
 
-## Step 1: Split (if needed)
-
-If `splits_exist=false`: split the PDF into 4-page chunks using PyPDF2, writing to `<splits-dir>/`. The canonical splits directory is `references/raw/raw_build/split_<basename>/` — use this exact path. Do not derive it yourself.
-
-## Step 2: Read splits in batches of 3
+## Step 1: Read splits in batches of 3
 
 Read each split sequentially in batches of 3, without pausing or asking for confirmation. After each batch, append findings to `<splits-dir>/notes.md` under the structured-extraction dimensions in `common.md`, preceded by a batch boundary comment:
 
@@ -16,7 +12,7 @@ Read each split sequentially in batches of 3, without pausing or asking for conf
 
 If `notes.md` already exists (prior interrupted run), read it first and resume from where it left off — do not overwrite earlier content. `notes.md` is append-mostly and permanent; never delete it.
 
-## Step 3: Synthesize `_text.md`
+## Step 2: Synthesize `_text.md`
 
 After all splits are read, write `references/raw/<basename>_text.md` from the accumulated `notes.md` content. Follow the `_text.md` structure in `common.md` (bib block, plain-English synthesis, 11 dimensions).
 
@@ -24,7 +20,7 @@ For the bib metadata block: scan the first split for the DOI regex `10\.\d{4,}/\
 
 `notes.md` is permanent — do not delete it after writing `_text.md`.
 
-## Step 4: Write wiki pages
+## Step 3: Write wiki pages
 
 Use the substantive-change rule and relevance filtering in `common.md`.
 

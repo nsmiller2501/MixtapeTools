@@ -130,7 +130,15 @@ For each new paper (using its post-rename canonical name), determine its ingest 
 
 2. **Tier E — Cached extract:** `references/raw/<basename>_text.md` exists. No conversion needed.
 
-3. **Tier S — Split-PDF pipeline:** Neither of the above. Check whether `references/raw/raw_build/split_<basename>/` already exists (splits cached from a prior interrupted run) — pass this as `splits_exist=true|false` to the subagent.
+3. **Tier S — Split-PDF pipeline:** Neither of the above. For each tier-S paper, run the split-pdf script from the main session so the subagent receives a populated splits directory:
+
+   ```bash
+   python3 ~/.claude/skills/split-pdf/scripts/split.py \
+     references/raw/<basename>.pdf \
+     --output-dir references/raw/raw_build/split_<basename>
+   ```
+
+   `split.py` is the canonical PyPDF2 splitter (shared with `/split-pdf`). It is idempotent at the chunk-file level: if the output directory already contains the expected `<basename>_pp<X>-<Y>.pdf` files from a prior interrupted run, re-running rewrites them with identical content. Do not invoke `/split-pdf` as a skill — its interactive pause-and-confirm flow cannot be answered from a subagent context. Call the script only.
 
 **Report tier breakdown once, before spawning subagents:**
 
@@ -138,7 +146,7 @@ For each new paper (using its post-rename canonical name), determine its ingest 
 Ingest tiers for this batch:
   M (converted markdown): N papers
   E (cached extract):     M papers
-  S (full pipeline):      K papers  [X with cached splits]
+  S (full pipeline):      K papers
 
 [If any converter failures:]
   ⚠ Converter failed for: <filenames> — falling back to E or S
@@ -158,8 +166,8 @@ Spawn one Agent per paper, sequentially. The main session must not read PDF extr
 
 Each subagent prompt must be self-contained — the agent has no memory of this conversation. Include:
 
-- Absolute paths: PDF, input source (markdown.md, `_text.md`, or PDF/splits), `references/raw/`, `references/wiki/`, `references/wiki/figures/`, `references/CLAUDE.md`
-- The tier (M, E, or S) and `splits_exist` flag if tier S
+- Absolute paths: PDF, input source (markdown.md, `_text.md`, or populated splits directory), `references/raw/`, `references/wiki/`, `references/wiki/figures/`, `references/CLAUDE.md`
+- The tier (M, E, or S)
 - Current `wiki/index.md` contents (for disambiguation)
 - Project context block: research question, data sources, identification strategy (from `./CLAUDE.md`)
 - Optional batch focus string (if provided as the skill argument)
