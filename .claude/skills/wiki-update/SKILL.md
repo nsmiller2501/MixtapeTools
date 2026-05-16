@@ -130,15 +130,15 @@ For each new paper (using its post-rename canonical name), determine its ingest 
 
 2. **Tier E — Cached extract:** `references/raw/<basename>_text.md` exists. No conversion needed.
 
-3. **Tier S — Split-PDF pipeline:** Neither of the above. For each tier-S paper, run the split-pdf script from the main session so the subagent receives a populated splits directory:
+3. **Tier S — Split-PDF pipeline:** Neither of the above. For each tier-S paper, run the read-pdf split backend from the main session so the subagent receives a populated splits directory:
 
    ```bash
-   python3 ~/.claude/skills/split-pdf/scripts/split.py \
+   python3 ~/.claude/skills/read-pdf/scripts/split.py \
      references/raw/<basename>.pdf \
      --output-dir references/raw/raw_build/split_<basename>
    ```
 
-   `split.py` is the canonical PyPDF2 splitter (shared with `/split-pdf`). It is idempotent at the chunk-file level: if the output directory already contains the expected `<basename>_pp<X>-<Y>.pdf` files from a prior interrupted run, re-running rewrites them with identical content. Do not invoke `/split-pdf` as a skill — its interactive pause-and-confirm flow cannot be answered from a subagent context. Call the script only.
+   `split.py` is the canonical PyPDF2 splitter for `/read-pdf --split` and the `/split-pdf` compatibility wrapper. It is idempotent at the chunk-file level: if the output directory already contains the expected `<basename>_pp<X>-<Y>.pdf` files from a prior interrupted run, re-running rewrites them with identical content. Do not invoke `/split-pdf` or `/read-pdf --split` as a skill — the interactive pause-and-confirm flow cannot be answered from a subagent context. Call the script only.
 
 **Report tier breakdown once, before spawning subagents:**
 

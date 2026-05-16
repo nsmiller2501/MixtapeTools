@@ -36,14 +36,15 @@ On first run, the skill can scaffold the references wiki structure. It will not 
 
 ## Boundaries
 
-`/wiki-update` owns the project-wiki lifecycle. `/split-pdf` owns standalone paper reading. The two skills share the same batching idea, but `/wiki-update` uses a non-interactive subagent flow because a per-batch confirmation gate would deadlock inside an ingest subagent.
+`/wiki-update` owns the project-wiki lifecycle. `/read-pdf` owns standalone paper reading, including the `/read-pdf --split` fallback. The two skills share the same batching idea, but `/wiki-update` uses a non-interactive subagent flow because a per-batch confirmation gate would deadlock inside an ingest subagent.
 
 For exact tier rules, destructive-edit handling, filename checks, log format, and BibTeX behavior, read [`SKILL.md`](SKILL.md).
 
 ## Related Skills
 
 - `/newproject` — creates the project structure this skill expects.
-- `/split-pdf` — standalone batched reading for individual papers.
+- `/read-pdf` — standalone paper reading and reusable `_text.md` extraction.
+- `/read-pdf --split` — standalone batched vision reading for individual papers.
 - `/bib-update` — refreshes `references/references.bib` from extracted metadata.
 
 ---

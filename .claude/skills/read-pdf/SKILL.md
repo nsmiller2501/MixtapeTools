@@ -1,26 +1,37 @@
 ---
 name: read-pdf
-description: Downloads or uses a local academic PDF, converts to clean markdown via a local layout-aware converter, then extracts structured reading notes into `_text.md`. Same output contract as `/split-pdf` but preserves equation fidelity, table structure, and figure references machine-readably. Use when the paper contains tables, equations, or figures that need to be captured (not just described); when batch-processing multiple papers and avoiding repeated vision-read token cost; or when the PDF is already saved locally. Prefer this over `/split-pdf` whenever layout fidelity matters.
-allowed-tools: Bash(python3:*), Bash(curl:*), Bash(wget:*), Bash(mkdir:*), Read, Write, WebSearch, WebFetch, Agent
-argument-hint: [pdf-path-or-search-query]
+description: Canonical academic-PDF reading skill. By default, downloads or uses a local PDF, converts it to clean markdown via a local layout-aware converter, then writes structured `_text.md` notes. Use `--split` to force the legacy vision-batch path: split into 4-page chunks and read 3 chunks at a time. Use default mode for tables, equations, figures, repeated processing, and batch ingest; use `--split` for triage, converter failures, or environments where marker setup is not available.
+allowed-tools: Bash(python3:*), Bash(curl:*), Bash(wget:*), Bash(mkdir:*), Bash(rm:*), Read, Write, WebSearch, WebFetch, Agent
+argument-hint: [--split] [pdf-path-or-search-query]
 ---
 
 # Read-PDF: Download, Convert, and Deep-Read Academic Papers
 
-Same I/O contract as /split-pdf: takes a PDF (local or searched), produces a structured `_text.md` extraction with a bibliographic metadata block and 8-dimension research notes. The difference is the reading mechanism: instead of Claude vision-reading PDF page images in chunks, read-pdf converts the PDF to markdown locally using python:marker, then reads the text. This preserves equation fidelity, table structure, and figure references without image-based context bloat.
+Takes a PDF (local or searched) and produces a structured `_text.md` extraction with a bibliographic metadata block and 8-dimension research notes.
+
+Default mode converts the PDF to markdown locally using python:marker, then reads the text. This preserves equation fidelity, table structure, and figure references without image-based context bloat.
+
+`--split` mode uses the legacy vision-batch path: split into 4-page chunks, read exactly 3 chunks at a time, update running notes, then write the same `_text.md` contract. This is the compatibility path for `/split-pdf`.
 
 ## When This Skill Is Invoked
 
-The user wants to read, review, or summarize an academic paper and either: (a) wants layout-aware equation/table extraction, or (b) already has a local PDF. The input is either:
+The user wants to read, review, or summarize an academic paper. The input is either:
 - A file path to a local PDF (e.g., `~/Documents/papers/smith_2024.pdf`)
 - A search query or paper title (e.g., `"Gentzkow Shapiro Sinkinson 2014 competition newspapers"`)
 
 **Important:** You cannot search for a paper you don't know exists. Provide either a file path or a specific query. If the user invokes this skill without specifying a paper, ask them.
 
+## Mode selection
+
+- **Default marker mode:** use unless the user explicitly asks for `--split`, triage-only reading, or no local converter setup.
+- **`--split` mode:** use when the user invokes `/read-pdf --split`, invokes the compatibility `/split-pdf` wrapper, needs first-split triage, or marker conversion fails and the user wants the vision-batch fallback.
+
 ## Prerequisites
 
 - **Python ≥ 3.10** must be available. `install.py` refuses to proceed on Python 3.9 or older. If needed: `brew install python@3.12`, `apt install python3.11`, or python.org installer.
 - **Optional GPU acceleration** is auto-detected: NVIDIA CUDA → CPU. (MPS on Apple Silicon is excluded — surya's layout model crashes on MPS at runtime.)
+
+These prerequisites apply only to default marker mode. `--split` mode requires PyPDF2 for `scripts/split.py`; if missing, install it with `python3 -m pip install PyPDF2`.
 
 ## Step 1: Acquire the PDF
 
@@ -37,7 +48,9 @@ The user wants to read, review, or summarize an academic paper and either: (a) w
 
 **CRITICAL: Always preserve the original PDF.** Never delete, move, or overwrite it at any point in this workflow.
 
-## Step 2: Ensure the converter is installed
+## Default marker mode
+
+### Step 2: Ensure the converter is installed
 
 ```bash
 python3 ~/.claude/skills/read-pdf/install.py
@@ -55,7 +68,7 @@ Do not purge caches automatically. Explain that existing cached conversions rema
 
 Surface the "First run" message to the user verbatim if it appears — they should know why this invocation is slow.
 
-## Step 3: Convert
+### Step 3: Convert
 
 **Before converting, check for a cached conversion.** Compute the SHA-256 hash of the PDF and check whether `markdown.md` already exists in the cache:
 
@@ -80,7 +93,7 @@ print(markdown_path if os.path.exists(markdown_path) else "NOT_CACHED")
   ```
   It prints the absolute path to `markdown.md` on success and exits 0. For born-digital PDFs with a usable embedded text layer, `convert.py` uses that text layer and disables marker's full-document OCR path while preserving marker's layout/table processing. **Do not fall back to pdftotext or any other tool on failure** — surface the error and stop. The whole point of this skill is the layout-aware conversion; a degraded fallback produces silently-wrong output.
 
-## Step 4: Check for existing `_text.md`
+### Step 4: Check for existing `_text.md`
 
 Look for `<basename>_text.md` in the same folder as the PDF.
 
@@ -89,21 +102,71 @@ If found, ask:
 
 Proceed using whichever filename the user chooses.
 
-## Step 5: Structured Extraction
+### Step 5: Structured Extraction
 
 Read `markdown.md` and collect notes following the contract in `extraction_schema.md` — a `## Bibliographic metadata` block from the title section, then 8 research dimensions (research question, audience, method, data, statistical methods, findings, contributions, replication feasibility). Read `extraction_schema.md` before starting so you know what to look for.
 
 Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first. Then notify the user: *"Extract saved to `<basename>_text.md` alongside the source PDF. Future requests on this paper can reuse it without re-reading."*
 
+## `--split` mode
+
+Use this branch only when selected by the Mode selection rules above.
+
+**Critical rule:** Never read a full PDF in split mode. Only read the 4-page split files, and only 3 splits at a time (~12 pages).
+
+### Step S2: Reuse or split
+
+1. Look for `<basename>_text.md` next to the PDF. If found, ask: *"An extract already exists (`<basename>_text.md`). Use it, or re-read from scratch?"* On **Use**, read `_text.md` as the source notes and skip the rest of split mode. On **Re-read**, continue.
+2. Look for `<foldername>_build/split_<pdf-basename>/*.pdf`. If found, ask: *"Splits already exist (N chunks). Reuse, or re-split?"* On **Reuse**, proceed with existing files. On **Re-split**, delete the split folder and continue.
+
+Create splits by running:
+
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/split.py path/to/paper.pdf
+```
+
+Directory convention:
+
+```text
+articles/
+├── smith_2024.pdf
+├── smith_2024_text.md
+└── articles_build/
+    └── split_smith_2024/
+        ├── smith_2024_pp1-4.pdf
+        ├── smith_2024_pp5-8.pdf
+        ├── smith_2024_pp9-12.pdf
+        └── notes.md
+```
+
+### Step S3: Read in batches of 3 splits
+
+Read exactly 3 split files at a time. After each batch:
+
+1. Read the 3 split PDFs using the Read tool.
+2. Update `notes.md` in the split directory.
+3. Pause and tell the user: *"I have finished reading splits [X-Y] and updated the notes. I have [N] more splits remaining. Would you like me to continue with the next 3?"*
+4. Wait for confirmation before reading the next batch.
+
+Do not read ahead.
+
+### Step S4: Structured extraction
+
+As you read, collect notes into `notes.md` following `extraction_schema.md`. After all batches are complete, write the final notes to `<basename>_text.md` next to the source PDF, with the `## Bibliographic metadata` block first. Keep both `notes.md` and `_text.md`.
+
 ## Agent Isolation
 
-When `/read-pdf` is invoked by another skill or workflow, the markdown read + extraction step must run in a subagent to prevent `markdown.md` token bloat in the parent conversation. See `agent_isolation.md` for the launch pattern and rationale.
+When `/read-pdf` is invoked by another skill or workflow, the heavy reading step must run in a subagent. See `agent_isolation.md` for the mode router and `isolation_read.md` / `isolation_split.md` for branch-specific launch patterns.
 
 ## Files in this skill
 
-- `SKILL.md` — this file (acquire → install → cache-check → convert → extract workflow)
-- `extraction_schema.md` — bibliographic metadata block + 8 research dimensions (shared output contract with `/split-pdf`)
-- `agent_isolation.md` — subagent launch pattern for when this skill is invoked by another workflow
+- `SKILL.md` — this file (acquire → default marker mode or `--split` mode → extract workflow)
+- `extraction_schema.md` — bibliographic metadata block + 8 research dimensions
+- `agent_isolation.md` — isolation mode router
+- `isolation_common.md` — shared parent/subagent rule
+- `isolation_read.md` — marker-mode isolation pattern
+- `isolation_split.md` — split-mode isolation pattern
 - `install.py` — idempotent marker venv installer with monthly advisory check
 - `convert.py` — PDF → markdown converter (writes to SHA-256-keyed cache)
+- `scripts/split.py` — PyPDF2 4-page splitter used by `--split` mode and downstream fallbacks
 - `README.md` — backend details, cache management, GPU notes

@@ -1,6 +1,6 @@
 # Extraction Schema
 
-The structured-extraction contract shared by `/split-pdf` and `/read-pdf`. Output is a single markdown file (`<basename>_text.md`) consisting of a bibliographic metadata block followed by 8-dimension research notes.
+The structured-extraction contract shared by `/read-pdf` default mode and `/read-pdf --split` mode. Output is a single markdown file (`<basename>_text.md`) consisting of a bibliographic metadata block followed by 8-dimension research notes.
 
 ## Bibliographic metadata (always first)
 

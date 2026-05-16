@@ -27,7 +27,7 @@ The skill picks the best available path per paper, in order:
 | **E — Cached extract** | `_text.md` already exists | Reads the existing structured extract and writes wiki pages directly |
 | **S — Split-PDF pipeline** | Neither above | Splits PDF into 4-page chunks, reads in batches with vision, synthesizes `_text.md` |
 
-**Protocol M** is the richest path: the layout-aware converter (docling/marker) produces pipe-syntax tables ready for copy-paste, pixel-accurate figure PNGs that are copied directly into `references/wiki/figures/`, and verbatim LaTeX equations. It requires a one-time venv install (~500 MB, 1–3 min, handled lazily by `/read-pdf`). After that, conversions are cached by content hash — re-ingesting the same PDF is free.
+**Protocol M** is the richest path: the marker layout-aware converter produces pipe-syntax tables ready for copy-paste, pixel-accurate figure PNGs that are copied directly into `references/wiki/figures/`, and verbatim LaTeX equations. It requires a one-time venv install (~500 MB, 1–3 min, handled lazily by `/read-pdf`). After that, conversions are cached by content hash — re-ingesting the same PDF is free.
 
 **Protocol S** is the zero-install fallback. Tables and figures are still captured — tables via careful reading of the PDF splits, figures via CLIP placeholders that you fill in by manually clipping from the PDF. It costs more tokens than Protocol M.
 
@@ -122,6 +122,6 @@ Each paper is ingested by a dedicated subagent so that converted markdown and ex
 
 Inspired by Andrej Karpathy's [LLM Wiki](https://karpathy.bearblog.dev/llm-wiki/) pattern — a structured, interlinked knowledge base maintained by an LLM, curated by a human. The Tier A / Tier B figure protocol, the project-relevance gate, and the substantive-change rule are workflow refinements specific to academic-paper ingest at scale.
 
-The local-conversion path (Protocol M) relies on [docling](https://github.com/docling-project/docling) and [marker](https://github.com/VikParuchuri/marker) — open-source layout-aware PDF parsers whose authors did the actual hard work.
+The local-conversion path (Protocol M) relies on [marker](https://github.com/VikParuchuri/marker), an open-source layout-aware PDF parser whose authors did the actual hard work.
 
 This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.
