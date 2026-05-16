@@ -172,7 +172,7 @@ If you install `/beautiful_deck` without `/tikz`, both steps will fail. Always i
 
 Full essays (in this skill directory):
 - [`rhetoric_of_decks.md`](rhetoric_of_decks.md) — the operational principles
-- [`rhetoric_of_decks_full_essay.md`](rhetoric_of_decks_full_essay.md) — the 600-line intellectual genealogy from Aristotle through LLMs
+- `deprecated/presentations/rhetoric_of_decks_full_essay.md` — the 600-line intellectual genealogy from Aristotle through LLMs (archived in the repo root, not loaded by the skill)
 - [`style_preferences.md`](style_preferences.md) — user-specific stylistic defaults, including functional slide-header progress indicators.
 
 `/beautiful_deck` is the operational skill version of those essays. You don't need to re-read them to invoke it — the skill handles the workflow — but the essays explain *why* the principles work.

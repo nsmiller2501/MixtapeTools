@@ -414,23 +414,7 @@ Before handing the deck to the user in Step 10, run the compile check one last t
 
 ## Step 6: Visual Cleanup — Invoke `/tikz`
 
-LaTeX warnings catch box overflow. They do NOT catch:
-- TikZ label collisions with arrows, boxes, or other labels
-- ggplot2 / matplotlib labels clipped at figure boundaries
-- Coordinate misalignment in custom diagrams
-- Text bleeding into patches or shapes
-
-Run `/tikz <deck>.tex` to audit every TikZ figure in the deck using the measurement-based collision-prevention protocol. The skill will:
-- Run `~/.claude/skills/tikz/scripts/audit_passes.sh <deck>.tex` to collect deterministic scope, precheck, candidate-pass, and compile-warning inputs
-- Compute Bézier curve depths and check for label overlaps
-- Calculate text-width vs. node-gap for every edge label
-- Verify boundary clearances for labels near shapes
-- Check cross-slide consistency if the same diagram appears on multiple slides
-- Report every collision with exact line numbers
-
-`audit_passes.sh` is only an index/precheck wrapper. The canonical geometry and clearance rules remain in `~/.claude/skills/tikz/tikz_rules.md`, which this skill reads before writing TikZ in Step 4.4 and `/tikz` reads before repairing TikZ in Step 6.
-
-Apply all fixes the skill suggests, then recompile. Go back to Step 5 if any new warnings appear.
+LaTeX warnings catch box overflow but not TikZ collisions, clipped matplotlib labels, coordinate drift, or text bleeding into shapes. Run `/tikz <deck>.tex` to audit residual visual collisions. The `/tikz` skill describes its own protocol; it reads the same `tikz_rules.md` you used at Step 4.4. Apply all fixes it suggests, then recompile. Return to Step 5 if any new warnings appear.
 
 ---
 
@@ -498,32 +482,9 @@ Report to the user:
 
 ---
 
-## Reference: The Three Laws (per `rhetoric_of_decks.md`)
+## Reference: Three Laws + Aristotelian triad
 
-These are the constants that hold across every audience, every aesthetic, every deck. Read them once and internalize:
-
-1. **Beauty is function.** Beauty in presentation is clarity made visible. Decoration without function is noise. The most beautiful slide may be three words on a blank background.
-2. **Cognitive load is the enemy.** One idea per slide. Two max for inseparable contrasts. If you need "also" or "additionally," you need a new slide.
-3. **The slide serves the spoken word.** The slide is the visual anchor for what you say — not what you say. If your slides can be understood without you speaking, you have written a document and called it a presentation.
-
-## Reference: The Aristotelian triad (per `rhetoric_of_decks.md` Part II)
-
-- **Ethos (credibility).** The audience asks: *Why should I trust this person?* Ethos lives in methodology slides, Devil's Advocate slides, honest scorecards, acknowledgment of limitations. Admitting weakness builds credibility.
-- **Pathos (emotion).** The audience asks: *Why should I care?* Pathos lives in opening hooks, stakes, human impact, aspiration. Pathos without logos is demagoguery.
-- **Logos (logic).** The audience asks: *Does this make sense?* Logos lives in data visualizations, comparison tables, causal diagrams, the logical flow from problem to conclusion. Logos without pathos is a lecture.
-
-The rhetorical balance depends on the audience — see Q2 in Step 0.
-
----
-
-## Full Philosophy Reference
-
-For the complete essay behind these principles, all in this skill directory:
-- `rhetoric_of_decks.md` — the condensed operational version
-- `rhetoric_of_decks_full_essay.md` — the 600-line intellectual genealogy from Aristotle through LLMs
-- `style_preferences.md` — user-specific stylistic defaults that persist across decks; separate from rhetorical principles.
-
-This skill operationalizes those essays. You don't need to re-read them to execute the workflow — just follow the steps above.
+The constants behind every choice in this skill — the Three Laws (beauty is function, cognitive load is the enemy, slide serves the spoken word) and the Aristotelian triad (ethos / pathos / logos) — are defined in `~/.claude/skills/beautiful_deck/rhetoric_of_decks.md` §I and §II. Read it once and internalize; the rhetorical balance per audience is the Q1 table in Step 0.
 
 ## Local reference files
 

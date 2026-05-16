@@ -144,7 +144,7 @@ If you install `/beautiful_deck` without `/tikz`, both steps will fail. Install 
 
 Full essays:
 - [`.claude/skills/beautiful_deck/rhetoric_of_decks.md`](../../.claude/skills/beautiful_deck/rhetoric_of_decks.md) — the operational principles
-- [`.claude/skills/beautiful_deck/rhetoric_of_decks_full_essay.md`](../../.claude/skills/beautiful_deck/rhetoric_of_decks_full_essay.md) — the 600-line intellectual genealogy from Aristotle through LLMs
+- [`deprecated/presentations/rhetoric_of_decks_full_essay.md`](../../deprecated/presentations/rhetoric_of_decks_full_essay.md) — the 600-line intellectual genealogy from Aristotle through LLMs (archived; not loaded by the skill)
 
 `/beautiful_deck` is the operational skill version of those essays. You don't need to re-read them to invoke it — the skill handles the workflow — but the essays explain *why* the principles work.
 
