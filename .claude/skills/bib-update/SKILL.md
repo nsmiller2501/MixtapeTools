@@ -1,7 +1,7 @@
 ---
 name: bib-update
 description: Assembles or refreshes `references/references.bib` from per-paper bibliographic metadata blocks in `references/raw/<basename>_text.md` via a DOI → CrossRef → OpenAlex → LLM-fallback cascade. Idempotent and append-only by default; pass `--rebuild-bib` to regenerate from scratch. Use when adding new papers to a project's reference library, after running `/wiki-update`, or to bootstrap `.bib` entries from bare PDFs.
-allowed-tools: Read, Edit, Write, Glob, Grep, Bash(ls*), Bash(curl:*), Bash(mkdir:*), Bash(pdftotext:*)
+allowed-tools: Read, Edit, Write, Glob, Grep, Bash(ls*), Bash(curl:*), Bash(mkdir:*), Bash(pdftotext:*), Bash(python3:*), Bash(~/.claude/skills/bib-update/scripts/fetch_bibtex.py:*)
 argument-hint: [--rebuild-bib]
 ---
 
@@ -78,61 +78,38 @@ Use the filename stem verbatim (e.g., `Deryugina_etal_2019_AER`). If the fetched
 
 ## Fetch cascade (per paper, stop at first success)
 
-**Source 0 — DOI direct.** If `doi` in the metadata block is non-null, fetch via content-negotiation:
+Run `scripts/fetch_bibtex.py` for each queued stem. The script encodes Sources 0–2 (DOI direct → CrossRef → OpenAlex), the 3-signal match test (title fuzzy ≥85%, year ±1, first-author match), three-way agreement against the parsed stem, and citation-key rewriting. Network errors, JSON parse errors, and empty content-negotiation bodies all fall through to the next source.
 
 ```bash
-curl -sLH "Accept: application/x-bibtex" "https://doi.org/<doi>"
+python3 ~/.claude/skills/bib-update/scripts/fetch_bibtex.py "<stem>" \
+  --doi "<doi-or-empty>" \
+  --first-author "<LastName>" \
+  --title "<verbatim title>" \
+  --year <year> \
+  --venue "<venue>" \
+  --venue-type <journal|working_paper|book_chapter|other>
 ```
 
-A non-empty response that starts with `@` is accepted as-is. Rewrite the key. This is a Tier 1 result.
-
-**Source 1 — CrossRef title+author.** Query:
+The script prints a single JSON object to stdout:
 
 ```
-https://api.crossref.org/works?query.title=<urlencoded-title>&query.author=<first-author-last>&rows=5
+{ "stem": "...", "tier": 1|2|3, "source": "doi-direct"|"crossref"|"openalex"|"fallback-needed",
+  "bibtex": "@article{...}" | null,
+  "match_signals": { "title_score": 0.94, "year_off_by_one": false, "author_ok": true } | null,
+  "rejections": [{"source": "...", "candidate": "...", "reason": "..."}] }
 ```
 
-For each candidate in the response, apply the **3-signal match test**:
+### Result handling
 
-- Year matches ±1 (flag in report if off by 1)
-- First author's last name matches (case-insensitive)
-- Title fuzzy-match ≥85% after normalization (lowercase, strip punctuation, collapse whitespace)
+- **Tier 1** (`source: doi-direct`): auto-append `bibtex`.
+- **Tier 2** (`source: crossref` or `openalex`): auto-append `bibtex`; flag in the tier report. If `match_signals.year_off_by_one == true`, surface that in the report so the user can confirm the preprint-vs-published version is the intended one. **Preprint/published divergence override**: if the filename's venue (e.g., `_NBER`, `_SSRN`, `_IZA` indicates a working paper; standard journal abbrevs like `_AER`, `_QJE` indicate published) disagrees with the candidate's venue type implied by the returned BibTeX (`@techreport` vs `@article`), reject this result and treat as Tier 3.
+- **Tier 3** (`source: fallback-needed`, `bibtex: null`): construct a BibTeX entry from the `_text.md` metadata block. Map `venue_type`:
+  - `journal` → `@article`
+  - `working_paper` → `@techreport` (institution = venue)
+  - `book_chapter` → `@incollection`
+  - `other` → `@misc`
 
-Also require **three-way agreement**: year and first-author last name must agree across (a) the filename parsed as `Author_etal_Year_Venue`, (b) the `_text.md` metadata block, and (c) the API result. Disagreement on any axis → reject this candidate.
-
-On first candidate passing all tests, content-negotiate its DOI:
-
-```bash
-curl -sLH "Accept: application/x-bibtex" "https://doi.org/<doi-from-crossref>"
-```
-
-Use the result. Rewrite the key. This is a Tier 2 result.
-
-**Source 2 — OpenAlex title+author.** Query:
-
-```
-https://api.openalex.org/works?search=<urlencoded-title>&filter=authorships.author.display_name.search:<first-author-last>
-```
-
-Apply the same 3-signal match test and three-way agreement. If a candidate passes and has a DOI, content-negotiate it. If no DOI, construct BibTeX directly from the OpenAlex JSON fields. Rewrite the key. This is also a Tier 2 result.
-
-**Source 3 — LLM-from-metadata fallback.** If all network sources fail or no candidates pass matching, construct a BibTeX entry from the `_text.md` metadata block. Map `venue_type`:
-
-- `journal` → `@article`
-- `working_paper` → `@techreport` (institution = venue)
-- `book_chapter` → `@incollection`
-- `other` → `@misc`
-
-Mark this entry **unverified**. Block for user approval (see Review below) — do not append until approved.
-
-**Preprint/published divergence:** the filename's venue wins. If the filename says `Anderson_etal_2022_NBER` but an API returns a 2024 AER version, reject the API result and either re-query scoped to the working paper series or fall through to LLM fallback.
-
-## Failure handling
-
-- `curl` timeout or network error on any single source → fall through to next source.
-- All sources fail → LLM-from-metadata fallback → blocks for approval.
-- JSON parse error from API response → treat as failure, fall through.
-- Content-negotiation returns an empty body → fall through.
+  Mark this entry **unverified**. Block for per-entry user approval before appending.
 
 ## Review and append
 
