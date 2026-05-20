@@ -8,28 +8,21 @@ Use this prompt after all worker bundles have durable notes.
 - all worker note paths
 - output `_text.md` path
 - `extraction_schema.md`
-- optional wiki-update context and wiki paths
 
 ## Task
 
-Read the manifest and every worker note. Write one coherent, project-neutral `_text.md` using `extraction_schema.md`. If running under `wiki-update`, write the neutral `_text.md` first, then apply project context only to wiki pages.
+Read the manifest and every worker note. Write one coherent, project-neutral `_text.md` using `extraction_schema.md`.
 
 ## Rules
 
 - Treat worker notes as local evidence, not final interpretation.
 - Do gap-directed rereads only: reread source chunks when notes omit a needed table, figure, equation, result, or ambiguous claim.
 - Do not read the full marker `markdown.md`.
+- Do not read project wiki pages, project context files, citation-overlap JSON, or downstream workflow files.
+- Do not write source pages, concept/wiki pages, index entries, log entries, or figure files.
 - Preserve exact coefficients, standard errors, sample details, equation labels, and table/figure captions when available.
-- Keep `_text.md` project-neutral. Project relevance gates belong only to wiki-facing pages.
+- Keep `_text.md` project-neutral. Downstream skills apply project relevance gates after this file exists.
 
 ## Outputs
 
-For `read-pdf`:
 - `<basename>_text.md`
-
-For `wiki-update`:
-- `references/raw/<basename>_text.md`
-- source page and concept/wiki pages
-- non-destructive index updates
-- proposed destructive diffs, if needed
-- return-value summary required by `wiki-update/common.md`

@@ -1,12 +1,12 @@
 # Common protocol fragments — wiki-update subagent
 
-These sections are shared across Protocols M, E, and S. The main session embeds this file verbatim into every per-paper subagent prompt, alongside exactly one of `protocol_m.md`, `protocol_e.md`, or `protocol_s.md`.
+These sections are shared across Protocols M, E, and S. The main session passes this file by path into every per-paper subagent prompt, alongside exactly one of `protocol_m.md`, `protocol_e.md`, or `protocol_s.md`.
 
 ---
 
 ## `_text.md` structure
 
-Protocols that synthesize `_text.md` (M and S) use this layout:
+Protocols that synthesize `_text.md` (Protocol S and the read-pdf fanout synthesis used by Protocol M) use this layout:
 
 ```markdown
 ## Bibliographic metadata

@@ -1,8 +1,10 @@
-# Protocol M — Converted Markdown Substrate
+# Protocol M — Fanout Extract Then Wiki Synthesis
 
 *Input:* path to `manifest.json` produced by `read-pdf/scripts/prepare_substrate.py`, path to the converter cache directory (for figures), canonical paper basename.
 
-Protocol M reads only `manifest.json`, its chunk files, worker notes, `meta.json`, and cache-local figure/equation files. Do not read the whole converted `markdown.md`. Do not inspect the source PDF with `pdftotext` or any other text extractor for substantive synthesis, even if conversion is slow. If conversion or substrate preparation is still running, wait.
+Protocol M reads only `manifest.json`, its chunk files, worker notes, `meta.json`, cache-local figure/equation files, the neutral `_text.md`, and wiki context files. Do not read the whole converted `markdown.md`. Do not inspect the source PDF with `pdftotext` or any other text extractor for substantive synthesis, even if conversion is slow. If conversion or substrate preparation is still running, wait.
+
+The old Version A path, where one Protocol M agent reads `markdown.md` directly and writes both `_text.md` and wiki pages, is deprecated and disallowed. Use direct `markdown.md` reads only for manual emergency debugging outside normal `/wiki-update` ingest, and label that debug session explicitly.
 
 ## Step 1: Check for equation fallback
 
@@ -24,21 +26,38 @@ If interrupted, completed worker notes are salvageable and should not be deleted
 
 ## Step 3: Synthesize `_text.md`
 
-After all worker notes exist, the main session spawns one synthesis agent. The synthesis agent reads `manifest.json` and all worker note files. It uses `~/.claude/skills/read-pdf/fanout_synthesis.md` plus `common.md` to produce `references/raw/<basename>_text.md` following the project-neutral `_text.md` structure (bib block, plain-English synthesis, structured dimensions, and formal-object inventories). Gap-reread specific chunk files only when worker notes omit a needed table, figure, equation, result, or ambiguous claim. Write or overwrite if a prior partial file exists.
+After all worker notes exist, the main session spawns one read-pdf synthesis agent. The synthesis agent reads `manifest.json` and all worker note files. It uses `~/.claude/skills/read-pdf/fanout_synthesis.md` plus `~/.claude/skills/read-pdf/extraction_schema.md` to produce `references/raw/<basename>_text.md` following the project-neutral `_text.md` structure (bib block, plain-English synthesis, structured dimensions, and formal-object inventories). Gap-reread specific chunk files only when worker notes omit a needed table, figure, equation, result, or ambiguous claim. Write or overwrite if a prior partial file exists.
 
 For the bib metadata block, use DOI candidates from `manifest.json` and front-matter worker notes. Extract authors, title, year, and venue from the front-matter chunks and worker notes. Record null for any field not found. Do not read the whole `markdown.md` for metadata.
 
-## Step 4: Copy and classify relevant figures
+The read-pdf synthesis agent must not read project wiki pages, project context files, citation-overlap JSON, or downstream wiki prompts. It writes only `_text.md`.
 
-For each figure inventoried in `manifest.json` or worker notes:
+## Step 4: Write project wiki pages
+
+After `_text.md` exists, the main session spawns one wiki synthesis agent. It reads:
+
+- `references/raw/<basename>_text.md`
+- `references/CLAUDE.md`
+- project root `CLAUDE.md`
+- current `references/wiki/index.md`
+- relevant existing wiki pages
+- `references/raw/raw_build/<basename>_citation_overlap.json`, if produced
+- `~/.claude/skills/wiki-update/wiki_synthesis.md`
+- `~/.claude/skills/wiki-update/common.md`
+
+The wiki synthesis agent must not read worker notes or chunk files unless `_text.md` explicitly marks a gap and the main session approves a targeted recovery read.
+
+## Step 5: Copy and classify relevant figures
+
+For each relevant figure listed in `_text.md`:
 
 1. Identify the paper figure number from surrounding caption text.
 2. Apply the project-relevance filter. Non-relevant: one-line description + page ref only; do not copy.
 3. For relevant figures:
    - Copy from cache to wiki: `cp <cache-dir>/figures/fig_N.png references/wiki/figures/<basename>_fig<M>.png` (where M is the paper's figure number). Before the first copy, run `mkdir -p references/wiki/figures` (idempotent).
-   - Classify as Tier A (data figure: scatter, line, bar, coefplot, histogram, density, time series, RD/event-study plot) or Tier B (schematic: DAG, conceptual diagram, map, flowchart, theoretical model). Use the caption text; read the PNG only if the caption is genuinely ambiguous.
+   - Classify as Tier A (data figure: scatter, line, bar, coefplot, histogram, density, time series, RD/event-study plot) or Tier B (schematic: DAG, conceptual diagram, map, flowchart, theoretical model). Use the `_text.md` figure description and caption; read the PNG only if genuinely needed for wiki writing.
 
-## Step 5: Write wiki pages
+## Step 6: Wiki figure embeds
 
 Use the substantive-change rule and relevance filtering in `common.md`.
 

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "source_markdown": "/Users/noahmiller/.cache/claude-pdf-converter/cache/marker/fb9f9e768ef707ea1d02032a0aba995e7908be9500840a90033e41fcd72e9784/markdown.md",
+  "bibtex": "/Users/noahmiller/code/MixtapeTools/tmp/references/references.bib",
+  "candidate_count": 1,
+  "candidates": [
+    {
+      "bib_key": "Carleton_etal_2024_HESECC",
+      "title": "Adaptation to Climate Change",
+      "year": "2024",
+      "doi": "10.1016/bs.hesecc.2024.10.001",
+      "match_labels": [
+        "title_exact_normalized"
+      ],
+      "priority_score": 75
+    }
+  ]
+}

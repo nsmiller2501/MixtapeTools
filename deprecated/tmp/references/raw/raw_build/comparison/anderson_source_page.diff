@@ -1,0 +1,215 @@
+--- real_anderson_source
++++ b_fanout_anderson_source
+@@ -1,137 +1,130 @@
+-# Anderson Etal 2022 NBER
++# Anderson, Hyun, and Lee (2022) NBER
+ 
+-**Summary**: Anderson, Hyun, and Lee estimate the welfare value of South Korea's particulate-matter alert program using a fuzzy RD design at the alert-issuance threshold, and develop a revealed-preference framework in which the externalized (publicly-borne) share of avoided healthcare expenditures provides a sharp lower bound on social welfare gains (source: Anderson_etal_2022_NBER.pdf). The paper is the JMP's methodological anchor for the alert-program welfare-bound exercise (source: Anderson_etal_2022_NBER.pdf).
++**Summary**: Establishes a lower-bound welfare framework for air-quality alert systems (AQAS) using a fuzzy RD at South Korea's PM alert threshold; finds alerts reduce government-borne health expenditures by $28.6M (contemporaneous) at a benefit-cost ratio of 7:1, with effects entirely via avoidance behavior (no ambient PM change at threshold). The fiscal externality $\Delta E$ identified here enters the JMP directly as the estimable component of $\Delta W$.
+ 
+ **Sources**: Anderson_etal_2022_NBER.pdf
+ 
+-**Last updated**: 2026-05-17
++**Last updated**: 2026-05-19
+ 
+ ---
+ 
+-## Project-Relevant Takeaway
++## Paper in brief
+ 
+-Anderson et al. provide the welfare-bound architecture the JMP uses to interpret the alert-program coefficient $\beta_A$ on government-borne Medicare costs. Their key insight is that when an alert is issued, individuals are weakly better off in private welfare because better information cannot harm a utility-maximizer who could otherwise have ignored it — so $\Delta U_i \geq 0$, and the externality component $\Delta E_i$ alone provides a sharp lower bound on the social welfare change $\Delta W_i = \Delta U_i + \Delta E_i$ (source: Anderson_etal_2022_NBER.pdf). Empirically they identify $\Delta E_i$ from the publicly-subsidized share of healthcare expenditures, which is about 70% in the South Korean system. The JMP reproduces this logic with the FFS Medicare gov/OOP cost decomposition: the alert coefficient on government-borne costs identifies $\Delta E$ (a lower bound on $\Delta W$), and the alert coefficient on out-of-pocket costs bounds private willingness-to-pay from above. See [[welfare-bounds-fiscal-externality]] for the formal mechanics.
++Anderson, Hyun, and Lee (2022) study South Korea's fine-particulate-matter alert system (PM2.5 and PM10 advisories issued to 51 million residents). They estimate the causal effect of alert issuance on per-capita health expenditures using a **fuzzy regression discontinuity**: when the running variable $rv_d = PM_d^{\text{2h-min-max}} - c$ crosses zero, the probability of an alert rises by ≈62 pp (strong first stage, F ≈ 46–90), but measured ambient PM does not jump — so any health expenditure changes must reflect avoidance behavior, not reduced actual pollution.
+ 
+-## Welfare-Bound Framework
++The paper's key conceptual contribution is a **welfare bounds framework**: social welfare gain decomposes as $\Delta W_i = \Delta U_i + \Delta E_i$. Because $\Delta U_i \geq 0$ (more accurate PM information weakly increases private utility), the estimated reduction in *publicly reimbursed* health costs $\Delta E_i$ is a lower bound on the total welfare gain. The JMP uses this logic: the alert coefficient $\beta_A$ on government-borne Medicare costs identifies $\Delta E$ and provides a conservative welfare lower bound.
+ 
+-The model treats an alert as an information intervention that sharpens the individual's belief about today's PM. With utility $U_i(a_i, pm) = b_i(a_i) - s_i^{pvt} p_s(a_i, pm)$ — activity benefits $b_i(a_i)$ minus a probability-of-sickness term — and beliefs $pm_i \in \{pm^{avg}, pm^{hi}\}$ depending on whether the running variable is below or above the threshold, the change in private utility from crossing the threshold is
++## Identification
+ 
+-$$\Delta U_i = [b_i(a_i(pm^{hi})) - b_i(a_i(pm^{avg}))] - s_i^{pvt}[p_s(a_i(pm^{hi}), c) - p_s(a_i(pm^{avg}), c)] \geq 0,$$
++- **Design**: Fuzzy RD; running variable is threshold-normalized daily PM; treatment is alert issuance; instrument is the above-threshold indicator.
++- **Sample**: South Korea, 2016–2017; 73 districts in 7 major cities; 2.3 million individuals (NHIS 10% sample); district-by-day observations ($N \approx 2{,}530$ at $h = 20$).
++- **No PM discontinuity**: Table A4 confirms no jump in ambient PM10 or PM2.5 at the threshold → effects are purely behavioral (avoidance).
++- **Bandwidth**: $h = 20$ preferred (CCT-optimal range 17–22); robustness at $h = 16$ and $h = 24$.
+ 
+-with the inequality following from revealed preference: $a_i = \arg\max_a U_i(a, pm_i)$ and $pm^{hi} \approx c$ (the running-variable threshold) (source: Anderson_etal_2022_NBER.pdf). Social welfare is $W_i = U_i + E_i$, so
++## Key estimates
+ 
+-$$\Delta W_i = \Delta U_i + \Delta E_i \geq \Delta E_i.$$
++**First stage** (Table 3): Alert probability rises 0.618–0.636 at threshold; F-stat 46–90; Adj. $R^2 \approx 0.71$–$0.73$.
+ 
+-A nontrivial bound therefore requires data on meaningful externalities of avoidance behavior. In the South Korean context, ~70% of healthcare spending is publicly subsidized, so 70% of any reduction in healthcare spending is externalized — i.e., $\Delta E_i$ (source: Anderson_etal_2022_NBER.pdf). See [[welfare-bounds-fiscal-externality]] for the project mapping.
++**Respiratory effects** (Table 4, 2SLS, $h = 20$, US cents per capita):
+ 
+-## Identification Design
++| Age group | Coeff. | SE (RV) | SE (day) |
++|---|---|---|---|
++| Minors (0–19) | −15.03 | (4.71) | [5.67] |
++| Adults (20–64) | −3.78 | (2.20) | [2.13] |
++| Older Adults (≥65) | −4.30 | (2.75) | [2.80] |
++| All ages | −5.83 | (2.40) | [2.50] |
+ 
+-The paper uses a fuzzy RD design at the South Korean PM-alert issuance threshold. The running variable is the daily maximum of 2-hour-minimum PM2.5 and PM10 readings, normalized by their respective issuance thresholds (90 µg/m³ and 150 µg/m³) and pooled via the multi-cutoff procedure of Cattaneo et al. (2020) so the cutoff sits at zero (source: Anderson_etal_2022_NBER.pdf). Assignment is fuzzy because (a) authorities also weigh weather conditions and (b) issuance and cancellation thresholds differ, so alerts persist into below-threshold days.
++Minors: ≈30% of mean below-threshold spending.
+ 
+-The first-stage and reduced-form regressions are local-linear with population weights and a default bandwidth $h = 20$ (CCT-optimal range 17–22):
++**Cardiovascular effects** (Table 5, 2SLS, $h = 20$, US cents per capita):
+ 
+-$$Alert_{it} = \gamma_1 \mathbb{1}(\widetilde{PM}_{it} \geq 0) + \gamma_2 \widetilde{PM}_{it} + \gamma_3 \widetilde{PM}_{it} \cdot \mathbb{1}(\widetilde{PM}_{it} \geq 0) + X_{1it}\theta_1 + X_{2t}\phi_1 + \delta_{1i} + u_{it},$$
++| Age group | Coeff. | SE (RV) | SE (day) |
++|---|---|---|---|
++| Adults (20–64) | −2.83 | (0.976) | [0.767] |
++| Older Adults (≥65) | −9.64 | (3.85) | [3.68] |
++| All ages | −3.26 | (1.09) | [1.01] |
+ 
+-$$Y_{it} = \beta_1 \mathbb{1}(\widetilde{PM}_{it} \geq 0) + \beta_2 \widetilde{PM}_{it} + \beta_3 \widetilde{PM}_{it} \cdot \mathbb{1}(\widetilde{PM}_{it} \geq 0) + X_{1it}\theta_2 + X_{2t}\phi_2 + \delta_{2i} + \varepsilon_{it}.$$
++Adults: ≈23% reduction; Older Adults: ≈14% reduction.
+ 
+-Controls $X_{1it}$ are temperature and precipitation; $X_{2t}$ is year-by-month, day-of-week, and holiday fixed effects; $\delta_i$ is district fixed effects. The FRD estimand $\hat\tau_{FRD} = \hat\beta_1 / \hat\gamma_1$ is estimated by 2SLS. Standard errors are clustered both by running-variable value and by day-of-sample; when reporting test statistics the authors default to the larger of the two (source: Anderson_etal_2022_NBER.pdf).
++**Dynamic effects** (Table 6, 3-day rolling sum, $h = 20$, cents per capita): Effects 2.5–2.8× contemporaneous, consistent with multi-day alert duration (mean 1.87 days).
+ 
+-The first stage is large and robust: crossing the threshold raises alert probability by about 0.62, with $F$-statistics 46–90 across bandwidths (source: Anderson_etal_2022_NBER.pdf). **Critically, there is no discontinuity in average PM at the threshold** (Appendix Table A4, with point estimates 0.3 for PM10 and $-4.7$ for PM2.5, all insignificant). This grounds the interpretation that the estimated health-spending discontinuities are pure responses to information (avoidance behavior) rather than to ambient pollution changes — a cleaner identification of the avoidance-behavior channel than studies where alerts are bundled with emissions controls (source: Anderson_etal_2022_NBER.pdf).
++| | All ages |
++|---|---|
++| Respiratory | −16.1 (4.78) |
++| Cardiovascular | −8.04 (2.66) |
+ 
+-## Data
++**Aggregate welfare bounds** (2016–2017):
++- Contemporaneous: total health expenditure reduction ≈$41M; public-share lower bound $28.6M (respiratory $18.4M + cardiovascular $10.2M).
++- Dynamic: total ≈$52M; public lower bound $36.7M.
++- System cost ≈$4M (Tables A12–A13).
++- **BCR: 7.1:1** (contemporaneous); **9.2:1** (dynamic).
++- **Net benefit: $24.6M** ($32.7M dynamic).
+ 
+-Health spending is a 10% random sample of the National Health Insurance Service (NHIS) for seven major South Korean cities (Seoul, Busan, Daegu, Daejeon, Incheon, Gwangju, Ulsan), covering ~2.3 million individuals over 2016–2017 (source: Anderson_etal_2022_NBER.pdf). Daily per-capita spending is broken out by disease (ICD-10 "I" cardiovascular, "J" respiratory) and age (minors 0–19, adults 20–64, older adults 65+). The main analysis **excludes** inpatient hospitalizations (because the lag between symptom onset and inpatient admission is typically a week or more and would inject noise into a daily panel) and excludes outpatient visits to tertiary general hospitals (which require referrals); robustness adds them back in (source: Anderson_etal_2022_NBER.pdf).
+-
+-The project's MedPAR-based JMP design takes the opposite choice: it analyzes daily inpatient admissions because the legacy Deryugina et al. (2019) ozone-and-mortality literature has established that daily inpatient counts respond detectably to acute ozone exposure at the day level. The Anderson et al. exclusion is specific to the Korean PM-alert RD context, not a general design principle.
+-
+-The out-of-pocket payment ratio ranges from 10–50% across institution types, with an average of ~30% OOP / ~70% public coverage — the "70%" the welfare bound applies to FRD coefficients (source: Anderson_etal_2022_NBER.pdf, Tables A3 and 2).
+-
+-Alert data come from the Korea Environment Corporation (KECO) website. Operating-cost data come from municipal environmental-expenditure reports (Appendix Tables A12 and A13). NAVER search-engine counts provide independent behavioral evidence of alert salience (Figure 2).
+-
+-## Headline Results
+-
+-Fuzzy-RD 2SLS estimates of the change in per-capita daily health expenditures (US cents) due to an alert issuance at bandwidth $h=20$ (source: Anderson_etal_2022_NBER.pdf, Tables 4 and 5):
+-
+-| Outcome | Minors (0–19) | Adults (20–64) | Older Adults (65+) | All |
+-|---|---|---|---|---|
+-| Respiratory | $-15.03$ (5.67) | $-3.78$ (2.13) | $-4.30$ (2.80) | $-5.83$ (2.50) |
+-| Cardiovascular | $-0.040$ (0.035) | $-2.83$ (0.77) | $-9.64$ (3.68) | $-3.26$ (1.01) |
+-
+-Percentage effects (relative to mean expenditure with running variable in $[-20, 0]$): **minors respiratory $-30\%$, adults cardiovascular $-23\%$, older adults cardiovascular $-14\%$** (source: Anderson_etal_2022_NBER.pdf).
+-
+-Dynamic (3-day rolling sum) estimates are 2.2–2.8 times the contemporaneous coefficients (Table 6), capturing both multi-day alert episodes (mean duration 1.87 days) and some lagged avoidance benefit after alert expiry (source: Anderson_etal_2022_NBER.pdf).
+-
+-**Aggregate gross-benefit lower bound** (sum across diseases and ages, scaled by exposed population and the 70% public-share factor): $\Delta E \geq 28.6$ million USD (contemporaneous) or $36.7$ million USD (dynamic) over 2016–2017 (source: Anderson_etal_2022_NBER.pdf). **Alert-system operating cost** ~4 million USD over 2016–2017. **Minimum benefit-cost ratio: 7.1:1 (contemporaneous) or 9.2:1 (dynamic).**
+-
+ ## Figures
+ 
+-**Figure 2:** Alert counts and keyword search results related to air quality information (p. 21).
++**Figure 1:** Alert cluster map for 7 South Korean cities (p. 20)
+ 
+-![Daily alert counts vs. NAVER search keyword counts, 2016–2017](figures/Anderson_etal_2022_NBER_fig2.jpeg)
++![Alert cluster map](../figures/Anderson_etal_2022_NBER_fig1.jpeg)
+ 
+-- Key visual finding: NAVER search-engine searches for "air pollution alert," "particulate matter," and "air quality" spike sharply on the same days alerts are issued, giving direct behavioral evidence that the public attends to alerts when they are triggered (source: Anderson_etal_2022_NBER.pdf).
+-- **Figure notes:** The red series represents the daily count of air quality alerts, and the blue series represents searches for "air pollution alert", "particulate matter", or "air quality" on NAVER. The maximum value of daily keyword search counts is set to 100.
++- Key visual finding: 73 districts organized into 14 alert regions across 7 cities (Seoul, Busan, Daegu, Daejeon, Incheon, Gwangju, Ulsan).
+ 
+-**Figure 3:** Treatment discontinuity (p. 22).
++**Figure 2:** Daily PM alert counts and NAVER keyword search index, 2016–2017 (p. 21)
+ 
+-![First-stage RD plot: probability of advisory by normalized running variable](figures/Anderson_etal_2022_NBER_fig3.jpeg)
++![Alert counts and search keyword spikes](../figures/Anderson_etal_2022_NBER_fig2.jpeg)
+ 
+-- Key visual finding: alert probability jumps from ~5% just below the threshold to ~80% just above, visualizing the $\hat\gamma_1 \approx 0.62$ first-stage coefficient (source: Anderson_etal_2022_NBER.pdf).
+-- **Figure notes:** Each point represents the population-weighted average of observations in a given bin, the width of which is 5 units. The *y*-axis indicates the average probability of a particulate matter advisory. The *x*-axis indicates the value of the running variable (a threshold-normalized function of PM).
++- Key visual finding: NAVER keyword searches for air quality spike sharply on alert days, confirming that alerts successfully transmit information to the public.
+ 
+-**Figure 4:** Outcome discontinuity (p. 23).
++**Figure 3:** P(PM advisory) vs. running variable — first-stage discontinuity (p. 22)
+ 
+-![Reduced-form RD plots of residualized health expenditures by disease and age](figures/Anderson_etal_2022_NBER_fig4.jpeg)
++![RD first stage](../figures/Anderson_etal_2022_NBER_fig3.jpeg)
+ 
+-- Key visual finding: clear downward jumps in residualized health spending at the alert threshold for minor respiratory, adult respiratory and cardiovascular, and older-adult cardiovascular; no visible jump for minor cardiovascular (essentially zero baseline). This is the visual analog of Tables 4 and 5 and the core empirical result (source: Anderson_etal_2022_NBER.pdf).
+-- **Figure notes:** Each point represents the population-weighted average of observations in a given bin, the width of which is 5 units. The *y*-axis indicates the per capita level of residualized health expenditures, in US cents (11.5 KRW = 0.01 USD). The residualization was performed with respect to day-of-week, year-by-month, holiday, and district fixed effects. The *x*-axis indicates the value of the running variable (a threshold-normalized function of PM).
++- Key visual finding: Sharp jump in advisory probability at $rv_d = 0$; essentially zero below, ≈62% above. Strong and credible first stage.
+ 
+-**Figure 5:** Potential health benefits by age group (p. 24).
++**Figure 4:** Residualized per-capita health expenditures vs. running variable — 6 panels (p. 23)
+ 
+-![Aggregate gross-benefit lower bounds by age, stacked by disease, contemporaneous and dynamic panels](figures/Anderson_etal_2022_NBER_fig5.jpeg)
++![RD outcome discontinuity](../figures/Anderson_etal_2022_NBER_fig4.jpeg)
+ 
+-- Key visual finding: prime-age adults realize the largest aggregate gross benefits, but every age group contributes substantially. "All" totals are ~28.6 million USD (contemporaneous) and ~36.7 million USD (dynamic) for 2016–2017 (source: Anderson_etal_2022_NBER.pdf).
+-- **Figure notes:** The left (right) panel plots lower bounds on gross benefits by age groups using estimates from Tables 4 and 5 (Table 6). To bound gross benefits we scale the table coefficients by the average share of health expenditures that are publicly covered (70%).
++- Key visual finding: Visible downward jumps in residualized spending at threshold for youth respiratory and adult/older-adult cardiovascular — visual confirmation of the 2SLS estimates.
++- **Figure notes:** Residualized for DOW, year × month, holiday, and district FEs. Bin width = 5 RV units.
+ 
+-**Figure 6:** Cost-benefit comparison and potential health benefits (p. 25).
++**Figure 5:** Lower bounds on gross health benefits by age group — contemporaneous and dynamic (p. 24)
+ 
+-![Aggregate gross-benefit lower bounds by alert-policy scenario with program-cost reference lines](figures/Anderson_etal_2022_NBER_fig6.jpeg)
++![Welfare lower bounds by age group](../figures/Anderson_etal_2022_NBER_fig5.jpeg)
+ 
+-- Key visual finding: Scenario B (lower PM2.5 threshold of 75 µg/m³, the post-July-2018 policy) roughly doubles aggregate benefits versus the baseline policy. Horizontal blue lines marking program operating costs sit far below every benefit bar, visually dramatizing the favorable benefit-cost ratio in all scenarios (source: Anderson_etal_2022_NBER.pdf).
+-- **Figure notes:** The left (right) panel plots lower bounds on gross benefits by scenario using estimates from Tables 4 and 5 (Table 6). To bound gross benefits we scale the table coefficients by the average share of health expenditures that are publicly covered (70%). "Baseline" represents the policy during the sample period, "Scenario A" represents a policy that triggers an alert whenever the running variable crosses the relevant threshold, and "Scenario B" represents a policy that lowers the PM2.5 threshold to the value adopted in July 2018. The solid (dashed) line represents the total system maintenance cost for the analytic period (2016–2017) using 2018 (2017) as the reference year for costs.
++- Key visual finding: Adults (20–64) account for the largest share of benefits ($20.4M), led by cardiovascular; respiratory benefits concentrated in minors ($12.6M).
++- **Figure notes:** Scaled by 70% public coverage rate. Based on Tables 4–5 (contemporaneous) and Table 6 (dynamic).
+ 
+-## Tables
++**Figure 6:** Cost-benefit comparison across Baseline, Scenario A (full compliance), and Scenario B (lower PM2.5 threshold to 75 µg/m³) (p. 25)
+ 
+-**Table 3 (First-stage RD results, p. 28).** Crossing the threshold raises alert probability by 0.636 (bw 16), 0.622 (bw 20), 0.618 (bw 24) with day-of-sample SEs of about 0.11; $F$-statistics 46–90 across bandwidths. Adjusted $R^2$ 0.71–0.73 (source: Anderson_etal_2022_NBER.pdf).
++![Cost-benefit comparison](../figures/Anderson_etal_2022_NBER_fig6.jpeg)
+ 
+-**Tables 4 and 5 (Reduced-form and 2SLS RD results for respiratory and cardiovascular diseases, pp. 29–30).** Reproduced in the Headline Results table above. Adjusted $R^2$ in $[0.80, 0.89]$ for respiratory; in $[0.03, 0.87]$ for cardiovascular (the low value for minor cardiovascular reflects an essentially zero dependent variable) (source: Anderson_etal_2022_NBER.pdf).
++- Key visual finding: All scenarios yield positive net benefits. Scenario B (lower threshold) generates $76.5M in expenditure reductions — 109% above baseline — with minimal additional cost.
++- **Figure notes:** 2016 system cost assumed equal to 2017. Maintenance cost line at $4M.
+ 
+-**Table 6 (Dynamic 3-day rolling-sum impacts, p. 31).** All-age 2SLS coefficients: respiratory $-16.13$ (5.94); cardiovascular $-8.04$ (3.06). When dropping alert days preceded by alert days (to avoid double-counting in policy simulations): respiratory $-13.01$ (5.38); cardiovascular $-7.41$ (3.30). Dynamic-to-contemporaneous ratio of ~2.2–2.8 exceeds the mean alert duration of 1.87 days, suggesting genuine lagged avoidance benefits beyond the alert window (source: Anderson_etal_2022_NBER.pdf).
++## Welfare framework equations
+ 
+-**Appendix Table A4 (FRD on PM as outcome).** No discontinuity in ambient PM10 (0.3 to 4.2 across bandwidths) or PM2.5 ($-3.6$ to $-4.7$); all insignificant. This is foundational for the avoidance-behavior interpretation: alerts do not change ambient PM at the threshold, so the spending discontinuities cannot reflect a direct dose-response (source: Anderson_etal_2022_NBER.pdf).
++$$
++W_i = U_i(a_i, pm) + E_i \qquad \Delta W_i = \Delta U_i + \Delta E_i
++$$
+ 
+-**Appendix Tables A12 and A13 (Alert-program operating costs).** Total 2017 cost ~2.0 million USD; total 2018 cost ~2.8 million USD; total 2016–2017 cost ~4 million USD (source: Anderson_etal_2022_NBER.pdf).
++Since $\Delta U_i \geq 0$: $\quad \Delta E_i \leq \Delta W_i$ — public expenditure reduction is a conservative lower bound on total social welfare gain.
+ 
+-## Implications For The JMP
++## Project connections
+ 
+-1. **Welfare-bound mapping.** The paper supplies the formal logic the JMP uses to interpret $\beta_A$ on FFS Medicare gov-share costs as identifying $\Delta E$ — the fiscal externality and a lower bound on the social welfare gain from an alert. The JMP's complementary use of OOP-share costs to bound private WTP from above is a project-specific extension that exploits the FFS Medicare cost decomposition unavailable to Anderson et al. (whose data lack a fine OOP/public breakdown; they apply a single ~70% average share) (source: Anderson_etal_2022_NBER.pdf). See [[welfare-bounds-fiscal-externality]].
++- **JMP direct application**: The $\beta_A$ coefficient on government-borne Medicare costs in the JMP's estimating equation identifies $\Delta E$, the fiscal externality, following this paper's bounds logic. See [[welfare-bounds-alert-programs]].
++- **Avoidance mechanism**: Effects are purely via behavioral avoidance — no PM reduction at threshold. This validates the JMP assumption that alerts operate through the information/behavior channel $b_t(\epsilon_{it}, A_{it})$. See [[air-quality-alerts-and-avoidance-behavior]].
++- **Identification analogy**: The FRD running variable is PM itself; the JMP uses ozone shocks + wind IV rather than an RD, but the alert-program component shares the same avoidance-behavior interpretive logic.
++- **Contemporaneous vs. ex-ante distinction**: AHL2022 identifies the contemporaneous avoidance effect $b$ (ex-post adaptation triggered by the alert). The JMP's norm-shock gap $\beta^S - \beta^N$ captures the ex-ante stock $k$ built against the anticipated pollution environment. These are complementary channels. See [[ex-ante-ex-post-adaptation]].
+ 
+-2. **Pure-avoidance identification.** The non-discontinuity of ambient PM at the alert threshold (Appendix Table A4) is what makes the Anderson et al. estimate "the pure effect of avoidance behavior." For the JMP, the analogous design check is to verify that AirNow AQAD alert issuance does not coincide with discontinuous shifts in ambient ozone after netting out forecastable variation through the [[wind-direction-instruments]]. See [[forecasts-alerts-and-identification]].
++## Replication feasibility
+ 
+-3. **Daily vs. inpatient outcomes.** Anderson et al. exclude inpatient admissions because the Korean referral process injects multi-day lag noise into a daily panel. The JMP design relies on inpatient admissions (Medicare MedPAR) and so cannot directly inherit this exclusion; the project's 4-day admissions count construction is the corresponding accommodation, anchored in the Deryugina et al. (2019) ozone-and-mortality precedent.
++LOW. NHIS health microdata restricted to South Korean data centers; data cannot be shared externally. Alert and PM monitoring data are public (AirKorea). Code fully described; rdrobust package standard.
+ 
+-4. **Where the JMP extends Anderson et al.** Three extensions specific to the JMP:
+-   - Decomposing pollution into pre-period norm $P_{im}$ and transitory shock $\epsilon_{it}$, and letting each interact with the alert indicator ($\beta_A^S$ vs. $\beta_A^N$). The Anderson et al. specification implicitly constrains these to a single alert effect; the JMP nests their design when $\beta_A^S = \beta_A^N$.
+-   - Using FFS Medicare's gov/OOP split to recover both the $\Delta E$ lower bound on $\Delta W$ and the WTP upper bound jointly. This sandwiches private welfare from both sides rather than producing only a one-sided lower bound.
+-   - Embedding the alert effect inside the broader [[ex-ante-ex-post-adaptation]] decomposition, so the alert coefficient is interpretable not just as a fiscal externality but as a measure of whether information augments contemporaneous defensive action $b$ given the chosen ex-ante stock $k$.
+-
+-5. **Robustness pattern to mirror.** The Anderson et al. robustness battery — bandwidth, polynomial degree, alternative time FE, additional pollution controls, multiple clustering levels, spatial-spillover and placebo-threshold tests — is a useful template for the JMP's eventual robustness section, though the JMP design is not RD-based.
+-
+ ## Related pages
+ 
+-- [[welfare-bounds-fiscal-externality]]
++- [[welfare-bounds-alert-programs]]
++- [[air-quality-alerts-and-avoidance-behavior]]
+ - [[forecasts-alerts-and-identification]]
+ - [[ex-ante-ex-post-adaptation]]
+ - [[health-production-and-adaptation]]
+-- [[carleton-etal-2024-hesecc]]
+-- [[grossman-1972-jpe]]
++- [[bento-miller-mookerjee-severnini-2023-jeem]]

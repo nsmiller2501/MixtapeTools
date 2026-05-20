@@ -1,0 +1,128 @@
+--- real_norm_shock
++++ b_fanout_climate_norm_weather_shock
+@@ -1,87 +1,76 @@
+-# Norm Shock Decomposition
++# Climate Norm / Weather Shock Decomposition
+ 
+-**Summary**: Decomposes a daily exposure variable into a long-run norm and a contemporaneous shock and identifies both responses jointly in a single panel fixed-effects regression via the Frisch–Waugh–Lovell theorem (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf). The norm–shock gap is the empirical measure of adaptation, and is the methodological backbone for the JMP's identification of ex-ante defensive action against ambient ozone.
++**Summary**: The norm/shock decomposition splits observed meteorological conditions into a slowly-moving climate norm (long-run average) and a transitory weather shock (deviation from that norm). Popularized for econometric climate-impact measurement by Bento et al. (2023), who showed via the [[frisch-waugh-lovell-decomposition]] that estimating both components jointly in one regression recovers the short-run and long-run effects as the weather-shock and climate-norm coefficients respectively.
+ 
+-**Sources**: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf; Deryugina_etal_2019_AER.pdf; Carleton_etal_2024_HESECC.pdf
++**Sources**: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf
+ 
+-**Last updated**: 2026-05-18
++**Last updated**: 2026-05-19
+ 
+ ---
+ 
+-## The Decomposition
++## Construction of the climate norm
+ 
+-Daily exposure $\rho_{it}$ for unit $i$ on day $t$ is decomposed into a long-run norm $P_{im}$ and a transitory shock $\epsilon_{it}$:
++**General form (Eq. 11)**:
+ 
+ $$
+-\rho_{it} = P_{im} + \epsilon_{it},
++\bar{x}_{i\bar{p}} \equiv \frac{1}{J}\sum_{j=1}^{J < y}\omega_j \bar{x}_{imj}
+ $$
+ 
+-where $P_{im}$ is a backward-looking moving average of $\rho$ at the unit × calendar-month level, lagged by at least one year, and $\epsilon_{it} = \rho_{it} - P_{im}$ is the deviation (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf).
++a lagged weighted average of monthly averages $\bar{x}_{imj}$ for location $i$, month $m$, and year $j$ (all years strictly before the current year $y$). Weights $\omega_j$ accommodate myopic, bounded, or rational agent assumptions.
+ 
+-The estimating equation puts both terms on the right-hand side:
++**Preferred specification (Eq. 12)** in Bento et al. (2023):
+ 
+ $$
+-y_{it} = \beta^S \epsilon_{it} + \beta^N P_{im} + X_{it}'\delta + \mu_i + \lambda_s + \nu_{it},
++\bar{x}_{i\bar{p}} = \frac{1}{30}\sum_{j=y-30}^{y-1}\bar{x}_{imj}
+ $$
+ 
+-with $\mu_i$ a unit fixed effect and $\lambda_s$ a coarser-than-day time fixed effect. The norm $P_{im}$ survives the unit FE because it has within-unit variation: (i) the moving average updates each year as the oldest year rolls off and a new year enters, and (ii) within-season variation across calendar months of the same unit (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf). See [[bento-etal-2023-jeem]].
++Equal weights over the preceding 30 calendar years, consistent with the WMO "climate normal" convention. Lagged at least 1 year to allow agents to observe and respond before the current ozone season.
+ 
+-## Frisch–Waugh–Lovell Identification
++**Approximation quality**: Correlation between $\bar{x}_{i\bar{p}}$ (30-yr MA) and $\bar{x}_{imy}$ (location-by-month-by-year FE) $> 0.95$; correlation between corresponding weather shocks $> 0.90$ (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf).
+ 
+-The Frisch–Waugh–Lovell theorem (Lovell 1963, Theorem 4.1) is what makes joint identification work. Because $\epsilon_{it}$ has been de-seasonalized by subtracting a time-mean within unit, $\beta^S$ recovers the same coefficient one would obtain from a standard fixed-effects regression of $y$ on raw $\rho$ (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf). Lovell's point 4 — it is immaterial whether the dependent variable is de-seasonalized provided the regressors are — is what permits both $\beta^S$ and $\beta^N$ to be estimated in the same equation rather than via SUR or block bootstrap across two separate equations. Bento et al.'s Table 1 confirms the equivalence empirically: the shock coefficient in a joint regression matches a fixed-effects regression on raw temperature, and the norm coefficient matches a cross-sectional regression on monitor-averaged temperature, but identified jointly within the panel.
++## Construction of the weather shock
+ 
+-## What the Gap Identifies
++$$
++\text{Shock}_{it} = x_{it} - \bar{x}_{i\bar{p}}
++$$
+ 
+-In Bento et al.'s climate-adaptation framing, $\beta^S$ approximates a no-adaptation response (transitory shocks leave agents no time to adjust), while $\beta^N$ is the adaptation-inclusive long-run response (norms are anticipated and let agents adjust). Their adaptation measure is $\beta^S - \beta^N$ (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf).
++The deviation of the contemporaneous value from the climate norm. Mean-zero by construction around the norm.
+ 
+-In the JMP, the same gap maps to the net health effect of agents' ex-ante defensive stock $k$, accounting for any rational crowding-out of contemporaneous defensive action $b$ by $k$ in the health production function:
++## JMP project mapping
+ 
++The JMP project follows this decomposition for daily ozone $\rho_{it}$:
++
+ $$
+-\beta^S - \beta^N = \left(\frac{\partial h}{\partial k} + \frac{\partial h}{\partial b}\frac{\partial b^*}{\partial k}\right) \frac{dk^*}{dP}.
++\rho_{it} = P_{im} + \epsilon_{it}
+ $$
+ 
+-By the envelope theorem, the corresponding utility-space gap collapses to $(\partial u / \partial h)(\partial h / \partial k)(dk^* / dP)$ — the direct welfare value of ex-ante defensive action, free of any contemporaneous-substitution offset (see [[ex-ante-ex-post-adaptation]] and [[health-production-and-adaptation]]).
++where $P_{im}$ is a 5-year backward moving average of ozone for the same county-month (lagged ≥1 year), and $\epsilon_{it}$ is the daily transitory shock. Note the JMP project uses a **5-year** rather than 30-year window — a shorter window that may better reflect agents' working knowledge of their local air quality environment than a 30-year norm. The shorter window is also constrained by ozone monitor data availability from 1980.
+ 
+-The sign convention flips relative to Bento et al. because the JMP outcome (hospitalizations or costs of care) responds positively to pollution and ex-ante defensive action is what closes the gap rather than what is consumed by it: $\beta^S > \beta^N$ is the empirical signature of protective ex-ante defensive action.
++The JMP estimating equation:
+ 
+-## Why Not Cross-Sectional Or Two-Stage
++$$
++h_{it} = \beta^S(\rho_{it} - P_{im}) + \beta^N P_{im} + \beta_A^S(\rho_{it} - P_{im})A_{it} + \beta_A^N P_{im}A_{it} + \beta_A A_{it} + X_{it}'\gamma + \alpha_{is} + \delta_{ky} + \nu_{it}
++$$
+ 
+-Two natural alternatives sit on either side of the joint FWL design:
++where the norm-shock gap $\beta^S - \beta^N$ recovers the net health benefit of ex-ante defensive action (the analogue of $\hat{\beta}_W - \hat{\beta}_C$ in Bento et al.).
+ 
+-1. **Pure cross-section / Ricardian.** Regress unit-level health on long-run pollution averages. This identifies a long-run dose–response but is contaminated by every cross-sectional confounder that correlates with the norm — demographics, baseline health, healthcare access. It cannot isolate the role of behavior.
+-2. **Pure fixed-effects on raw exposure.** Regress health on raw $\rho_{it}$ with unit and time FE. The within-unit variation is dominated by daily shocks, so the recovered slope is essentially the no-adaptation shock response. There is no separate norm coefficient to compare against, so no measure of adaptation.
++## Robustness of the norm construction
+ 
+-The FWL decomposition recovers both objects in one panel equation, with the same identifying variation that powers the FE design for $\beta^S$ and a clean source of within-unit variation in the norm for $\beta^N$. See [[adapting-wind-iv-to-ozone-shocks]] for the wind-direction-IV variant that adds an exogeneity argument to both halves.
++Bento et al. (2023) show the adaptation measure $\hat{\beta}_W - \hat{\beta}_C$ is stable across MA windows of 3–30 years (range: 0.495–0.542 ppb/°C). The slight increase in the shock coefficient when using very short windows reflects attenuation bias (measurement error in the permanent component is larger for short MAs); the slight decrease when moving from 20 to 30 years reflects panel-driven attenuation bias (Blanc & Schlenker 2017). The 30-year window is approximately "optimal" for the ozone application.
+ 
+-## Practical Choices In The JMP
++## Conceptual interpretation
+ 
+-| Object | Bento et al. (2023) | JMP |
++| | Weather shock $x_{it} - \bar{x}_{i\bar{p}}$ | Climate norm $\bar{x}_{i\bar{p}}$ |
+ |---|---|---|
+-| Exposure variable | Daily max temperature | Daily 8-hr max ozone (EPA AQS parameter 44201) |
+-| Outcome | Daily max ozone | Medicare hospitalizations and costs of care |
+-| Norm MA window | 30 years | 5 years |
+-| Norm aggregation | Monitor × calendar month | County × calendar month |
+-| Lag of norm vs. shock | $\geq 1$ year | $\geq 1$ year |
+-| Time fixed effect | Monitor × season × year | State × year ($\delta_{ky}$) |
+-| Unit-cross-time fixed effect | Monitor × season ($\phi_{is}$) | County × season ($\alpha_{is}$) |
+-| Standard errors | Clustered at county | Clustered at county |
+-| IV | None (OLS) | Wind direction (daily for shock; historical monthly shares for norm) |
++| What varies | Day-to-day within location-season-year | Across years (rolling update) and across locations |
++| Behavioral assumption | Agent has not had time to adapt | Agent has had time to adapt |
++| Coefficient interpretation | Short-run effect, exclusive of adaptation | Long-run effect, inclusive of adaptation |
++| FE analogue | Panel FE coefficient | Cross-section coefficient |
++| Adaptation indicator | $\hat{\beta}_W - \hat{\beta}_C > 0$ implies partial adaptation | $\hat{\beta}_C = 0$ implies full adaptation |
+ 
+-The shorter MA window (5 years rather than 30) is a substantive choice: 5 years is closer to the timescale over which agents can plausibly update beliefs about pollution norms and adjust their ex-ante defensive stock $k$. The longer 30-year window in Bento et al. is matched to the climate-adaptation timescale of capital and emissions decisions, not to health-protective behavior. Bento et al.'s Table 2 shows estimates are stable across 3-, 5-, 10-, 20-, and 30-year MA windows in their setting, providing reassurance that the choice is not pivotal.
+-
+-## Identification Threats
+-
+-The cleanest interpretation requires $\epsilon_{it}$ to be less anticipated than $P_{im}$. Two channels can muddy that:
+-
+-1. **Forecasts and visibility.** If agents have private information about $\epsilon_{it}$ from forecasts, visible haze, weather, or routines, $\beta^S$ already incorporates some contemporaneous defensive action and is attenuated relative to a no-adaptation benchmark (source: Carleton_etal_2024_HESECC.pdf). The JMP controls for visibility and rich weather conditions to absorb these channels, so $\beta^S$ captures the shock effect net of any observable-information adjustment. Residual unobservable information leaves $\beta^S - \beta^N$ as a conservative measure of $A_k$ (see Appendix A of the JMP conceptual framework).
+-2. **Alerts as a discrete information event.** Air-quality alerts are forecast 1–3 days in advance and are interacted with both the shock and the norm in the JMP, so the alert-induced contemporaneous adjustment is absorbed by $\beta_A^S$ and $\beta_A^N$ rather than bleeding into $\beta^S - \beta^N$. See [[forecasts-alerts-and-identification]].
+-
+ ## Related pages
+ 
+-- [[bento-etal-2023-jeem]]
++- [[frisch-waugh-lovell-decomposition]]
++- [[bento-miller-mookerjee-severnini-2023-jeem]]
+ - [[ex-ante-ex-post-adaptation]]
+-- [[health-production-and-adaptation]]
+ - [[adapting-wind-iv-to-ozone-shocks]]
+-- [[forecasts-alerts-and-identification]]
+-- [[carleton-etal-2024-hesecc]]
+-- [[deryugina-etal-2019-aer]]

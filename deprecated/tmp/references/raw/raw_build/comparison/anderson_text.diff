@@ -1,0 +1,457 @@
+--- real_anderson_text
++++ b_fanout_anderson_text
+@@ -1,208 +1,324 @@
+ ## Bibliographic metadata
+ doi: null
+ authors: [Anderson, Hyun, Lee]
+-title: Bounds, Benefits, and Bad Air: Welfare Impacts of Pollution Alerts
++title: "Bounds, Benefits, and Bad Air: Welfare Impacts of Pollution Alerts"
+ year: 2022
+ venue: NBER Working Paper No. 29637
+ venue_type: working_paper
+ 
+ ## Plain-English synthesis
+ 
+-Air-quality alert programs tell the public when pollution is dangerously high so people can take precautions (stay inside, wear masks, avoid exercise). Such programs cover 1.7 billion people worldwide, but we know very little about whether they are actually worth the money. This paper tackles the question for the South Korean alert program covering 51 million people. The authors face a hard problem: alerts cause people to change behavior, which has both a benefit (less illness) and a cost (forgone activity that people enjoyed), and that cost is essentially unmeasurable. Their clever workaround is to argue that, when people choose freely, the benefit of better information has to be at least as big as zero — so the externalized health-care costs saved (the portion the public health system covers, not the patient's out-of-pocket share) give a clean lower bound on the program's total social benefit. They compare days just above the alert-triggering pollution threshold to days just below it using a regression discontinuity design and find that alerts cut youth respiratory spending 30 percent and adult cardiovascular spending 23 percent. Total externalized savings come to roughly 28.6 million USD over two years against operating costs of 4 million USD, a benefit-cost ratio of at least 7.1:1. Take-away: alert programs are cheap and substantially welfare-improving, and any government manipulation of pollution data that suppresses alerts likely carries real social cost.
++Governments in many countries issue air-quality alerts when pollution crosses dangerous thresholds. These alerts warn people and recommend protective actions (staying indoors, wearing masks, reducing outdoor exercise). Despite covering over 1.7 billion people worldwide, almost nothing was known about whether these alert systems actually improve welfare. This paper studies South Korea's PM alert system, which covers 51 million people.
+ 
++The authors use a clever research design: alerts are issued when a running measure of PM pollution crosses a threshold. Just above the threshold, alerts are much more likely; just below, they rarely happen. This "fuzzy" discontinuity lets them isolate the causal effect of receiving an alert, separate from the pollution itself — they confirm that ambient PM doesn't jump at the threshold, so any health changes must come from alert-induced behavior.
++
++They find that alerts meaningfully reduce healthcare spending. Youth respiratory spending falls by about 30%, adult and older-adult cardiovascular spending falls by 14–23%. Aggregating over the two-year study period, the alert system reduced government-borne health costs by $28.6 million. The system cost $4 million to run, giving a minimum benefit-cost ratio of 7:1.
++
++The key conceptual insight is that the government's spending reduction is a *lower bound* on the total welfare gain: the remaining private benefits (avoided illness, reduced discomfort) can only add to it. The system is highly cost-effective on the most conservative possible calculation.
++
+ ## 1. Research question
+ 
+-What are the net welfare benefits and benefit-cost ratio of a public air-quality alert system? Specifically, what fraction of an alert program's value can be recovered from data on externalized (publicly reimbursed) health-care expenditures alone, without observing the costs of avoidance behavior itself? Why it matters: alert programs are cheap and widespread, but their welfare evaluation is hampered by the fact that the benefits of avoidance behavior (reduced illness) are partially offset by its costs (forgone activity), and the latter are essentially unobservable.
++What are the welfare impacts of an air-quality alert system (AQAS)? Specifically: do alerts induce avoidance behavior that reduces health expenditures, and what is the lower bound on net social welfare gain, accounting for the fact that avoidance behavior itself carries costs?
+ 
++Motivation: AQAS cover billions of people globally, yet empirical welfare evidence has been lacking. Prior work studied health responses to pollution levels, not the incremental value of public information provision about pollution. Paper distinguishes AQAS (information-only intervention with no effect on ambient pollution) from emission-control programs.
++
+ ## 2. Audience
+ 
+-Environmental economists studying air pollution and information disclosure; health economists studying healthcare utilization and revealed-preference welfare bounds; public economists studying fiscal externalities of consumer behavior; policy audiences evaluating regulatory cost-effectiveness of information-based programs.
++Environmental and health economists studying information provision, avoidance behavior, and the externalities of public health systems. Policy analysts designing or evaluating air-quality warning programs in countries with high pollution and large public health expenditures (particularly relevant for middle-income countries where South Korean PM levels are more representative than those in the US literature).
+ 
+ ## 3. Method / identification strategy
+ 
+-Fuzzy regression discontinuity (FRD) design at the South Korean PM-alert issuance threshold. The running variable is the daily maximum of 2-hour-minimum PM2.5 and PM10 readings, normalized by their respective alert cutoffs (90 µg/m³ and 150 µg/m³) and pooled so the threshold sits at zero. The alert indicator is the treatment, but assignment is fuzzy because (a) authorities also consider weather conditions when issuing alerts and (b) the issuance and cancellation thresholds differ, so alerts can persist below the issuance threshold. Estimation by 2SLS instrumenting the alert indicator with the above-threshold indicator. Theoretical welfare bound: revealed-preference argument that $\Delta U_i \geq 0$ when an individual is given better information, so the externality component $\Delta E_i$ alone bounds the social welfare change $\Delta W_i = \Delta U_i + \Delta E_i$ from below.
++**Fuzzy regression discontinuity (FRD)** exploiting exogenous variation in alert issuance at a PM concentration threshold.
+ 
+-## 4. Target parameter
++Running variable: daily maximum of 2-hour-minimum PM, threshold-normalized. PM2.5 threshold = 90 µg/m³ (lowered to 75 µg/m³ from March 2018); PM10 threshold = 150 µg/m³. Running variable $rv_d = PM_d^{\text{2h-min-max}} - c$, rounded to nearest integer. Treatment threshold = 0.
+ 
+-Two distinct objects:
+-1. **Reduced-form / IV health-expenditure RD parameter**: the per-capita change in (publicly-subsidized portion of) health spending in a district-day attributable to crossing the alert threshold, by disease (respiratory, cardiovascular) and age group (minors 0–19, adults 20–64, older adults 65+). This is a local average treatment effect (LATE) at the threshold.
+-2. **Aggregate welfare lower bound**: $\Delta E$, the reduction in publicly-borne (externalized) health expenditures attributable to the alert program over the analysis period, scaled by exposure population. This is the welfare object — the authors take 70 percent of the FRD coefficients (the publicly-subsidized share) as the per-event externality saved.
++Alert issuance is not mechanical (weather conditions also matter; issuance and cancellation thresholds differ), making this a fuzzy RD. First stage shows alert probability rises ~62 pp when $rv_d$ crosses zero.
+ 
+-## 5. Data
++Key identification assumption: no discontinuous change in ambient PM or pre-determined covariates at the threshold — confirmed empirically (Table A4: PM coefficients near zero; Figure A3: no break in temperature or precipitation).
+ 
+-- **Health expenditures**: 10 percent random sample of National Health Insurance Service (NHIS) subscribers in seven major South Korean cities (Seoul, Busan, Daegu, Daejeon, Incheon, Gwangju, Ulsan); ~2.3 million individuals; daily per-capita spending by district; broken out by disease (ICD-10 "I" cardiovascular, "J" respiratory) and age (0–19, 20–64, 65+); calendar years 2016–2017.
+-- **Excludes** inpatient stays (gap between symptom onset and admission) and outpatient visits to tertiary general hospitals (referral required); robustness includes tertiary visits.
+-- **Out-of-pocket payment ratio** is 10–50 percent across patient types; on average 70 percent of total spending is publicly subsidized → the project's "externality share."
+-- **Alert data**: Korea Environment Corporation (KECO) website; 230 region-days or 1,427 district-days with alerts during 2016–2017 across 73 districts in 14 alert regions.
+-- **Running variable inputs**: hourly PM2.5 and PM10 monitor readings; 2-hour-minimum computed per hour, then daily maximum of those values.
+-- **Controls**: temperature, precipitation (weather), year-by-month, day-of-week, holiday, and district fixed effects.
+-- **Internet search data**: NAVER search-engine counts for keywords "air pollution alert," "particulate matter," "air quality" (used to show alerts are salient — Figure 2).
+-- **Alert program operating costs**: collected from municipal environmental expenditure reports for the seven cities; ~2 million USD/year in 2017, ~4 million USD over 2016–2017.
+-- **Unit of observation**: district by day. Total district-day observations: 53,363 (full sample); 10,547 at bandwidth 40; 2,530 at preferred bandwidth $h = 20$.
++Local linear regression with bandwidth $h = 20$ (CCT-optimal range: 17–22); robustness checks at $h = 16$ and $h = 24$.
+ 
+-## 6. Statistical methods / specifications
++## 4. Target parameter
+ 
+-Fuzzy RD with local-linear first-stage (Equation 5) and reduced-form (Equation 6):
++**Contemporaneous LATE**: effect of receiving a PM alert (for compliers at the threshold) on same-day per-capita health expenditures in cents (respiratory or cardiovascular, by age group).
+ 
+-$$Alert_{it} = \gamma_1 \mathbb{1}(\widetilde{PM}_{it} \geq 0) + \gamma_2 \widetilde{PM}_{it} + \gamma_3 \widetilde{PM}_{it}\, \mathbb{1}(\widetilde{PM}_{it} \geq 0) + X_{1it}\theta_1 + X_{2t}\phi_1 + \delta_{1i} + u_{it}$$
++**Dynamic LATE (Eq. 8)**: cumulative 3-day effect, capturing multi-day alert duration (average alert length ≈ 1.87 days).
+ 
+-$$Y_{it} = \beta_1 \mathbb{1}(\widetilde{PM}_{it} \geq 0) + \beta_2 \widetilde{PM}_{it} + \beta_3 \widetilde{PM}_{it}\, \mathbb{1}(\widetilde{PM}_{it} \geq 0) + X_{1it}\theta_2 + X_{2t}\phi_2 + \delta_{2i} + \varepsilon_{it}$$
++**Welfare lower bound**: $\Delta E_i$ = reduction in publicly reimbursed health expenditures ($\approx 70\%$ of total), which is a lower bound on total welfare gain $\Delta W_i = \Delta U_i + \Delta E_i$ since $\Delta U_i \geq 0$ (accurate information about pollution weakly increases private utility).
+ 
+-where $\widetilde{PM}_{it}$ is the normalized running variable (Cattaneo et al. 2020 multi-cutoff normalization), $X_{1it}$ is temperature and precipitation, $X_{2t}$ is year-by-month, day-of-week, and holiday FE, and $\delta_i$ is district FE. The FRD estimand:
++## 5. Data
+ 
+-$$\hat{\tau}_{FRD} = \frac{\hat{\beta}_1}{\hat{\gamma}_1}$$
++- **Country / period**: South Korea, 2016–2017 (ozone season equivalent: full year).
++- **Unit of observation**: district-by-day (73 districts, 14 alert regions in 7 major cities: Seoul, Busan, Daegu, Daejeon, Incheon, Gwangju, Ulsan; combined population ≈ 23 million = 44% of South Korea).
++- **Health spending**: National Health Insurance Service (NHIS) daily per-capita expenditures by district; 10% random sample of insured individuals ($\approx 2.3$ million). Covers cardiovascular (ICD-10 "I") and respiratory (ICD-10 "J") disease categories, by age group (Minors 0–19, Adults 20–64, Older Adults 65+). Excludes inpatient stays and tertiary outpatient visits from main analysis to avoid temporal-lag bias. Unit: US cents/capita (11.5 KRW = 0.01 USD).
++- **Alert data**: Korea Environment Corporation (KECO)/AirKorea website; 134 unique alerts, 80 lasting >1 day, average length ≈ 1.87 days; 230 region-days / 1,427 district-days with alerts in 2016–2017.
++- **PM data**: PM2.5 and PM10 monitoring station data; running variable construction based on hourly PM readings.
++- **Summary statistics (Table 2)**: Full sample: 53,363 district-day observations; BW=40 sample: 10,547 observations. PM2.5 full-sample mean 25.1 µg/m³ (BW-40: 41.8), PM10 full-sample mean 44.5 µg/m³ (BW-40: 68.4), precipitation mean 3.1 mm, temperature mean 13.8 °C.
+ 
+-Estimated by 2SLS. Bandwidth $h = 20$ by default (CCT-optimal range 17–22; Calonico, Cattaneo, Titiunik 2014, 2015); robustness at $h = 16, 20, 24$. Population-weighted by district. Standard errors clustered by running-variable value (parentheses) and by day-of-sample (square brackets); the reported test statistics use the larger of the two.
++## 6. Statistical methods / specifications
+ 
+-**Dynamic specification** (Equation 8) replaces $Y_{it}$ with $Y_{it}^{+} = \sum_{s=0}^{2} Y_{i,t+s}$ (rolling 3-day sum) to capture lagged effects. A variant drops alert days whose previous day was also alerted to avoid double-counting in policy simulations.
++**First-stage regression (Eq. 5)**:
+ 
+-**Theoretical framework** (Section II): individual utility $U_i(a_i, pm) = b_i(a_i) - s_i^{pvt} p_s(a_i, pm)$ with private cost-of-sickness $s_i^{pvt}$ and probability of sickness $p_s$. Beliefs about PM depend on whether the running variable is below or above $c$: $pm_i = pm^{avg}$ if below, $pm^{hi}$ if above, with $pm^{hi} \approx c$. Revealed preference gives $\Delta U_i \geq 0$. Social welfare $W_i = U_i + E_i$; $\Delta W_i = \Delta U_i + \Delta E_i$; so $\Delta E_i$ is a lower bound on $\Delta W_i$. **The key empirical move is that the publicly-subsidized share of healthcare expenditures (~70%) measures $\Delta E_i$.**
++$$
++\text{Alert}_{it} = \gamma_0 + \gamma_1 \mathbf{1}[\widetilde{PM}_{it} \geq 0] + \gamma_2 \widetilde{PM}_{it} + \gamma_3 \widetilde{PM}_{it} \cdot \mathbf{1}[\widetilde{PM}_{it} \geq 0] + X_{1it}' \lambda + X_{2t}' \mu + \delta_i + \varepsilon_{it}
++$$
+ 
+-## 7. Findings
++**Reduced form (Eq. 6)**:
+ 
+-**First stage (Table 3, p. 28).** Crossing the RD threshold raises the probability of an alert by about 0.62 (i.e., ~60 percentage points). $F$-statistics 46–90 across bandwidths.
++$$
++Y_{it} = \beta_0 + \beta_1 \mathbf{1}[\widetilde{PM}_{it} \geq 0] + \beta_2 \widetilde{PM}_{it} + \beta_3 \widetilde{PM}_{it} \cdot \mathbf{1}[\widetilde{PM}_{it} \geq 0] + X_{1it}' \lambda + X_{2t}' \mu + \delta_i + \varepsilon_{it}
++$$
+ 
+-**No discontinuity in average PM at the threshold** (Appendix Table A4): point estimates 0.3 (PM10) and -4.7 (PM2.5) with SEs of similar magnitude. This is the basis for interpreting the RD effects as pure avoidance-behavior responses rather than ambient-pollution responses.
++**FRD LATE via 2SLS (Eq. 7)**:
+ 
+-**Contemporaneous effects** (Tables 4 and 5, pp. 29–30; cents per capita, bandwidth 20):
++$$
++\hat{\tau}_{\text{FRD}} = \frac{\hat{\beta}_1}{\hat{\gamma}_1}
++$$
+ 
+-| Outcome | Minors | Adults | Older Adults | All |
+-|---|---|---|---|---|
+-| Respiratory (RF) | $-9.41$ (2.93) | $-2.35$ (1.38) | $-2.66$ (1.86) | $-3.62$ (1.53) |
+-| Respiratory (2SLS) | $-15.03$ (5.67) | $-3.78$ (2.13) | $-4.30$ (2.80) | $-5.83$ (2.50) |
+-| Cardiovascular (RF) | $-0.025$ (0.022) | $-1.76$ (0.48) | $-5.96$ (2.25) | $-2.03$ (0.62) |
+-| Cardiovascular (2SLS) | $-0.040$ (0.035) | $-2.83$ (0.77) | $-9.64$ (3.68) | $-3.26$ (1.01) |
++**Dynamic specification (Eq. 8)**: 3-day rolling sum $Y_{it}^+ = \sum_{s=0}^{2} Y_{i,t+s}$ as dependent variable; alert days preceded by another alert day dropped to avoid double-counting.
+ 
+-(Standard errors clustered by day-of-sample, the larger of the two reported.) Percentage effects relative to mean expenditure with running variable in $[-20, 0]$: minors respiratory $-30\%$, adults cardiovascular $-23\%$, older adults cardiovascular $-14\%$.
++Controls ($X_1$): temperature, precipitation. Fixed effects ($X_2$): year × month, day-of-week, holiday. District FEs ($\delta_i$). Population-weighted regressions. Standard errors double-clustered: by running-variable value (in parentheses) and by day of sample (in square brackets) — use whichever yields larger t-statistics for conservative inference. Adjusted $R^2 \approx 0.8$–$0.9$ in outcome equations.
+ 
+-**Dynamic (3-day) effects** (Table 6, p. 31). All-age coefficients: respiratory $-16.13$ (5.94), cardiovascular $-8.04$ (3.06). Coefficients are 2.2–2.8× the contemporaneous estimates; mean alert duration is 1.87 days, so the dynamic estimates capture some lagged avoidance benefit beyond the alert window. Specification dropping alert days preceded by alert days (to avoid double-counting): respiratory $-13.0$ (5.4), cardiovascular $-7.4$ (3.3).
++Robustness: quadratic RV specification (Table A8); PM10/PM2.5/AQI as covariates (Table A9); alternative clustering (Table A10); spatial spillover via nearest-neighbor alert region (Table A11); placebo thresholds at $-20$, $-30$, $-50$ units from true threshold (Table A11).
+ 
+-**Aggregate welfare bound.** Sum of contemporaneous coefficients across diseases = 9.1 cents per capita per alert. Multiplied by population exposed in alert region-days, total reduction in health expenditures during 2016–2017 = ~41 million USD (contemporaneous), ~52 million USD (with dynamics). Externalized share (70 percent) gives **gross welfare lower bound = 28.6 million USD (contemporaneous) or 36.7 million USD (dynamic)** for 2016–2017.
++**Running variable construction (Appendix A2)**:
+ 
+-**Benefit-cost ratio.** Alert program operating costs ~4 million USD over 2016–2017 → **lower bound BCR = 7.1:1 (contemporaneous), 9.2:1 (dynamic)**.
++$$
++PM_{dh}^{\text{2h-min}} = \min\{PM_{d,h-1}, PM_{d,h}\}
++\qquad
++PM_d^{\text{2h-min-max}} = \max_h\{PM_{dh}^{\text{2h-min}}\}
++\qquad
++rv_d = \text{round}(PM_d^{\text{2h-min-max}} - c)
++$$
+ 
+-**Counterfactual scenarios** (Figure 6, p. 25). Scenario A (sharp RD: alert whenever running variable exceeds zero) increases benefits modestly. Scenario B (PM2.5 threshold lowered from 90 to 75 µg/m³, the policy adopted in July 2018) **doubles** total reductions to ~76 million USD.
++## 7. Findings
+ 
+-**Robustness** (Tables 7–9, A4–A11). Results are robust to: inclusion of tertiary-hospital outpatient visits (Tables 7, 8); bandwidth choice $h = 16, 20, 24$ (Table 9); dropping alerts triggered late or cancelled early (Table 9); quadratic polynomial in the running variable (Table A8); quadratic in temperature (Table A8); year + month FE instead of year-by-month FE (Table A8); adding controls for PM10, PM2.5, both, or AQI (Table A9); different clustering levels (Table A10); spatial spillovers from neighbor regions (Table A11); placebo thresholds shifted by 20, 30, 50 units (Table A11). McCrary-style manipulation test of the running variable distribution shows no bunching (Figures A1, A2).
++**First stage (Table 3)**:
+ 
+-## 8. Contributions
++| Bandwidth | 1(RV≥0) coeff. | First-stage F | Adj. R² |
++|---|---|---|---|
++| h = 16 | 0.618 | 89.7 | 0.728 |
++| h = 20 | 0.628 | — | 0.718 |
++| h = 24 | 0.636 | 46.0 | 0.708 |
+ 
+-1. **First welfare analysis of air-quality alert systems** as opposed to general air-quality monitoring. The contribution is enabled by access to itemized health-expenditure data with a public/private split, combined with the theoretical insight that the externalized share alone bounds welfare from below.
+-2. **RD design applied to alert effects on health-care utilization.** Prior literature (Neidell 2009, Janke 2014, Mullins and Bharadwaj 2015, Aguilar-Gomez 2020) primarily used time-series or panel variation. Chen et al. 2018 attempted an RD on healthcare outcomes but was underpowered.
+-3. **Effects extend beyond respiratory minors.** Prior work mostly found respiratory effects for children. The paper documents significant cardiovascular effects in adults and older adults, suggesting alerts induce avoidance across all age groups.
+-4. **Pure avoidance interpretation.** The non-discontinuity of ambient PM at the threshold (Appendix Table A4) means the RD effects identify the avoidance-behavior channel cleanly — they are *not* contaminated by alert-triggered emissions controls (in contrast to Mullins and Bharadwaj 2015 and Aguilar-Gomez 2020, where alerts were bundled with driving restrictions or other pollution-reduction policies).
+-5. **Implications for pollution-data manipulation.** Quantifying alert benefits frames the welfare cost of monitor manipulation (Andrews 2008; Chen et al. 2012; Ghanem and Zhang 2014; Greenstone et al. 2021; Zou 2021).
++Alert probability rises ~62 pp when running variable crosses zero (strong first stage).
+ 
+-## 9. Replication feasibility
++**Table 4: Respiratory disease — 2SLS estimates, h = 20** (US cents per capita)
+ 
+-NHIS micro-data are restricted: "the dataset can be used only in selected data centers in South Korea. Furthermore, NHIS does not allow the sharing or publication of any type of processed data, except for summary statistics, figures, and regression results" (footnote 9). Alert and PM data are publicly available from KECO. No replication archive mentioned. Replication would require IRB approval and on-site access in South Korea.
++| Age group | 2SLS coeff. | SE (RV-clustered) | SE (day-clustered) | % of mean |
++|---|---|---|---|---|
++| Minors (0–19) | −15.03 | (4.71) | [5.67] | −30% |
++| Adults (20–64) | −3.78 | (2.20) | [2.13] | — |
++| Older Adults (≥65) | −4.30 | (2.75) | [2.80] | — |
++| All ages | −5.83 | (2.40) | [2.50] | — |
+ 
+-## 10. Tables
++Notes: Local-linear 2SLS. Running variable, RV × above-threshold interaction, temperature, precipitation, year × month FE, day-of-week FE, district FE. SE in parentheses clustered by running-variable value; SE in square brackets clustered by day of sample.
+ 
+-**Table 1: Thresholds and guidelines of South Korean PM advisories** (p. 26). Documents alert triggering rules (PM10 > 150 µg/m³ for 2 hours; PM2.5 > 90 µg/m³ for 2 hours), cancellation rules (PM10 < 100, PM2.5 < 50 for 1 hour), and government-published behavioral guidelines (stay indoors, wear masks, avoid roadways).
++**Table 5: Cardiovascular disease — 2SLS estimates, h = 20** (US cents per capita)
+ 
+-**Table 2: Summary statistics** (p. 27). Per-capita daily spending in US cents (11.5 KRW = 0.01 USD). Full sample (N = 53,363) and bandwidth-40 subsample (N = 10,547). Means: minor respiratory 46 cents; adult respiratory 21; older adult respiratory 14; minor cardiovascular 0.1; adult cardiovascular 12; older adult cardiovascular 65. Alert frequency 3% full sample, 10% near-threshold. PM10 mean 44.5 (full), 68.4 (near). PM2.5 mean 25.1 (full), 41.8 (near).
++| Age group | 2SLS coeff. | SE (RV-clustered) | SE (day-clustered) | % of mean |
++|---|---|---|---|---|
++| Minors (0–19) | −0.040 | (0.032) | [0.035] | — |
++| Adults (20–64) | −2.83 | (0.976) | [0.767] | −23% |
++| Older Adults (≥65) | −9.64 | (3.85) | [3.68] | −14% |
++| All ages | −3.26 | (1.09) | [1.01] | — |
+ 
+-**Table 3: First-stage RD results** (p. 28). Reproduced fully in Findings above.
++Notes: Same specification as Table 4.
+ 
+-**Table 4: RD results for respiratory diseases** (p. 29). Reproduced in compact form in Findings above. Full table includes RV and RV × $\mathbb{1}(RV \geq 0)$ slope terms and adjusted $R^2$ in $[0.80, 0.89]$.
++**Table 6: Dynamic effects — 2SLS 3-day rolling sum, h = 20** (US cents per capita)
+ 
+-**Table 5: RD results for cardiovascular diseases** (p. 30). Reproduced in compact form in Findings above. Adjusted $R^2$ in $[0.03, 0.87]$ (low value for minor cardiovascular because the dependent variable is essentially zero).
++| | Minors | Adults | Older Adults | All |
++|---|---|---|---|---|
++| Respiratory | −38.2 (11.6) | −10.7 (3.95) | −13.0 (4.95) | −16.1 (4.78) |
++| Cardiovascular | near zero | −5.28 (1.91) | −30.4 (12.2) | −8.04 (2.66) |
+ 
+-**Table 6: Dynamic impacts (3-day rolling sum)** (p. 31). Reproduced in Findings above.
++Notes: 3-day cumulative spending (days $t$ through $t+2$). Excludes district-days preceded by an alert day to avoid double-counting. SE in parentheses clustered by running-variable value. $N = 2{,}530$ main; $N = 2{,}228$ excluding prior-alert days.
+ 
+-**Table 7: Robustness with tertiary hospital outpatient visits** (p. 32). Similar magnitudes to Tables 4–5.
++**Aggregate welfare effects**:
++- Contemporaneous total health expenditure reduction: ≈$41M (2016–2017); public share (lower bound): $28.6M (respiratory $18.4M + cardiovascular $10.2M).
++- Dynamic total: ≈$52M; public share lower bound: $36.7M (respiratory $24.5M + cardiovascular $12.2M).
++- Alert system management cost: $4M (2016–2017; city-level records, Tables A12–A13: $2.0M in 2017 + $2.8M in 2018).
++- **Benefit-cost ratio: 7.1:1** (contemporaneous); **9.2:1** (dynamic).
++- Net benefit: $24.6M (contemporaneous); $32.7M (dynamic).
+ 
+-**Table 8: Same as Table 7 for cardiovascular** (p. 33).
++**Age heterogeneity**: Minors benefit most from respiratory effects; adults and older adults benefit most from cardiovascular effects. Dollar aggregates: minors $12.6M, prime-age adults $20.4M, older adults $8M.
+ 
+-**Table 9: Robustness checks — bandwidth and late/early advisories** (p. 34). Cardio effects insignificant at bandwidth 24 for older adults; otherwise stable.
++**Policy simulation**: Full compliance (sharp RD) would add $5.7M; lowering PM2.5 threshold from 90 to 75 µg/m³ would have reduced total health expenditures by $76.5M (109% increase over baseline).
+ 
+-**Table A1: Examples of alert systems in the world.** Confirms 1.7+ billion population coverage globally (China 1.39 billion 4-tier system, South Korea 51.7 million, US EnviroFlash 193.8 million, etc.).
++**Robustness**: No PM discontinuity at threshold (Table A4). No covariate discontinuity (Figure A3). McCrary density test: no missing density above threshold (Figures A1, A2). Estimates stable across quadratic RV (Table A8), air-quality covariates (Table A9), clustering (Table A10). No spatial spillover; placebo thresholds insignificant (Table A11).
+ 
+-**Table A2: Types of medical institutions in South Korea.** Tertiary general hospitals (require referral), secondary general hospitals and hospitals, primary clinics and public health centers.
++## 8. Contributions
+ 
+-**Table A3: Out-of-pocket payment ratios.** 40 percent of remaining medical expenses for tertiary normal patients; lower for pregnant women and children under 1; variable for clinics and public health centers. Average ratio across all spending: ~30 percent OOP, ~70 percent publicly subsidized.
++1. First welfare analysis of an air-quality alert system (distinct from emission-control programs): uses health expenditure data + theoretical bounds to estimate net benefits net of avoidance behavior costs.
++2. First regression discontinuity design to identify causal health impacts of AQAS (prior work used time-series or DID).
++3. Establishes novel mechanism: effects are purely via avoidance behavior (no discontinuous change in ambient PM at threshold), not via informing pollution itself.
++4. First causal evidence that AQAS effects extend beyond respiratory disease (cardiovascular effects for working-age and older adults).
++5. Context more representative of middle-income country pollution levels than prior US-focused literature.
++6. Framework ($\Delta W = \Delta U + \Delta E$; lower-bound identification via public expenditure reduction) generalizable to other information-provision contexts (restaurant hygiene cards, electricity usage information, hospital report cards).
+ 
+-**Table A4: FRD results using particulate matter as dependent variables.** No discontinuity in PM10 or PM2.5 at threshold (point estimates 0.3 to 4.2 for PM10, $-3.6$ to $-4.7$ for PM2.5; all insignificant). Foundational for the pure-avoidance interpretation.
++## 9. Replication feasibility
+ 
+-**Table A5: Optimal (CCT) bandwidths** for each outcome. Range 17–22 for contemporaneous; range 17–34 for dynamic.
++**Rating: LOW.**
+ 
+-**Table A6: Dynamic effects with different bandwidths.** All-age coefficients robust.
++- Health spending micro-data: South Korean NHIS data, restricted to Korean data centers. NHIS prohibits sharing processed data. No public replication archive possible.
++- Alert data: public (https://www.airkorea.or.kr/); alert timing fully documented.
++- PM monitoring data: retrievable from AirKorea.
++- Code / specifications: fully described in paper. Standard rdrobust package (Calonico, Cattaneo, Titiunik 2014, 2015) for bandwidth selection. Sufficient to replicate given data access.
++- Cost data (Tables A12–A13): from municipal environmental budget records, 7 cities; available via FOIA-equivalent Korean government request.
++- Restriction note: 2016 alert system cost assumed equal to 2017 ($2M) because actual 2016 figure unavailable to authors (fn. 30).
++- IRB: Korea National Institute for Bioethics Policy IRB P01-201811-22-008.
+ 
+-**Table A7: Robustness — exclusion of later alert days and removal of early/late alerts.** Stable.
++## 10. Tables (project-relevance gated)
+ 
+-**Table A8: Alternative specifications (quadratic RV, quadratic temperature, alternative time FE).** Stable.
++**Directly relevant (extracted above)**: Tables 3–6 (first stage, respiratory and cardiovascular 2SLS, dynamic effects).
+ 
+-**Table A9: Robustness — adding air pollution covariates (PM10, PM2.5, both, AQI).** Coefficients essentially unchanged, reinforcing the no-discontinuity-in-PM result.
++**Relevant context, not extracted verbatim**:
++- Table 1 (p. 26): PM10 and PM2.5 advisory issuance/cancellation thresholds and recommended behaviors by target group. Source: AirKorea.
++- Table 2 (p. 27): Summary statistics for full sample and bandwidth-40 subsample; expenditure means and SDs by disease type, age group, and covariates.
++- Table 7–8 (pp. 32–33): Robustness to inclusion of tertiary general hospital visits — all-age respiratory −5.54 (SE 2.37), cardiovascular −3.43 (SE 1.17).
++- Table 9 (p. 34): Bandwidth sensitivity (h=16/20/24) and alert timing filter (drop cancelled before 9am or triggered after 7pm) — results stable.
+ 
+-**Table A10: Standard errors with different clusters** (province × day-of-week, province × day-of-sample, region × day-of-week, region × day-of-sample, district × day-of-week, district). Significance preserved across all clustering choices.
++**Appendix tables (less relevant)**:
++- Table A1: Global air quality alert system examples (China, South Korea, US, Canada, Australia, Mexico, Singapore, UK) with population covered. (pp. A1–A2)
++- Table A2–A3: Korean medical institution types and out-of-pocket payment schedules. (pp. A2–A3)
++- Table A4: PM as dependent variable — no discontinuity. (Appendix)
++- Table A5: CCT optimal bandwidths, range 17–34 across 16 outcome × age-group combinations. (Appendix)
++- Tables A6–A11: Dynamic robustness, asymmetric threshold, quadratic RV, pollution covariates, alternative clustering, spillover + falsification. (Appendix)
++- Tables A12–A13: Municipal alert system costs by city (total 2017: $2,014,558; 2018: $2,833,940). (Appendix)
+ 
+-**Table A11: Spillover effects and falsification tests.** Adjacent-region alerts have no effect on focal-region spending; placebo thresholds shifted by 20, 30, 50 units give insignificant point estimates.
++## 11. Figures (project-relevance gated)
+ 
+-**Tables A12 and A13: Alert system operating-cost itemization and totals by city.** Total 2017 cost: $2.01 million USD; total 2018 cost: $2.83 million USD.
++**Figure 1:** Alert clusters for seven major South Korean cities (Busan, Daejeon, Daegu, Gwangju, Incheon, Seoul, Ulsan); districts color-coded by alert region cluster. (p. 20)
++![Map of South Korean alert regions](../wiki/figures/Anderson_etal_2022_NBER_fig1.jpeg)
++- Type: Map (Tier B — schematic)
++- One-liner: Geographic boundaries of alert clusters within 7 cities; 73 districts across 14 alert regions.
++- **Figure notes:** Alert regions within cities.
+ 
+-## 11. Figures
++**Figure 2:** Daily PM alert counts (red) and NAVER search index for air quality keywords (blue), 2016–2017. (p. 21)
++![Daily alert counts and search keyword spikes](../wiki/figures/Anderson_etal_2022_NBER_fig2.jpeg)
++- Type: Time series (Tier A)
++- X-axis: Date (2016–2017)
++- Y-axis: Alert count (red, left); NAVER keyword search index (blue, right; max = 100)
++- Series / panels: Alert count series; NAVER search index series
++- Key visual finding: NAVER keyword searches for air quality spike sharply on alert days, confirming that alerts successfully transmit information to the public.
++- Annotations: Spikes in blue series coincide with red bars; search index reaches 100 on high-alert days.
++- **Figure notes:** NAVER is the dominant South Korean search engine; keyword search index is normalized with max = 100.
+ 
+-**Figure 1:** Alert clusters for seven major cities in South Korea (p. 20).
+-- One-liner: Map of 7 South Korean cities (Busan, Daejeon, Daegu, Gwangju, Incheon, Seoul, Ulsan) showing the district-level alert clusters used for assigning alert status. Not relevant to JMP analytic design; only relevant to documenting that alerts are issued at sub-city (cluster) level in South Korea — analogous to CBSA-level alerts in the US AirNow AQAD data.
++**Figure 3:** Treatment probability discontinuity — P(PM advisory) vs. running variable; bin width = 5 units, population-weighted. (p. 22)
++![RD first stage: advisory probability vs. running variable](../wiki/figures/Anderson_etal_2022_NBER_fig3.jpeg)
++- Type: Binned scatter (Tier A)
++- X-axis: Running variable (threshold-normalized PM; range approximately −40 to +40)
++- Y-axis: Probability of PM advisory (range 0–1)
++- Series / panels: Single series; local linear fit on each side of threshold
++- Key visual finding: Sharp jump in advisory probability at running variable = 0; no advisory below threshold, ≈62% probability above.
++- Annotations: Vertical dashed line at RV = 0; fitted lines on each side of threshold.
++- **Figure notes:** Bin width = 5 running-variable units. Population-weighted. First-stage F-statistic ~46–90 depending on bandwidth.
+ 
+-**Figure 2:** Alert counts and keyword search results related to air quality information (p. 21).
+-![Daily alert counts vs. NAVER search keyword counts, 2016–2017](../wiki/figures/Anderson_etal_2022_NBER_fig2.jpeg)
+-- Type: time-series line plot
+-- X-axis: date, 2016-01 through 2017-12 (YYYYMM format)
+-- Y-axis: count, normalized to maximum of 100 (alerts and search counts on the same axis)
+-- Series: red = daily alert counts; blue = NAVER keyword searches for "air pollution alert," "particulate matter," "air quality"
+-- Key visual finding: keyword searches spike dramatically on the same days alerts are issued, providing direct behavioral evidence that the public attends to alerts when they are triggered.
+-- **Figure notes:** The red series represents the daily count of air quality alerts, and the blue series represents searches for "air pollution alert", "particulate matter", or "air quality" on NAVER. The maximum value of daily keyword search counts is set to 100.
++**Figure 4:** Outcome discontinuity — residualized per-capita health expenditures (US cents) vs. running variable; 6 panels (respiratory / cardiovascular × minors / adults / older adults). (p. 23)
++![RD outcome: residualized health expenditures vs. running variable](../wiki/figures/Anderson_etal_2022_NBER_fig4.jpeg)
++- Type: Binned scatter, 6-panel (Tier A)
++- X-axis: Running variable (each panel)
++- Y-axis: Residualized per-capita expenditure in US cents (residualized for DOW, year × month, holiday, district FEs)
++- Series / panels: Respiratory (top row) and cardiovascular (bottom row); Minors / Adults / Older Adults (columns)
++- Key visual finding: Visible downward jumps in residualized spending at threshold for youth respiratory and adult/older-adult cardiovascular, consistent with 2SLS estimates.
++- Annotations: Vertical dashed lines at RV = 0; local linear fits on each side.
++- **Figure notes:** Bin width = 5 running-variable units. Population-weighted.
+ 
+-**Figure 3:** Treatment discontinuity (first-stage RD plot) (p. 22).
+-![Probability of advisory by running variable, binned scatter](../wiki/figures/Anderson_etal_2022_NBER_fig3.jpeg)
+-- Type: binned scatter plot
+-- X-axis: running variable (threshold-normalized function of PM); range $[-40, 40]$, bin width 5
+-- Y-axis: probability of particulate matter advisory; range $[0, 1]$
+-- Series: single series; point sizes weighted by population (1 mil, 10 mil, 100 mil legend)
+-- Key visual finding: sharp jump from probability ~0.05 just below the threshold to ~0.80 just above it. The jump is exactly the first-stage discontinuity Table 3 quantifies as $\hat{\gamma}_1 \approx 0.62$.
+-- Annotations: vertical dashed line at running variable = 0 marks the RD cutoff.
+-- **Figure notes:** Each point represents the population-weighted average of observations in a given bin, the width of which is 5 units. The *y*-axis indicates the average probability of a particulate matter advisory. The *x*-axis indicates the value of the running variable (a threshold-normalized function of PM).
++**Figure 5:** Lower bounds on gross health benefits by age group: contemporaneous (left) and dynamic 3-day (right), scaled by 70% public coverage rate. (p. 24)
++![Lower bounds on gross health benefits by age group](../wiki/figures/Anderson_etal_2022_NBER_fig5.jpeg)
++- Type: Bar chart (Tier A)
++- X-axis: Age group (Minors, Adults, Older Adults) × disease type
++- Y-axis: Lower bound on gross health benefit (millions USD, public-expenditure share)
++- Series / panels: Contemporaneous (left panel) and dynamic 3-day (right panel); respiratory and cardiovascular stacked bars
++- Key visual finding: Adults (20–64) account for the largest share of aggregate benefits ($20.4M), driven by cardiovascular effects; respiratory benefits are concentrated in minors.
++- Annotations: Dollar totals labeled on bars.
++- **Figure notes:** Scaled by 70% public coverage rate. Based on Tables 4–5 (contemporaneous) and Table 6 (dynamic).
+ 
+-**Figure 4:** Outcome discontinuity (key reduced-form RD plots) (p. 23).
+-![Health expenditures by running variable, six panels (respiratory and cardiovascular × three age groups)](../wiki/figures/Anderson_etal_2022_NBER_fig4.jpeg)
+-- Type: binned scatter plot, 3 × 2 panel grid
+-- X-axis (all panels): running variable, range $[-40, 40]$, bin width 5
+-- Y-axis: per-capita residualized health expenditures in US cents (11.5 KRW = 0.01 USD)
+-- Panels: rows = age (minors 0–19, adults 20–64, older adults 65+); columns = disease (respiratory left, cardiovascular right)
+-- Series: single series per panel; point sizes weighted by population (1 mil, 10 mil, 100 mil)
+-- Key visual finding: clear downward jump at the threshold in (i) minor respiratory (largest in magnitude relative to mean), (ii) adult respiratory and cardiovascular, (iii) older-adult cardiovascular. No visible jump for minor cardiovascular (cardio disease is essentially absent in this age group). The figure is the visual analog of Tables 4 and 5 and the project-relevant heart of the paper.
+-- Annotations: vertical dashed line at running variable = 0; horizontal solid line at zero residualized spending.
+-- **Figure notes:** Each point represents the population-weighted average of observations in a given bin, the width of which is 5 units. The *y*-axis indicates the per capita level of residualized health expenditures, in US cents (11.5 KRW = 0.01 USD). The residualization was performed with respect to day-of-week, year-by-month, holiday, and district fixed effects. The *x*-axis indicates the value of the running variable (a threshold-normalized function of PM).
++**Figure 6:** Cost-benefit comparison under Baseline, Scenario A (full compliance), and Scenario B (lowered PM2.5 threshold to 75 µg/m³). (p. 25)
++![Cost-benefit comparison across policy scenarios](../wiki/figures/Anderson_etal_2022_NBER_fig6.jpeg)
++- Type: Bar/line chart (Tier A)
++- X-axis: Policy scenario (Baseline / Scenario A / Scenario B)
++- Y-axis: Millions USD
++- Series / panels: Gross benefit bars; system maintenance cost line for 2016–2017
++- Key visual finding: All three scenarios yield positive net benefits; Scenario B (lower threshold) generates $76.5M in expenditure reductions — 109% above baseline — at marginally higher system cost.
++- Annotations: Maintenance cost line at $4M.
++- **Figure notes:** 2016 system cost assumed equal to 2017 value ($2M) due to data unavailability.
+ 
+-**Figure 5:** Potential health benefits by age group (p. 24).
+-![Aggregate gross-benefit lower bounds by age, stacked bar by disease](../wiki/figures/Anderson_etal_2022_NBER_fig5.jpeg)
+-- Type: stacked bar chart
+-- X-axis: age group (Minors 0–19, Adults 20–64, Older Adults 65+, All), in two panels
+-- Y-axis: million USD over 2016–2017
+-- Series: stacked bars by disease (orange = respiratory bottom segment, red = cardiovascular top segment)
+-- Panels: left = contemporaneous estimates (Tables 4–5); right = dynamic estimates (Table 6)
+-- Key visual finding: prime-age adults realize the largest aggregate gross benefits in both panels; older adults' cardiovascular share is substantial despite their smaller population. Dynamic-effect bars are roughly 30 percent taller than contemporaneous bars. "All" totals: ~28.6 million USD (contemporaneous), ~36.7 million USD (dynamic) — these are the headline lower-bound benefit numbers.
+-- Annotations: legend at bottom labels orange/red for respiratory/cardiovascular.
+-- **Figure notes:** The left (right) panel plots lower bounds on gross benefits by age groups using estimates from Tables 4 and 5 (Table 6). To bound gross benefits we scale the table coefficients by the average share of health expenditures that are publicly covered (70%).
++**Appendix Figures (robustness only — not copied)**:
++- Figure A1 (p. 39): Histogram of daily running variable with threshold line — no missing density above 0. One-line: McCrary-type manipulation test for daily PM running variable.
++- Figure A2 (p. 39): Histogram of hourly running variable — same test at hourly level. One-line: No evidence of hourly PM reporting manipulation at alert threshold.
++- Figure A3 (p. 40): Continuity of temperature and precipitation plotted against running variable, bin width 5, range [−40, 40] — no discontinuity at threshold. One-line: Covariate balance check; weather controls unaffected at RD threshold.
+ 
+-**Figure 6:** Cost-benefit comparison and potential health benefits (p. 25).
+-![Aggregate gross-benefit lower bounds by alert-policy scenario; horizontal lines mark program cost](../wiki/figures/Anderson_etal_2022_NBER_fig6.jpeg)
+-- Type: stacked bar chart with reference lines
+-- X-axis: scenario (Baseline, A, B), in two panels
+-- Y-axis: million USD; range $[0, 80]$
+-- Series: stacked bars by disease (orange = respiratory, red = cardiovascular)
+-- Panels: left = contemporaneous; right = dynamic
+-- Key visual finding: Scenario B (PM2.5 threshold lowered to 75 µg/m³, the post-July-2018 policy) more than doubles aggregate benefits relative to baseline in both panels (reaching ~50 million USD contemporaneous, ~76 million USD dynamic). Scenario A (sharp RD: alert whenever running variable exceeds zero) yields a modest increase over baseline. The horizontal blue lines marking total system cost (~4–5 million USD) sit far below every bar, visually dramatizing that benefits dwarf costs in all scenarios.
+-- Annotations: solid horizontal line = 2018 reference cost (~5.6 million USD); dashed horizontal line = 2017 reference cost (~4 million USD).
+-- **Figure notes:** The left (right) panel plots lower bounds on gross benefits by scenario using estimates from Tables 4 and 5 (Table 6). To bound gross benefits we scale the table coefficients by the average share of health expenditures that are publicly covered (70%). "Baseline" represents the policy during the sample period, "Scenario A" represents a policy that triggers an alert whenever the running variable crosses the relevant threshold, and "Scenario B" represents a policy that lowers the PM2.5 threshold to the value adopted in July 2018. The solid (dashed) line represents the total system maintenance cost for the analytic period (2016–2017) using 2018 (2017) as the reference year for costs.
++## 12. Equations / formal objects
+ 
+-**Figure A1:** Histogram of daily running variable (p. 39).
+-- One-liner: McCrary-style density plot of the daily running variable showing no manipulation/bunching at the threshold. Relevant only as a manipulation check.
++**Welfare decomposition**:
+ 
+-**Figure A2:** Histogram of hourly running variable (p. 39).
+-- One-liner: Same manipulation check at the hourly level. Not project-relevant beyond confirming the design's internal validity.
++$$
++W_i = U_i(a_i, pm) + E_i \tag{Eq. 3}
++$$
+ 
+-**Figure A3:** Continuity of continuous control variables (p. 40).
+-- One-liner: Binned-scatter continuity test for temperature and precipitation at the RD threshold; both are smooth across the cutoff. Standard RD diagnostic, not project-relevant beyond confirming internal validity.
++$$
++\Delta W_i = \Delta U_i + \Delta E_i \tag{Eq. 4}
++$$
++
++where $U_i$ is private utility, $E_i$ is fiscal externality (publicly reimbursed health costs), and $\Delta$ denotes the change from receiving the alert. Since $\Delta U_i \geq 0$ (more accurate information weakly helps), $\Delta E_i$ is a lower bound on $\Delta W_i$.
++
++**Utility function (Eq. 1)**:
++
++$$
++U_i(a_i, pm) = b_i(a_i) - s_i^{\text{pvt}} \cdot p_s(a_i, pm)
++$$
++
++where $a_i$ = avoidance action, $b_i(a_i)$ = benefit of action minus its cost, $s_i^{\text{pvt}}$ = private share of healthcare costs, $p_s(a_i, pm)$ = probability of health event given action and pollution.
++
++**Change in private utility (Eq. 2)**:
++
++$$
++\Delta U_i = \left[b_i(a_i(pm^{\text{hi}})) - b_i(a_i(pm^{\text{avg}}))\right] - s_i^{\text{pvt}}\left[p_s(a_i(pm^{\text{hi}}), c) - p_s(a_i(pm^{\text{avg}}), c)\right]
++$$
++
++where $pm^{\text{avg}} = 22.7$ µg/m³ (mean PM2.5 below threshold), $pm^{\text{hi}} = 66.7$ µg/m³ (mean above), $c = 57.5$ µg/m³ (PM2.5 near threshold).
++
++**FRD first stage (Eq. 5)**:
++
++$$
++\text{Alert}_{it} = \gamma_0 + \gamma_1 \mathbf{1}[\widetilde{PM}_{it} \geq 0] + \gamma_2 \widetilde{PM}_{it} + \gamma_3 \widetilde{PM}_{it} \cdot \mathbf{1}[\widetilde{PM}_{it} \geq 0] + X_{1it}'\lambda + X_{2t}'\mu + \delta_i + \varepsilon_{it}
++$$
++
++**FRD reduced form (Eq. 6)**:
++
++$$
++Y_{it} = \beta_0 + \beta_1 \mathbf{1}[\widetilde{PM}_{it} \geq 0] + \beta_2 \widetilde{PM}_{it} + \beta_3 \widetilde{PM}_{it} \cdot \mathbf{1}[\widetilde{PM}_{it} \geq 0] + X_{1it}'\lambda + X_{2t}'\mu + \delta_i + \varepsilon_{it}
++$$
++
++**FRD LATE (Eq. 7)**:
++
++$$
++\hat{\tau}_{\text{FRD}} = \frac{\hat{\beta}_1}{\hat{\gamma}_1}
++$$
++
++**Dynamic specification (Eq. 8)**:
++
++$$
++Y_{it}^+ = \sum_{s=0}^{2} Y_{i,t+s}
++$$
++
++used as dependent variable in place of $Y_{it}$; sample restricted to drop days $t$ preceded by an alert day to avoid double-counting.
++
++**Running variable construction (Appendix A2)**:
++
++$$
++PM_{dh}^{\text{2h-min}} = \min\{PM_{d,h-1},\, PM_{d,h}\}
++$$
++
++$$
++PM_d^{\text{2h-min-max}} = \max_h\{PM_{dh}^{\text{2h-min}}\}
++$$
++
++$$
++rv_d = \text{round}\!\left(PM_d^{\text{2h-min-max}} - c\right)
++$$
++
++**Theoretical generalization (Appendix A1)**: Main model holds when the running variable is an arbitrary increasing function $f(\text{PM})$ of daily PM, not just average daily PM. This formally justifies using the max-2h-min PM as the RD running variable rather than a daily average.
++
++**Cost data**: $c_{\text{alerts}}$: total system management cost from city-level environmental budget reports (Tables A12–A13); 7 cities; $2,014,558 in 2017, $2,833,940 in 2018 (USD; KRW converted at 11.5 KRW/cent). 2016 cost assumed equal to 2017.

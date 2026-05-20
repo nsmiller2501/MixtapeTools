@@ -28,8 +28,9 @@ On first run, the skill can scaffold the references wiki structure. It will not 
 ## What It Does
 
 - Finds new PDFs and proposes filename normalization.
-- Reads each paper in an isolated subagent to avoid PDF image bloat in the main session.
+- Reads each paper in isolated subagents to avoid PDF image bloat and whole-file markdown reads in the main session.
 - Reuses existing `_text.md` extracts or PDF splits when available.
+- For marker-converted PDFs, writes a neutral `_text.md` first, then runs a separate project-wiki synthesis pass.
 - Applies a project-context relevance filter so important material receives full treatment and less relevant material gets concise page-referenced notes.
 - Writes wiki pages atomically per paper, then logs completion only after edits succeed.
 - Runs the BibTeX update cascade after ingestion.
