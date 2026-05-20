@@ -4,10 +4,9 @@ Use this prompt for one bounded worker bundle from `prepare_substrate.py`.
 
 ## Inputs
 
-- `manifest.json` path
 - bundle id and bundle excerpt from `worker_bundles`
 - output note path
-- position: `front_matter`, `body`, or `back_matter`
+- position: `front_matter`, `body`, `back_matter`, or `full_paper`
 
 ## Task
 
@@ -27,6 +26,9 @@ Read only assigned chunk paths. Write local extraction notes to the output note 
 `back_matter`:
 - Robustness, appendices, limitations, replication/data availability, and references-section clues.
 - Record references only when they matter for DOI/bibliographic candidates or citation-overlap checks.
+
+`full_paper`:
+- Apply all extraction categories across the assigned chunks. Do not over-prioritize title/abstract material just because the paper fit in one bundle.
 
 ## Note Format
 

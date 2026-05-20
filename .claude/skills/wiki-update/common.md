@@ -24,7 +24,7 @@ venue_type: journal | working_paper | book_chapter | other
 ...
 ## 2. Audience
 ...
-[continue through dimension 11]
+[continue through dimension 12]
 ```
 
 ## Plain-English synthesis block

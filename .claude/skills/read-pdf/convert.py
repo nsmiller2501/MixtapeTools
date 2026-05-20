@@ -311,6 +311,7 @@ def main() -> int:
     (out_dir / "meta.json").write_text(
         json.dumps(info, indent=2), encoding="utf-8"
     )
+    normalize_cached_figures(out_dir)
     print(str(md_path))
     return 0
 

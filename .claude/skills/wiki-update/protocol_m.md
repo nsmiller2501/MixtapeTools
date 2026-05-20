@@ -55,7 +55,7 @@ For each relevant figure listed in `_text.md`:
 2. Apply the project-relevance filter. Non-relevant: one-line description + page ref only; do not copy.
 3. For relevant figures:
    - Copy with the deterministic helper, not by hand:
-     `python3 ~/.claude/skills/wiki-update/scripts/copy_marker_figure.py <cache-dir>/markdown.md references/wiki/figures --basename <basename> --figure <M>`
+     `python3 ~/.claude/skills/wiki-update/scripts/copy_marker_figure.py <cache-dir>/markdown.md <absolute-project-root>/references/wiki/figures --basename <basename> --figure <M>`
    - Use the helper's printed wiki-relative path in markdown. The helper preserves the source image format and uses a byte-matching extension, so destinations may be `.jpg` or `.png`.
    - Verify copied files exist with `ls references/wiki/figures/<basename>_fig<M>.*`.
    - Classify as Tier A (data figure: scatter, line, bar, coefplot, histogram, density, time series, RD/event-study plot) or Tier B (schematic: DAG, conceptual diagram, map, flowchart, theoretical model). Use the `_text.md` figure description and caption; read the PNG only if genuinely needed for wiki writing.

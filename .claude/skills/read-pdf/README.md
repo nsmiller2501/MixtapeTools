@@ -10,7 +10,7 @@
 
 You give Claude a paper — either a local PDF file or a search query — and it does the rest. It finds and downloads the paper (or uses your local file in place), reads it through the selected backend, and writes a persistent `_text.md` extraction alongside the source PDF.
 
-Both modes produce the same output contract: bibliographic metadata plus 8-dimension research notes.
+Both modes produce the same output contract: bibliographic metadata, plain-English synthesis, and 12-dimension research notes.
 
 | Mode | Command | Best for |
 |---|---|---|
@@ -47,7 +47,7 @@ Convert the PDF to markdown with python:marker (layout-aware, GPU-accelerated), 
 | **Convert** | `convert.py` runs marker and writes `markdown.md` to a content-hash cache |
 | **Collision** | If `_text.md` already exists, ask: overwrite or save as `_text2.md`? |
 | **Prepare substrate** | Split cached `markdown.md` into bounded chunk files plus `manifest.json` |
-| **Extract** | Workers read assigned chunks; synthesis reads worker notes and writes bibliographic metadata + 8-dimension notes |
+| **Extract** | Workers read assigned chunks; synthesis reads worker notes and writes bibliographic metadata, plain-English synthesis, and 12-dimension notes |
 | **Persist** | Save final extraction to `<basename>_text.md` alongside the source PDF |
 
 ### Usage
@@ -88,7 +88,7 @@ The old `~/.claude/skills/split-pdf/scripts/split.py` path remains as a compatib
 
 ### What Gets Extracted
 
-Both modes extract the same 8 dimensions, plus a bibliographic metadata block at the top of `_text.md`:
+Both modes extract the same 12 dimensions, plus a bibliographic metadata block and plain-English synthesis at the top of `_text.md`:
 
 ```
 ## Bibliographic metadata
@@ -103,11 +103,15 @@ venue_type: journal | working_paper | book_chapter | other
 1. **Research question** — What is the paper asking and why does it matter?
 2. **Audience** — Which sub-community of researchers cares about this?
 3. **Method** — How do they answer the question? What is the identification strategy?
-4. **Data** — What data do they use? Where did they find it? Unit of observation? Sample size? Time period?
-5. **Statistical methods** — What econometric or statistical techniques? Key specifications?
-6. **Findings** — Main results? Key coefficient estimates and standard errors?
-7. **Contributions** — What is learned that we didn't know before?
-8. **Replication feasibility** — Public data? Replication archive? Data appendix? URLs?
+4. **Target parameter** — What estimand or causal/statistical object is targeted?
+5. **Data** — What data do they use? Where did they find it? Unit of observation? Sample size? Time period?
+6. **Statistical methods** — What econometric or statistical techniques? Key specifications?
+7. **Findings** — Main results? Key coefficient estimates and standard errors?
+8. **Contributions** — What is learned that we didn't know before?
+9. **Replication feasibility** — Public data? Replication archive? Data appendix? URLs?
+10. **Tables** — Inventory tables; extract machine-readable tables when central.
+11. **Figures** — Inventory figures, captions, and key visual claims.
+12. **Equations / formal objects** — Inventory equations, model primitives, algorithms, propositions, and labeled specifications.
 
 ---
 

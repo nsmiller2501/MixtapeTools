@@ -244,6 +244,8 @@ def bundle_chunks(chunks: list[Chunk], source_limit: int) -> list[dict[str, obje
 
     if len(bundles) > 1:
         bundles[-1]["position"] = "back_matter"
+    elif len(bundles) == 1:
+        bundles[0]["position"] = "full_paper"
     return bundles
 
 

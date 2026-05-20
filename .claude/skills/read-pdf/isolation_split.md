@@ -14,7 +14,7 @@ Schema:          ~/.claude/skills/read-pdf/extraction_schema.md
 Process:
 1. Read 3 PDF files at a time using the Read tool.
 2. After each batch, update <notes_path> with extracted content.
-3. Extract the bibliographic metadata block and 8 research dimensions as specified in extraction_schema.md.
+3. Extract the bibliographic metadata block and 12 research dimensions as specified in extraction_schema.md.
 4. Write the final structured extraction to <text_path>, with the ## Bibliographic metadata block first.
 
 Report when done: splits read, figures/tables found, one-sentence content summary.

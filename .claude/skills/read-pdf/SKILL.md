@@ -7,7 +7,7 @@ argument-hint: [--split] [pdf-path-or-search-query]
 
 # Read-PDF: Download, Convert, and Deep-Read Academic Papers
 
-Takes a PDF (local or searched) and produces a structured `_text.md` extraction with a bibliographic metadata block and 8-dimension research notes.
+Takes a PDF (local or searched) and produces a structured `_text.md` extraction with a bibliographic metadata block, a plain-English synthesis, and 12-dimension research notes.
 
 Default mode converts the PDF to markdown locally using python:marker, prepares bounded source chunks, then reads those chunks through a fanout-first extraction workflow. This preserves equation fidelity, table structure, and figure references without image-based context bloat or whole-file `Read` failures.
 

@@ -18,6 +18,10 @@ venue_type: journal | working_paper | book_chapter | other
 
 If a field is not visible on the title page, record `null`. Do not guess.
 
+## Plain-English synthesis
+
+Hard cap: ~200 words. No jargon. Cover the research question, why it matters, what the paper estimates and how in plain terms, what it finds, and the main take-away.
+
 ## Research dimensions
 
 1. **Research question** — What is the paper asking and why does it matter?

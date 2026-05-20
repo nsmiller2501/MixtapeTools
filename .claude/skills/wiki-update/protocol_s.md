@@ -14,7 +14,7 @@ If `notes.md` already exists (prior interrupted run), read it first and resume f
 
 ## Step 2: Synthesize `_text.md`
 
-After all splits are read, write `references/raw/<basename>_text.md` from the accumulated `notes.md` content. Follow the `_text.md` structure in `common.md` (bib block, plain-English synthesis, 11 dimensions).
+After all splits are read, write `references/raw/<basename>_text.md` from the accumulated `notes.md` content. Follow the `_text.md` structure in `common.md` (bib block, plain-English synthesis, 12 dimensions).
 
 For the bib metadata block: scan the first split for the DOI regex `10\.\d{4,}/\S+`. Extract authors, title, year, and venue from the first-split text. Record null for any field not found.
 

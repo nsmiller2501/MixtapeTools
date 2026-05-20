@@ -154,7 +154,7 @@ For each new paper (using its post-rename canonical name), determine its ingest 
      --output-dir references/raw/raw_build/split_<basename>
    ```
 
-   `split.py` is the canonical PyPDF2 splitter for `/read-pdf --split` and the `/split-pdf` compatibility wrapper. It is idempotent at the chunk-file level: if the output directory already contains the expected `<basename>_pp<X>-<Y>.pdf` files from a prior interrupted run, re-running rewrites them with identical content. Do not invoke `/split-pdf` or `/read-pdf --split` as a skill — the interactive pause-and-confirm flow cannot be answered from a subagent context. Call the script only.
+   `split.py` is the canonical pypdf splitter for `/read-pdf --split` and the `/split-pdf` compatibility wrapper. It is idempotent at the chunk-file level: if the output directory already contains the expected `<basename>_pp<X>-<Y>.pdf` files from a prior interrupted run, re-running rewrites them with identical content. Do not invoke `/split-pdf` or `/read-pdf --split` as a skill — the interactive pause-and-confirm flow cannot be answered from a subagent context. Call the script only.
 
 **Report tier breakdown once, before spawning subagents:**
 
@@ -194,7 +194,7 @@ All per-paper wiki-writing prompts include:
 - Optional batch focus string (if provided as the skill argument)
 - Absolute path to exactly one protocol file: `~/.claude/skills/wiki-update/protocol_m.md`, `protocol_e.md`, or `protocol_s.md` depending on the tier. Do not include paths to the other two.
 - Absolute path to `~/.claude/skills/wiki-update/common.md`.
-- For Tier M wiki synthesis only: absolute path to `~/.claude/skills/wiki-update/wiki_synthesis.md`, cache `markdown.md` path, cache figure directory, absolute path to `~/.claude/skills/wiki-update/scripts/copy_marker_figure.py`, and citation-overlap JSON path if one was produced.
+- For Tier M wiki synthesis only: absolute path to `~/.claude/skills/wiki-update/wiki_synthesis.md`, cache `markdown.md` path, absolute cache figure directory, absolute project `references/wiki/figures` directory, absolute path to `~/.claude/skills/wiki-update/scripts/copy_marker_figure.py`, and citation-overlap JSON path if one was produced.
 
 Tier M worker prompts include only `fanout_worker.md`, the bundle excerpt, assigned chunk paths, and output note path.
 
