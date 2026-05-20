@@ -11,7 +11,7 @@ Maintains a project's reference wiki by ingesting newly-added PDFs from `referen
 
 **Ingest path is auto-detected per paper.** If the read-pdf converter is installed, it runs first for high-fidelity markdown (Protocol M: best tables, figures, and equation handling). If only a cached `_text.md` extract exists, that feeds wiki writing directly (Protocol E). Otherwise the full split-PDF vision pipeline runs (Protocol S). All three paths produce the same wiki output — the difference is quality of table and figure capture.
 
-**`pdftotext` is not an ingest source.** It is allowed only for narrow pre-flight tasks: first-page filename proposals when the converter is unavailable, metadata checks needed for `/bib-update`, and other explicit bootstrap/diagnostic checks that do not synthesize wiki content. Once a paper is assigned to Protocol M or Protocol E, do not use `pdftotext` to read, summarize, validate, or supplement substantive content. Wait for the selected input (`markdown.md` or `_text.md`) and read that source only.
+**`pdftotext` is not an ingest source.** It is allowed only for narrow pre-flight tasks: first-page filename proposals when the converter is unavailable, metadata checks needed for `/bib-update`, and other explicit bootstrap/diagnostic checks that do not synthesize wiki content. Once a paper is assigned to Protocol M or Protocol E, do not use `pdftotext` to read, summarize, validate, or supplement substantive content. Wait for the selected input (`manifest.json` plus bounded chunks, or `_text.md`) and read that source only.
 
 ## When this skill is invoked
 
@@ -124,7 +124,23 @@ For each new paper (using its post-rename canonical name), determine its ingest 
 
 **Check order (stop at the first match):**
 
-1. **Tier M — Converted markdown:** `~/.claude/skills/read-pdf/convert.py` exists, **and** running it for this PDF succeeds (cache hit is instant; a miss triggers the full conversion here). Capture the returned `markdown.md` path and cache directory. If `convert.py` was already run during step 4 for this paper, it was cached — re-running is a no-op.
+1. **Tier M — Converted markdown substrate / fanout extract:** `~/.claude/skills/read-pdf/convert.py` exists, **and** running it for this PDF succeeds (cache hit is instant; a miss triggers the full conversion here). Capture the returned `markdown.md` path and cache directory. If `convert.py` was already run during step 4 for this paper, it was cached — re-running is a no-op. Then prepare the read-pdf extraction substrate:
+
+   ```bash
+   python3 ~/.claude/skills/read-pdf/scripts/prepare_substrate.py "<markdown.md path>"
+   ```
+
+   Capture the printed `manifest.json` path. Protocol M workers consume this manifest and chunk files; they must not read the whole `markdown.md`.
+
+   If `references/references.bib` exists, also run the mechanical citation-overlap scan:
+
+   ```bash
+   python3 ~/.claude/skills/wiki-update/scripts/citation_overlap.py \
+     "<markdown.md path>" references/references.bib \
+     --output "references/raw/raw_build/<basename>_citation_overlap.json"
+   ```
+
+   Pass the output JSON path to the Protocol M subagent. These are candidate overlaps only; the subagent decides whether any are substantively useful for wiki links.
 
    If `convert.py` exists but fails for a specific paper (conversion error), report the error, skip tier M for that paper, and fall through to tier E or S. Do not use `pdftotext` as a temporary or parallel substitute while conversion is running or after conversion fails.
 
@@ -158,23 +174,44 @@ Load `./references/wiki/index.md` once. Pass it into each per-paper subagent so 
 
 ---
 
-## Per-paper ingest (subagent)
+## Per-paper ingest (agents)
 
-Spawn one Agent per paper, sequentially. The main session must not read PDF extracts or markdown directly — delegate deep reading to subagents to bound context.
+Process papers sequentially. The main session must not read PDF extracts, marker chunks, or split contents directly — delegate deep reading to agents to bound context.
+
+- **Tier M:** run a split fanout sequence for the paper. Spawn one bounded worker agent per `manifest.worker_bundles` entry, sequentially. Then spawn one read-pdf synthesis agent that writes only the neutral `_text.md`. Then spawn one wiki synthesis agent that reads `_text.md` plus project/wiki context and writes wiki artifacts.
+- **Tier E and Tier S:** spawn one per-paper agent using the selected protocol.
 
 **Before spawning each subagent, record the journal** (for rollback on failure): for every wiki page the subagent intends to touch, note whether it exists and its current content if so. This is the rollback snapshot. On failure at any step, restore journaled state and do not write the log entry. The next invocation rediscovers the paper as new and retries cleanly.
 
-Each subagent prompt must be self-contained — the agent has no memory of this conversation. Include:
+Each agent prompt must be self-contained — the agent has no memory of this conversation.
 
-- Absolute paths: PDF, input source (markdown.md, `_text.md`, or populated splits directory), `references/raw/`, `references/wiki/`, `references/wiki/figures/`, `references/CLAUDE.md`
+All per-paper wiki-writing prompts include:
+
+- Absolute paths: PDF, input source (`_text.md` for Tier M and E, or populated splits directory for Tier S), `references/raw/`, `references/wiki/`, `references/wiki/figures/`, `references/CLAUDE.md`
 - The tier (M, E, or S)
 - Current `wiki/index.md` contents (for disambiguation)
 - Project context block: research question, data sources, identification strategy (from `./CLAUDE.md`)
 - Optional batch focus string (if provided as the skill argument)
-- **The verbatim contents of exactly one protocol file** — read and embed `~/.claude/skills/wiki-update/protocol_m.md`, `protocol_e.md`, or `protocol_s.md` depending on the tier. Do not embed the other two.
-- **The verbatim contents of `~/.claude/skills/wiki-update/common.md`** — shared `_text.md` structure, structured-extraction dimensions, tables and figures protocols, substantive-change rule, concept disambiguation, relevance filtering, and subagent return-value schema.
+- Absolute path to exactly one protocol file: `~/.claude/skills/wiki-update/protocol_m.md`, `protocol_e.md`, or `protocol_s.md` depending on the tier. Do not include paths to the other two.
+- Absolute path to `~/.claude/skills/wiki-update/common.md`.
+- For Tier M wiki synthesis only: absolute path to `~/.claude/skills/wiki-update/wiki_synthesis.md`, cache figure directory, and citation-overlap JSON path if one was produced.
 
-Embed both files verbatim in the subagent prompt; the subagent has no filesystem awareness of this skill directory.
+Tier M worker prompts include only `fanout_worker.md`, the bundle excerpt, assigned chunk paths, and output note path.
+
+Tier M read-pdf synthesis prompts include only `fanout_synthesis.md`, `extraction_schema.md`, `manifest.json`, worker note paths, and output `_text.md` path. They do not include PDF path, wiki paths, project context, protocol_m.md, common.md, or citation-overlap JSON.
+
+Do not embed the protocol or common files verbatim. Instead, the first instruction in each wiki-writing prompt must be:
+
+```text
+Before doing any paper work:
+1. Read the protocol file at <absolute protocol path>.
+2. Read the common file at <absolute common path>.
+3. Follow those instructions exactly for this paper.
+```
+
+Tier M worker prompts use `fanout_worker.md` and should include only the bundle excerpt for that worker, not the full manifest unless needed. Tier M read-pdf synthesis prompts use `fanout_synthesis.md`, `extraction_schema.md`, the manifest path, and all worker note paths; they must not include wiki paths or project context. Tier M wiki synthesis prompts use `protocol_m.md`, `common.md`, `wiki_synthesis.md`, `_text.md`, citation-overlap JSON if present, and wiki context; they must not include worker note paths or marker chunk paths unless gap recovery is explicitly approved.
+
+This keeps spawned prompts small while still making the protocol explicit through normal file reads.
 
 ---
 

@@ -1,18 +1,23 @@
 # Isolation: Default Marker Mode
 
-The parent runs install/cache/convert steps, then launches a subagent for markdown reading and extraction.
+The parent runs install/cache/convert steps, prepares the extraction substrate, then launches bounded workers and one synthesis bottleneck.
 
 ```text
-Read a converted markdown file and produce structured extraction notes.
+Prepare converted marker markdown for bounded extraction.
 
 Markdown input: <markdown_path>
 Text output:    <text_path>
+Manifest:       <cache-dir>/substrate/manifest.json
 Schema:         ~/.claude/skills/read-pdf/extraction_schema.md
+Worker prompt:  ~/.claude/skills/read-pdf/fanout_worker.md
+Synthesis:      ~/.claude/skills/read-pdf/fanout_synthesis.md
 
 Process:
-1. Read <markdown_path> using the Read tool.
-2. Extract the bibliographic metadata block and 8 research dimensions as specified in extraction_schema.md.
-3. Write the final structured extraction to <text_path>, with the ## Bibliographic metadata block first.
+1. Parent runs:
+   python3 ~/.claude/skills/read-pdf/scripts/prepare_substrate.py <markdown_path>
+2. Parent launches worker bundles sequentially from manifest.worker_bundles.
+3. Each worker reads only assigned chunk paths and writes one durable note file.
+4. Synthesis reads manifest + worker notes, gap-rereads specific chunks only when needed, and writes <text_path>.
 
 Report when done: page count if available, figures/tables found, one-sentence content summary.
 ```

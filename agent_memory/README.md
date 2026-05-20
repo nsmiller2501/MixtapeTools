@@ -10,3 +10,4 @@ Current files:
 
 - `key_decisions.md` — durable architectural decisions.
 - `deferred_ideas.md` — postponed or rejected ideas that should remain visible.
+- `fanout_extraction_spec.md` — implementation and A/B testing spec for `read-pdf` / `wiki-update` fanout extraction.

@@ -1,0 +1,424 @@
+--- real_bento_text
++++ b_fanout_bento_text
+@@ -7,225 +7,274 @@
+ venue_type: journal
+ 
+ ## Plain-English synthesis
+-Bento, Miller, Mookerjee, and Severnini ask how much economic agents have adapted to a changing climate, and how to measure both climate impacts and adaptation in a single regression. They build a unifying empirical method that splits daily temperature into a long-run climate norm — the 30-year monthly moving average, lagged by one year — and a short-run weather shock equal to the deviation from that norm, and they enter both pieces in the same panel fixed-effects equation. Because the decomposition is built up front, the Frisch–Waugh–Lovell theorem guarantees that the shock coefficient identifies the same short-run response as a standard fixed-effects regression while the norm coefficient identifies the long-run response, free of much of the omitted-variable bias that haunts cross-sectional climate regressions. They apply the method to ambient ozone in U.S. counties over 1980–2013 and find that a 1 degree Celsius temperature shock raises daily maximum ozone by 1.68 parts per billion, a 1 degree change in the 30-year norm raises it by 1.16, and the 0.51 ppb gap is their measure of adaptation. The take-away is that ignoring adaptation overstates the climate penalty on ozone by roughly 44 percent.
+ 
++Climate scientists and economists have struggled to agree on a single number for how much warming raises pollution or crop losses, partly because two popular methods — comparing places with different climates versus tracking day-to-day weather swings — give different answers, and neither alone captures how people adjust to chronic heat. This paper shows why the two methods diverge: daily weather shocks measure what happens before anyone has time to adapt, while long-run climate norms capture behavior that has already incorporated adaptation. The authors write a single regression equation that estimates both responses at once, exploiting the Frisch–Waugh–Lovell theorem to show that a panel fixed-effects model and a cross-sectional model are limiting cases of the same estimator. Applying the framework to ambient ozone across U.S. monitoring stations from 1980 to 2013, they find that a 1 °C temperature shock raises daily maximum ozone by 1.68 ppb, while a 1 °C increase in the 30-year climate norm raises ozone by only 1.16 ppb — a statistically significant adaptation gap of 0.51 ppb. Using only the shock coefficient to project future air quality under RCP 8.5 would overestimate the "climate penalty" by roughly 44 percent. Researchers projecting long-run climate damages should use the climate-norm coefficient, not the weather-shock coefficient, to get a penalty estimate that is inclusive of adaptation.
++
+ ## 1. Research question
+-The paper asks two coupled questions: (i) how does climate change affect ambient "bad" ozone in the United States, and (ii) how much have economic agents adapted to that climatic change? Earlier studies relied on either cross-sectional or panel fixed-effects approaches and could not jointly estimate climate impacts and adaptation in a single equation with the same agents, sample, and identifying variation. The paper proposes a method that decomposes temperature into a long-run norm and a short-run shock, estimates both responses jointly, and defines adaptation as the difference between the two coefficients.
+ 
+-For the JMP, the research question is the methodological one: how does the Frisch–Waugh–Lovell decomposition recover separate short-run and long-run coefficients in a single fixed-effects regression, and what does the gap identify? The JMP transports the temperature decomposition to ozone itself ($\rho_{it} = P_{im} + \epsilon_{it}$) and reinterprets the norm/shock gap as the net health effect of ex-ante defensive action.
++How can researchers simultaneously measure (a) the short-run response to weather shocks and (b) the long-run response to climatic changes — including any adaptive behavior — in a single consistent framework? Applied question: by how much does temperature affect ambient ozone concentration, and how much do economic agents adapt?
+ 
+ ## 2. Audience
+-The primary audience is climate-economy researchers who study impacts and adaptation, and environmental economists who care about ambient ozone and the so-called "climate penalty" on air quality. The methodological audience is broader: any applied microeconometrician estimating short-run vs. long-run effects of a temporal variable that can be decomposed into a slow-moving expected component and a fast-moving deviation. The paper explicitly invokes parallels with macro (Lucas 1972, 1977 — anticipated vs. unanticipated shocks) and labor (Solon 1992 — transitory vs. permanent income).
+ 
+-For the JMP, the relevant audience overlap is environmental and health economists who want a clean separation of expected and unexpected pollution exposure, with a measure of adaptation derived directly from coefficients in a single equation.
++Environmental and climate economists; empirical economists working on climate damage functions, agriculture, mortality, or any outcome where both weather-shock and long-run climate effects are of interest; researchers designing panel studies of climate adaptation.
+ 
+ ## 3. Method / identification strategy
+-The method has two key features. First, the daily meteorological variable $x_{it}$ is decomposed up front into a climate norm $\bar{x}_{i\bar{p}}$ and a weather shock $(x_{it} - \bar{x}_{i\bar{p}})$. The norm is constructed as a backward-looking moving average lagged by at least one year, so that it is part of the agent's information set when the outcome is measured.
+ 
+-Second, both pieces enter the same panel fixed-effects equation:
++**Core insight — Frisch–Waugh–Lovell decomposition**: The paper decomposes daily observed temperature $x_{it}$ into a climate norm $\bar{x}_{i\bar{p}}$ (lagged 30-year monthly moving average) and a weather shock $(x_{it} - \bar{x}_{i\bar{p}})$, then includes both in the same regression. The FWL theorem guarantees:
+ 
+-$$
+-y_{it} = \alpha + \beta_W(x_{it} - \bar{x}_{i\bar{p}}) + \beta_C \bar{x}_{i\bar{p}} + \mu_i + \lambda_s + \nu_{it}.
+-$$
++- The weather-shock coefficient $\hat{\beta}_W$ equals the standard panel FE estimate (exploits within-monitor, within-season variation).
++- The climate-norm coefficient $\hat{\beta}_C$ equals the cross-sectional estimate (exploits between-monitor variation in long-run averages), but without the omitted-variable bias of a pure cross-section.
++- Adaptation is identified as $\hat{\beta}_W - \hat{\beta}_C$, testable from a single equation's standard errors.
+ 
+-By the Frisch–Waugh–Lovell theorem (Lovell 1963, Theorem 4.1), because the weather shock has been de-seasonalized as a first step (de-meaning over the period in the time-series dimension for each unit), the shock coefficient $\hat{\beta}_W$ is approximately equivalent to the fixed-effects coefficient $\hat{\beta}_{FE}$ from a standard panel regression of $y$ on $x$. The norm coefficient $\hat{\beta}_C$ is approximately equivalent to the cross-sectional coefficient $\hat{\beta}_{CS}$, but identified jointly within the same fixed-effects equation rather than from a separate cross-sectional regression — and therefore free from a large class of cross-sectional omitted-variable concerns.
++**First-stage decomposition** (Eq. 9): $x_{it} = \gamma_{imy} + \varepsilon_{it}$, where $\gamma_{imy}$ are location-by-month-by-year FE capturing climate norms; residuals are weather shocks.
+ 
+-Critically, the authors do **not** include the strictly contemporaneous monthly mean as the norm. They use a *lagged* function of historical monthly averages so that (a) the norm is part of the agent's information set and (b) variation in the norm is preserved when monitor-by-season-by-year fixed effects are added. Two sources of within-unit variation remain after the fixed effects: (i) the year-to-year "update" of the moving average as the oldest year drops and the newest year is added, and (ii) within-season demeaning of the monthly norm across months within the same season-year (Section 2.2 and the Appendix C derivation).
++**Climate norm construction**: $\bar{x}_{i\bar{p}} \equiv \frac{1}{J}\sum_{j=1}^{J<y}\omega_j \bar{x}_{imj}$ (Eq. 11), a lagged weighted average of monthly averages. Preferred specification: equal weights over 30 years, lagged 1 year. Correlates $> 0.95$ with location-by-month-by-year FE.
+ 
+-The identification of adaptation is by definition the difference $\hat{\beta}_W - \hat{\beta}_C$. The motivating intuition is Lucas-style: agents respond differently to transitory vs. permanent variation. Realized weather shocks leave agents only hours to respond, so $\hat{\beta}_W$ is approximately the no-adaptation response; long-run norms are anticipated and allow adjustment, so $\hat{\beta}_C$ is the adaptation-inclusive response. The gap is the empirical estimate of adaptation.
++**Identifying variation**: Climate variation comes from (1) rolling update of the 30-year MA across years and (2) demeaning from the monitor-by-season-by-year FE. Unit of observation is the ozone monitor × day.
+ 
+-For the JMP, this identification logic carries over directly to ozone: $\beta^N$ on the pollution norm $P_{im}$ identifies the long-run response inclusive of adaptation, and $\beta^S$ on the shock $\epsilon_{it} = \rho_{it} - P_{im}$ identifies the short-run response exclusive of adaptation. The norm–shock gap $\beta^S - \beta^N$ becomes the net health effect of ex-ante defensive action.
+-
+ ## 4. Target parameter
+-The two target parameters are $\beta_W$ (the short-run weather-shock effect on ambient ozone, approximately equivalent to a standard panel fixed-effects estimate of the contemporaneous temperature-ozone slope) and $\beta_C$ (the long-run climate-norm effect on ambient ozone, approximately equivalent to a cross-sectional climate-ozone slope but jointly estimated within the panel equation). The derived target is $\hat{\beta}_W - \hat{\beta}_C$, the measure of adaptation.
+ 
+-In plain terms: $\hat{\beta}_W$ is what a 1 degree Celsius transitory temperature shock does to daily maximum ozone today. $\hat{\beta}_C$ is what a 1 degree shift in the 30-year norm does to ozone, *inclusive* of any production-process, regulatory, or technological adjustments agents have made. The gap $\hat{\beta}_W - \hat{\beta}_C$ is the average reduction in ozone that comes from agents adapting to the new norm — a behavioral object.
++- $\beta_W$ — effect of a 1 °C temperature shock on daily max ozone (ppb), holding climate norm fixed. Equivalent to standard FE estimate; no adaptation included.
++- $\beta_C$ — effect of a 1 °C increase in the 30-year climate norm on daily max ozone (ppb). Inclusive of any adaptation by economic agents.
++- $\beta_W - \beta_C$ — the adaptation measure: how much lower the long-run ozone response is relative to the short-run response, attributable to behavioral and technological adjustments by agents facing a permanent temperature increase.
+ 
+-For the JMP, the analogue target parameters are $\beta^N$ (long-run health response to pollution norm $P_{im}$, inclusive of ex-ante defensive stock $k$) and $\beta^S$ (short-run health response to the ozone shock $\epsilon_{it}$, exclusive of ex-ante adaptation but inclusive of any contemporaneous $b$). The gap $\beta^S - \beta^N$ (note: the JMP flips the sign convention because the health outcome moves with the pollutant, so the larger short-run response is what reveals defensive action) identifies the net health effect of ex-ante defensive stock $k$.
++Full adaptation would imply $\beta_C = 0$. Positive $\beta_W - \beta_C > 0$ is evidence of partial adaptation.
+ 
+ ## 5. Data
+-- **Meteorological data:** NOAA Global Historical Climatology Network daily maximum temperature and total precipitation, 1950–2013, from ~20,000 U.S. weather stations. The 1950–1979 data are used only to construct the 30-year moving averages.
+-- **Ozone data:** EPA AQS daily maximum 8-hr ozone concentrations from monitor-level readings, 1980–2013, focused on the typical U.S. ozone season April–September.
+-- **Matching algorithm:** each ozone monitor is matched to the two closest weather stations within 30 km; an extended algorithm uses the closest five stations within 80 km for sensitivity.
+-- **Other:** EPA "Ozone Action Day" (OAD) county-level alert data from 2004 onward (covering roughly 36% of the sample), used to test short-run adaptation.
+ 
+-**Unit of observation:** monitor-by-day, with monitors aggregated to monitor-by-season-by-year for fixed effects.
++- **Ozone**: EPA air quality monitoring stations (AQS), daily maximum concentration (ppb), unbalanced panel, U.S., 1980–2013. Ozone season = April–September. Unit = ozone monitor × day.
++- **Temperature**: NOAA Global Historical Climatology Network (GHCN), daily maximum temperature and total precipitation, 1950–2013, 20,000+ stations. Matching: two closest stations within 30 km of each ozone monitor (covers 97.25% of ozone observations); expanded to five stations within 80 km covers >99.99%.
++- **Ozone Action Day (OAD) alerts**: EPA data, 2004 onward; county-level binary alert indicator.
++- **Sample**: N = 5,139,523 monitor-day observations (cols 1–2 of main tables); cross-section N = 2,712 monitors (col 3). OAD subsample: N = 1,879,041 (2004–2013, ~35% of full sample).
+ 
+-**Sample size:** 5,139,523 monitor-day observations in the preferred specification, dropping to 1,879,041 in the 2004–2013 subsample where OAD data are available.
+-
+-**Time period:** 1980–2013, ozone season (April–September; varies by state — see Table A3).
+-
+ ## 6. Statistical methods / specifications
+-The preferred decomposition uses a 30-year monthly moving average lagged by one year:
+ 
++**Main estimating equation (Eq. 13)**:
++
+ $$
+-\bar{x}_{i\bar{p}} = \frac{1}{30} \sum_{j=y-30}^{y-1} \bar{x}_{imj},
++\text{Ozone}_{it} = \beta_W \text{Temp}_{it}^W + \beta_C \bar{\text{Temp}}_{i\bar{p}}^C + X_{it}'\delta + \phi_{is} + \varepsilon_{it}
+ $$
+ 
+-with $\bar{x}_{imj}$ the monthly mean for month $m$ in year $j$ at monitor $i$. Implicitly the weights $\omega_j = 1$ for $j \in \{y-30, \ldots, y-1\}$ and zero otherwise. Monthly granularity is chosen because agents are assumed to recall climate by month rather than by day-of-year (this is partly defended on observation: weather media commonly report monthly highs and lows over the past 10/20/30 years).
++where $\phi_{is}$ = monitor-by-season-by-year FE; $X_{it}$ includes decomposed precipitation controls (norm + shock); standard errors clustered at county level.
+ 
+-The general weighting form is:
++**FWL equivalences (Eqs. 5–8)**:
++- Eq. (5): Ideal unifying equation — $y_{it} = \alpha + \beta_W(x_{it} - \bar{x}_i) + \beta_C \bar{x}_i + \mu_i + \lambda_t + \nu_{it}$
++- Eq. (6): Feasible unifying equation — $y_{it} = \alpha + \beta_W(x_{it} - \bar{x}_{i\bar{p}}) + \beta_C \bar{x}_{i\bar{p}} + \mu_i + \lambda_s + \nu_{it}$
++- Eq. (7): Time-averaged → recovers $\beta_C$
++- Eq. (8): Within-transformation → recovers $\beta_W$
+ 
++**CS and FE as limiting cases**:
++- Eq. (1): $y_i = \alpha + \beta_{CS} x_i + e_i$ (cross-section)
++- Eq. (2): $y_{it} = \alpha + \beta_{FE} x_{it} + \mu_i + \lambda_t + \nu_{it}$ (panel FE)
++
++**Climate norm construction (Eq. 12)**:
+ $$
+-\bar{x}_{i\bar{p}} \equiv \frac{1}{J} \sum_{j=1}^{J<y} \omega_j \bar{x}_{imj} \approx \bar{x}_{imy},
++\bar{x}_{i\bar{p}} = \frac{1}{30}\sum_{j=y-30}^{y-1} \bar{x}_{imj}
+ $$
++(30-year monthly MA, lagged 1 year)
+ 
+-which the authors note can be specialized to other filtering schemes (Baxter and King 1999; Christiano and Fitzgerald 2003).
++**Nonlinear extensions**:
++- Quadratic (Eq. 14): adds $\beta_{W2}(x_{it} - \bar{x}_{i\bar{p}})^2 + \beta_{C2}(\bar{x}_{i\bar{p}})^2$
++- Marginal adaptation under quadratic (Eq. 15): $(\beta_W - \beta_C) + 2[\beta_{W2}(x_{it} - \bar{x}_{i\bar{p}}) - \beta_{C2}\bar{x}_{i\bar{p}}]$
++- Marginal adaptation at zero shock (Eq. 16): $\beta_W - \beta_C - 2\beta_{C2}\bar{x}_{i\bar{p}}$
++- Cubic: adds $\beta_{W3}(x_{it} - \bar{x}_{i\bar{p}})^3 + \beta_{C3}(\bar{x}_{i\bar{p}})^3$
++- Binned: 5 °C bins; lowest $< 20$ °C, highest $> 35$ °C, middle bin 25–30 °C (median 27.8 °C, mean 27.1 °C)
+ 
+-The main estimating equation is:
++**OAD short-run robustness**: adds $\text{Shock} \times \mathbf{1}[\text{Action Day}_{it}]$ interaction to Eq. (13).
+ 
+-$$
+-Ozone_{it} = \beta_W \, Temp_{it}^W + \beta_C \, Temp_{i\bar{p}}^C + X_{it}'\delta + \phi_{is} + \epsilon_{it},
+-$$
++## 7. Findings
+ 
+-where $Temp_{it}^W = x_{it} - \bar{x}_{i\bar{p}}$ is the temperature shock, $Temp_{i\bar{p}}^C = \bar{x}_{i\bar{p}}$ is the climate norm, $X_{it}$ contains a similar decomposition of precipitation, $\phi_{is}$ is monitor-by-season-by-year fixed effects, and $s$ indexes season-of-the-sample (Spring or Summer in each year).
++**Primary results (Table 1, col 1)**:
++- Temperature shock $\hat{\beta}_W = 1.678$ ppb/°C (SE 0.063; $p < 0.01$)
++- Climate norm $\hat{\beta}_C = 1.164$ ppb/°C (SE 0.051; $p < 0.01$)
++- Implied adaptation $= 0.514$ ppb/°C (SE 0.041; $p < 0.01$)
+ 
+-**Fixed-effects structure.** Monitor-by-season-by-year fixed effects $\phi_{is}$ replace the separate monitor $\mu_i$ and time $\lambda_s$ fixed effects of the general theoretical equation. The authors note results are quantitatively similar with separated $\mu_i$ and $\lambda_s$; they combine them to control more flexibly for local factors changing across seasons and years. Analogous to Isen et al. (2017), this is equivalent to estimating the main specification monitor-by-monitor in each season-year and taking the weighted average of all coefficients. The Appendix C derivation shows that two sources of monitor-level variation in $\bar{x}_{i\bar{p}}$ — within-season (across months) and across-year (year-to-year MA updates) — survive within this fixed-effects structure.
++**Benchmarks**:
++- Panel FE (col 2): $\hat{\beta}_{FE} = 1.659$ ppb (SE 0.063) — statistically indistinguishable from $\hat{\beta}_W$ ✓
++- Cross-section (col 3): $\hat{\beta}_{CS} = 1.166$ ppb (SE 0.106) — statistically indistinguishable from $\hat{\beta}_C$ ✓ (consistent with FWL)
+ 
+-**Why FWL.** The reason a separate first-stage de-seasonalization is unnecessary on the outcome variable is Lovell's Theorem 4.1, point 4: it is immaterial whether the dependent variable is adjusted, provided the explanatory variables have been seasonally corrected. This is what permits estimating both effects in the same equation.
++**Climate penalty projections (RCP 8.5)**:
++- Correct (norm-based): +1.9 ppb by 2050, +5.6 ppb by 2100
++- Incorrect (shock-based): +2.7 ppb by 2050, +8.0 ppb by 2100
++- Overestimation: +44% in relative terms; +0.82 ppb by 2050, +2.47 ppb by 2100
+ 
+-**Standard errors.** Clustered at the county level. Bootstrap and state-level clustering are explored in Appendix B Table B5 with similar inference.
++**Robustness (Table 2)**:
++- Adaptation stable across MA lengths: 0.495–0.542 ppb over 3–30 year windows
++- Longer lag structures (10- and 20-year lags): adaptation 0.527–0.542 ppb (slightly larger)
++- OAD interaction: Shock × Action Day = 0.068 (SE 0.188; insignificant) → no short-run adaptive response
+ 
+-**Comparison equations.** The cross-sectional benchmark is $y_i = \alpha + \beta_{CS} x_i + e_i$ (Eq. 1). The standard panel benchmark is $y_{it} = \alpha + \beta_{FE} x_{it} + \mu_i + \lambda_t + \nu_{it}$ (Eq. 2). The ideal-but-infeasible equation embedding both is $y_{it} = \alpha + \beta_W(x_{it} - \bar{x}_i) + \beta_C \bar{x}_i + \mu_i + \lambda_t + \nu_{it}$ (Eq. 5), which fails because $\bar{x}_i$ is collinear with $\mu_i$. The feasible approximation (Eq. 6) breaks this collinearity by letting the norm vary across time via the lagged historical MA.
++**Nonlinear results (Fig. 4)**:
++- Ozone-temperature response: increasing at increasing rate at low temperatures, increasing at decreasing rate at high temperatures
++- Marginal adaptation (binned/cubic): "normal u" shape — greatest adaptive effort at highest temperatures
++- Linear spec is a good first-order approximation; quadratic misspecifies; cubic and binned preferred for nonlinear analysis
+ 
+-**Nonlinear extension.** A quadratic version adds $(x_{it}-\bar{x}_{i\bar{p}})^2$ and $\bar{x}_{i\bar{p}}^2$ terms; cubic adds the cube. A binned linear version interacts the shock, norm, and controls with 5-degree-Celsius temperature-bin indicators. Marginal adaptation in the quadratic case is $(\beta_W - \beta_C) + 2(\beta_{W2}(x_{it}-\bar{x}_{i\bar{p}}) - \beta_{C2}\bar{x}_{i\bar{p}})$.
++**Heterogeneity (Appendix B.2)**:
++- Adaptation measure relatively stable over time (Fig. B1), though the level effect of climate norm on ozone has decreased over time
++- Additional heterogeneity by belief in climate change (Tables B9–B11) and NOx/VOC precursor limitation (Table B12)
+ 
+-## 7. Findings
+-**Main estimates (Table 1):**
++## 8. Contributions
+ 
+-- Temperature shock: $\hat{\beta}_W = 1.678$ ppb per degree Celsius (SE 0.063), highly significant.
+-- Climate norm: $\hat{\beta}_C = 1.164$ ppb per degree Celsius (SE 0.051), highly significant.
+-- Implied adaptation: $\hat{\beta}_W - \hat{\beta}_C = 0.514$ ppb per degree Celsius (SE 0.041), highly significant.
+-- Benchmark fixed-effects on raw temperature (column 2): 1.659 (SE 0.063) — statistically equivalent to $\hat{\beta}_W$.
+-- Benchmark cross-section (column 3): 1.166 (SE 0.106) — statistically equivalent to $\hat{\beta}_C$.
++1. **Unifying framework**: Nests the cross-sectional (Mendelsohn et al. 1994; Schlenker et al. 2005) and panel FE (Deschenes-Greenstone 2007; Schlenker-Roberts 2009) approaches in a single estimating equation.
++2. **Direct, testable adaptation measure**: $\hat{\beta}_W - \hat{\beta}_C$ with standard errors from the same regression — no SUR, no bootstrap, no resampling required.
++3. **Overcomes OVB of the cross-section**: The FWL decomposition eliminates the confounders that plague a pure cross-sectional approach by including monitor FE.
++4. **Overcomes the Lucas Critique**: Comparing weather responses across time or space implicitly assumes structural stability; the norm/shock decomposition compares the same agents' long- vs. short-run responses.
++5. **Applied insight for ozone**: Shows that omitting adaptation leads to ~44% overestimation of the climate penalty, with implications for EPA ozone standard-setting and air quality projections.
+ 
+-**Implied climate penalty.** Using Vose et al. (2017) RCP 8.5 projections (1.6 C by 2050, 4.8 C by 2100), the unifying approach predicts ozone increases of 1.9 ppb (2050) and 5.6 ppb (2100). Using $\hat{\beta}_W$ instead (the no-adaptation counterfactual) would over-predict the penalty as 2.7 and 8 ppb. Disregarding adaptation overstates the penalty by roughly 44%.
++## 9. Replication feasibility
+ 
+-**Robustness (Table 2):**
+-- 3/5/10/20/30-year MAs yield $\hat{\beta}_W$ from 1.669–1.678 and $\hat{\beta}_C$ from 1.158–1.176, with adaptation 0.495–0.514. Stability of the norm coefficient across MA windows suggests 20–30-year windows are near-optimal for the bias trade-off (Solon 1992 — measurement error vs. fixed-effects-induced attenuation).
+-- 10-year and 20-year lags between the MA and contemporaneous temperature yield adaptation 0.527 and 0.542, slightly larger as expected when agents have more time to adjust.
+-- 2004–2013 subsample with OAD interactions: shock × Ozone Action Day = 0.068 (SE 0.188), statistically zero. The authors interpret this as evidence that short-run adaptation is small relative to long-run adaptation. (For the JMP, this is the "Bento test" — alert effects do not show up at this level of aggregation in this paper's design, but the JMP refines the design to look for them.)
++- Data: Publicly available (EPA AQS ozone monitors; NOAA GHCN temperature; EPA OAD alerts from 2004)
++- Replication archive: https://doi.org/10.3886/E192708V1 (openICPSR)
++- Online appendix (including appendix tables and figures): https://doi.org/10.1016/j.jeem.2023.102843
++- Sample period: 1980–2013; N = 5,139,523 monitor-day observations
++- Standard panel FE software (Stata/R) is sufficient for main specification
+ 
+-**Nonlinear specifications (Figure 4 and Appendix Table B6).** The linear specification captures first-order nonlinearity well. The cubic and binned specifications both show "inverted-U" marginal effects of temperature on ozone — ozone increases at a decreasing rate at higher temperatures — and "normal-U" marginal adaptation — adaptation is larger when temperature is hotter. The authors interpret this as agents focusing adaptive effort on the days that would otherwise produce the most ozone.
++## 10. Tables (project-relevance gated)
+ 
+-**Heterogeneity (Appendix B.2).** Adaptation is explored over time, across climate-change-belief measures, and across local NOx-vs.-VOCs limitations.
++Both main tables are directly relevant (the decomposition is the methodological core of the JMP project).
+ 
+-## 8. Contributions
+-1. **Joint identification in one equation.** The method recovers short- and long-run climate impacts in the same panel fixed-effects regression, sidestepping the SUR/bootstrap acrobatics needed when the cross-sectional and panel coefficients come from separate equations (Dell, Jones, Olken 2012, 2014).
+-2. **Direct measure of adaptation with a standard hypothesis test.** Because both coefficients are estimated in one equation, testing $H_0: \beta_W = \beta_C$ is trivial — a single linear restriction. SUR or block-bootstrap is not needed.
+-3. **Reduced OVB exposure for the long-run estimate.** Unlike pure cross-sectional climate regressions, the long-run norm coefficient here is identified within unit fixed effects, exploiting (i) the year-to-year update of the MA and (ii) within-season-year monthly variation in the norm. This eliminates between-monitor OVB sources.
+-4. **Application to the "climate penalty" on ozone.** First quasi-experimental estimate of climate-induced adaptation in ozone formation, suggesting modeled climate-penalty projections (Jacob and Winner 2009; USEPA 2009) may overshoot by ignoring behavioral response.
+-5. **Generalizable framework.** Any climate-related outcome (agriculture, mortality, electricity demand, labor productivity) admits the same decomposition.
++**Table 1:** Climate impacts and adaptation — our unifying approach vs. Prior approaches (p. 12)
+ 
+-For the JMP, the most directly transported contribution is (1) and (2): joint identification of $\beta^N$ and $\beta^S$ on $P_{im}$ and $\epsilon_{it}$ in one equation, with adaptation testable as a single restriction on the gap.
++|                           | Daily max ozone levels (ppb) |               |               |
++|---------------------------|------------------------------|---------------|---------------|
++|                           | Unifying (1)                 | Fixed-Effects (2) | Cross-Section (3) |
++| Temperature shock         | 1.678***                     |               |               |
++|                           | (0.063)                      |               |               |
++| Climate norm              | 1.164***                     |               |               |
++|                           | (0.051)                      |               |               |
++| Max temperature           |                              | 1.659***      |               |
++|                           |                              | (0.063)       |               |
++| Average max temperature   |                              |               | 1.166***      |
++|                           |                              |               | (0.106)       |
++| Implied adaptation        | 0.514***                     | 0.493**       |               |
++|                           | (0.041)                      | (0.225)       |               |
++| Fixed effects:            |                              |               |               |
++| Monitor-by-Season-by-Year | Yes                          |               |               |
++| Monitor-by-Month-by-Year  |                              | Yes           |               |
++| State                     |                              |               | Yes           |
++| Precipitation controls    | Yes                          | Yes           | Yes           |
++| Latitude & Longitude      |                              |               | Yes           |
++| Non-attainment control    |                              |               | Yes           |
++| Observations              | 5,139,523                    | 5,139,523     | 2,712         |
++| $R^2$                     | 0.481                        | 0.542         | 0.352         |
+ 
+-## 9. Replication feasibility
+-Replication materials are publicly archived at <https://doi.org/10.3886/E192708V1>. Data sources are all public:
+-- NOAA GHCN for daily weather (1950–2013).
+-- EPA AQS for daily monitor-level ozone (1980–2013).
+-- EPA OAD alert data from 2004 onward.
++Notes: Column (1) = unifying approach decomposing daily max temperature into 30-year monthly MA (lagged 1 year) and temperature shock. Column (2) = panel FE exploiting within-monitor daily variation. Column (3) = cross-sectional using monitor-averaged variables 1980–2013. Standard errors clustered at county level in cols (1)–(2); heteroskedastic robust in col (3). ***, **, * = 1%, 5%, 10% significance.
+ 
+-The Appendix details the matching algorithm (Appendix A.2) and balanced/unbalanced sample construction. Robustness checks are in Appendix B.1 (Tables B1–B5). Heterogeneity in B.2.
++---
+ 
+-For the JMP, the most relevant inputs already exist in the JMP dataset (county-day ozone, NARR wind, PRISM weather, EPA AirNow alerts). The Bento et al. norm construction code can be reused with a 5-year backward MA (the JMP's shorter window) in place of the 30-year.
++**Table 2:** Key robustness checks (p. 14)
+ 
+-## 10. Tables (project-relevance gated)
++|                    | 3-yr MA (1) | 5-yr MA (2) | 10-yr MA (3) | 20-yr MA (4) | 10-yr Lag (5) | 20-yr Lag (6) | OAD 2004–2013 (7) |
++|--------------------|-------------|-------------|--------------|--------------|---------------|---------------|-------------------|
++| Temperature shock  | 1.669***    | 1.670***    | 1.670***     | 1.673***     | 1.681***      | 1.685***      | 1.179***          |
++|                    | (0.063)     | (0.062)     | (0.062)      | (0.062)      | (0.063)       | (0.063)       | (0.029)           |
++| Climate norm       | 1.158***    | 1.166***    | 1.176***     | 1.175***     | 1.155***      | 1.143***      | 0.581***          |
++|                    | (0.049)     | (0.050)     | (0.051)      | (0.051)      | (0.050)       | (0.049)       | (0.034)           |
++| Implied adaptation | 0.511***    | 0.504***    | 0.495***     | 0.499***     | 0.527***      | 0.542***      | 0.597***          |
++|                    | (0.040)     | (0.040)     | (0.041)      | (0.041)      | (0.041)       | (0.041)       | (0.029)           |
++| Shock × Action Day |             |             |              |              |               |               | 0.068             |
++|                    |             |             |              |              |               |               | (0.188)           |
++| Observations       | 5,139,523   | 5,139,523   | 5,139,523    | 5,139,523    | 5,131,943     | 5,127,886     | 1,879,041         |
++| $R^2$              | 0.481       | 0.481       | 0.481        | 0.481        | 0.481         | 0.481         | 0.444             |
+ 
+-**Table 1:** Climate impacts and adaptation — our unifying approach vs. Prior approaches.
++Notes: Cols (1)–(4) vary MA length (all lagged 1 year). Col (5) = 20-yr MA lagged 10 years. Col (6) = 10-yr MA lagged 20 years. Col (7) = preferred spec with Shock × Action Day interaction, sample restricted to 2004–2013 when EPA OAD data are available. Standard errors clustered at county level. ***, ** = 1%, 5% significance.
+ 
+-| Variable | Unifying (1) | Fixed-Effects (2) | Cross-Section (3) |
+-|---|---:|---:|---:|
+-| Temperature shock | 1.678*** | | |
+-| | (0.063) | | |
+-| Climate norm | 1.164*** | | |
+-| | (0.051) | | |
+-| Max temperature | | 1.659*** | |
+-| | | (0.063) | |
+-| Average max temperature | | | 1.166*** |
+-| | | | (0.106) |
+-| Implied adaptation | 0.514*** | | 0.493** |
+-| | (0.041) | | (0.225) |
+-| Monitor-by-Season-by-Year FE | Yes | | |
+-| Monitor-by-Month-by-Year FE | | Yes | |
+-| State FE | | | Yes |
+-| Precipitation controls | Yes | Yes | Yes |
+-| Latitude & Longitude | | | Yes |
+-| Non-attainment control | | | Yes |
+-| Observations | 5,139,523 | 5,139,523 | 2,712 |
+-| $R^2$ | 0.481 | 0.542 | 0.352 |
++Appendix tables B1–B12 (one-line descriptions):
++- **Table B1** (Appendix B.1): Sensitivity to ozone–temperature monitor matching algorithm (p. A).
++- **Table B2** (Appendix B.1): Robustness to semi-balanced panel; cross-sectional approach over-estimates adaptation by >100% on this sample (p. A).
++- **Table B3** (Appendix B.1): Exclusion of regions with targeted ozone-precursor policies (p. A).
++- **Table B4** (Appendix B.1): Four additional checks — daily MA, monthly aggregation, wind/sunlight controls, OTR exclusion (p. A).
++- **Table B5** (Appendix B.1): Bootstrapped and state-level clustered SEs; state-level clustering doubles magnitude but does not change significance (p. A).
++- **Table B6** (Appendix B.2): Binned specification coefficients and implied adaptation (p. A).
++- **Table B7** (Appendix B.2): Adaptation comparison across linear, binned, quadratic, cubic (p. A).
++- **Tables B8–B11** (Appendix B.2): Heterogeneity by time period and belief in climate change (p. A).
++- **Table B12** (Appendix B.2): Heterogeneity by NOx/VOC precursor limitation (p. A).
+ 
+-Notes: Dependent variable is daily max ozone (ppb). Standard errors clustered at the county level in columns (1) and (2); column (3) uses standard heteroskedastic robust errors. The column (1) "implied adaptation" 0.514 is $\hat{\beta}_W - \hat{\beta}_C$ from the same equation; the column (3) 0.493 is the gap $\hat{\beta}_{FE} - \hat{\beta}_{CS}$ across separate equations, with SE 0.225 reflecting much larger uncertainty when not jointly estimated. *, **, *** = 10%, 5%, 1%. Combining estimates with U.S. Fourth National Climate Assessment RCP 8.5 projections (Vose et al. 2017) implies ozone rises of 1.9 ppb by 2050 and 5.6 ppb by 2100; the shock-based counterfactual gives 2.7 and 8 ppb. Source: paper Table 1, p. 12.
++## 11. Figures (project-relevance gated)
+ 
+-**Table 2:** Key robustness checks (alternative MA lengths, lag lengths, and short-run adaptation).
++All four paper figures are relevant.
+ 
+-| Variable | 3-yr MA (1) | 5-yr MA (2) | 10-yr MA (3) | 20-yr MA (4) | LR 10-yr Lag (5) | LR 20-yr Lag (6) | 2004–13 only (7) |
+-|---|---:|---:|---:|---:|---:|---:|---:|
+-| Temperature shock | 1.669*** | 1.670*** | 1.670*** | 1.673*** | 1.681*** | 1.685*** | 1.179*** |
+-| | (0.063) | (0.062) | (0.062) | (0.062) | (0.063) | (0.063) | (0.029) |
+-| Climate norm | 1.158*** | 1.166*** | 1.176*** | 1.175*** | 1.155*** | 1.143*** | 0.581*** |
+-| | (0.049) | (0.050) | (0.051) | (0.051) | (0.050) | (0.049) | (0.034) |
+-| Implied adaptation | 0.511*** | 0.504*** | 0.495*** | 0.499*** | 0.527*** | 0.542*** | 0.597*** |
+-| | (0.040) | (0.040) | (0.041) | (0.041) | (0.041) | (0.041) | (0.029) |
+-| Shock × Action day | | | | | | | 0.068 |
+-| | | | | | | | (0.188) |
+-| All controls | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+-| Observations | 5,139,523 | 5,139,523 | 5,139,523 | 5,139,523 | 5,131,943 | 5,127,886 | 1,879,041 |
+-| $R^2$ | 0.481 | 0.481 | 0.481 | 0.481 | 0.481 | 0.481 | 0.444 |
++---
+ 
+-Notes: Column-(7) sample is restricted to 2004–2013 because EPA Ozone Action Day data begin in 2004 (~35% of full sample). The full list of controls matches the main model in Table 1 column (1). Standard errors clustered at the county level. *, **, *** = 10%, 5%, 1%. Source: paper Table 2, p. 14.
++**Figure 1:** Theoretical relationship between marginal cost of dirty production and temperature. (p. 7)
+ 
+-**Tables B1–B12 (Appendix, lower priority for the JMP):** robustness to weather-monitor matching algorithm (B1); balanced vs. unbalanced panel (B2); exclusion of ozone-precursor-policy regions (B3); daily-vs.-monthly MA, monthly-aggregated data, wind speed and sunlight controls, ozone transport region inclusion/exclusion (B4); bootstrap and state-clustered SEs (B5); binned-specification estimates (B6); cross-specification adaptation comparison (B7); heterogeneity over time (B8); heterogeneity across climate-change belief measures (B9–B11); NOx- vs. VOC-limited atmospheres (B12). Only B6/B7 are directly relevant to the JMP's nonlinear extension; the rest provide template robustness checks the JMP can mirror.
++![Conceptual schematic: cost-minimizing production schedule shifts under climate norm vs. weather shock](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig1.jpeg)
+ 
+-## 11. Figures (project-relevance gated)
++- Type: Tier B (schematic — conceptual diagram)
++- One-liner: Shows two production cost schedules (1 and 2) as a function of temperature, illustrating why agents facing a transitory shock (point A′) produce more ozone than agents facing a permanent norm at the same temperature (point C, adapted to schedule 2).
+ 
+-**Figure 1:** Theoretical relationship between marginal cost of dirty production and temperature. (p. 8)
++---
+ 
+-![Cost-minimizing production schedule and ozone formation](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig1.jpeg)
++**Figure 2, Panel A:** Climate norms — US ozone-season monthly average of daily maximum temperature, 1980–2013. (p. 9)
+ 
+-- One-liner: Stylized envelope diagram of cost-minimizing production schedules as temperature rises, illustrating the difference between a transitory shock (point A to A', no adaptation) and a permanent norm change (point A to C, adaptation through switching to schedule 2). The schematic motivates why $\beta_W$ identifies the no-adaptation response and $\beta_C$ identifies the adaptation-inclusive response.
+-- Tier B (schematic — theoretical model diagram, not a data figure).
+-- **Figure notes:** Cost of production on the left y-axis, associated ozone concentration on the right y-axis, temperature on the x-axis. Production schedule 1 dominates between $T_1$ and $T_2$, schedule 2 between $T_2$ and $T_3$, with indifference at $T_2$ (point B). A firm at climate-norm temperature $T_1$ produces at A; under a transitory shock $T_3$ it produces at A' on schedule 1 (no adaptation), but under permanent norm change to $T_3$ it switches to schedule 2 and produces at C. The gray dashed line is the long-run equilibrium envelope (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf).
++![Time-series map of climate norms for US ozone monitors 1980–2013, Panel A](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig2a.jpeg)
+ 
+-**Figure 2 (Panels A and B):** Climate norms and shocks (1980–2013, ozone season). (p. 10)
++- Type: Tier A (time series / map)
++- Key visual finding: The 30-year moving average climate norm is smooth and shows gradual warming trends across the sample period.
++- **Figure notes:** Unbalanced panel of weather monitoring stations, April–September.
+ 
+-Panel A — climate norms:
++---
+ 
+-![U.S. 30-year monthly moving-average temperature, 1980-2013](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig2A.jpeg)
++**Figure 2, Panel B:** Weather shocks — US ozone-season monthly average of deviations from climate norm, 1980–2013. (p. 9)
+ 
+-Panel B — temperature shocks:
++![Time-series map of weather shocks for US ozone monitors 1980–2013, Panel B](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig2b.jpeg)
+ 
+-![U.S. daily temperature shocks (deviation from 30-year MA), 1980-2013](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig2B.jpeg)
++- Type: Tier A (time series / map)
++- Key visual finding: Weather shocks (deviations from the 30-year MA norm) are mean-zero and volatile relative to norms, confirming the decomposition produces distinct variation.
++- **Figure notes:** Unbalanced panel of weather monitoring stations, April–September.
+ 
+-- Type: time-series (Panel A: line of annual averages of monthly 30-year MAs; Panel B: scatter of daily temperature shocks with dashed bounds).
+-- X-axis: year, 1980–2013.
+-- Y-axis: Panel A — 30-year monthly MA of maximum temperature (degrees Celsius); Panel B — temperature shock = $x_{it} - \bar{x}_{i\bar{p}}$ (degrees Celsius).
+-- Series / panels: Panel A shows a gradually rising solid line of smoothed climate-norm temperature. Panel B shows a scatter of daily shocks centered at zero with horizontal dashed bounds at roughly ±15 C, stable over time.
+-- Key visual finding: Average temperature has been gradually increasing across the sample period, while the magnitude of temperature shocks (deviations from the 30-year MA) is relatively stable and narrowly bounded. This supports the paper's claim that the decomposition focuses on changes in averages rather than variability.
+-- Annotations: solid smoothing line in Panel A; horizontal dashed bounds in Panel B.
+-- **Figure notes:** Constructed from a complete unbalanced panel of weather stations across the U.S. from 1950 to 2013, restricted to the ozone season (April–September). The 30-year monthly moving average is lagged by one year; the shock is the deviation from this value (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf).
++---
+ 
+-**Figure 3:** Decomposition of temperature norms & shocks — Illustration (Los Angeles, 2013). (p. 12)
++**Figure 3:** Decomposition of temperature norms & shocks, Los Angeles 2013. (p. 11)
+ 
+-![Norm-shock decomposition compared to fixed-effects decomposition for LA 2013](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig3.jpeg)
++![Two-panel figure showing preferred vs. standard FE decomposition for LA 2013](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig3.jpeg)
+ 
+-- Type: line plot, two-panel comparison.
+-- X-axis: day of year, 2013 ozone season (Los Angeles).
+-- Y-axis: temperature (degrees Celsius).
+-- Series / panels: Panel A — daily max temperature (dashed top line), 30-year monthly MA climate norm (solid black line), and temperature shock (solid gray line at bottom). Panel B — same dashed top line, but with a fixed-effects-decomposition mean (solid black, constant within month) and deviation (solid gray) under a standard monitor-by-month decomposition.
+-- Key visual finding: The temperature shocks in Panel A (paper's preferred decomposition) are visually nearly identical to the deviations in Panel B (fixed-effects decomposition), confirming the Frisch–Waugh–Lovell equivalence. The crucial difference is that Panel A's climate norm varies smoothly across days within the season (and across years), while Panel B's fixed-effects mean is a within-month constant collinear with the LA fixed effect, providing no variation for identifying a long-run effect.
+-- Annotations: dashed line at the top of each panel for observed daily max temperature, solid black line for long-run norms, solid gray line at the bottom for shocks.
+-- **Figure notes:** Panel A is the paper's Eq. (6); Panel B is the standard fixed-effects decomposition of Eq. (2). The figure highlights why the unifying approach can identify both $\beta_W$ and $\beta_C$, while the fixed-effects approach can only identify $\beta_W$ (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf).
++- Type: Tier A (time series)
++- X-axis: Calendar day, 2013 ozone season (April–September)
++- Y-axis: Daily maximum temperature (°C)
++- Series / panels: Panel A = preferred decomposition (norm from 30-yr MA + shock); Panel B = standard FE decomposition (norm from monitor-by-month-by-year FE + residual shock)
++- Key visual finding: The preferred decomposition and the standard FE decomposition yield near-identical weather shocks for LA 2013, validating the approximation $\text{corr}(x_{it} - \bar{x}_{i\bar{p}}, x_{it} - \bar{x}_{imy}) > 0.90$.
++- **Figure notes:** See Eq. (12) and Eq. (9) for the two decomposition methods.
+ 
+-**Figure 4:** Comparing linear, binned, and nonlinear specifications. (p. 18)
++---
+ 
+-![Linear/binned/quadratic/cubic ozone-temperature relationship and adaptation across the temperature distribution](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig4.jpeg)
++**Figure 4:** Comparing linear, binned, quadratic, and cubic specifications. (p. 17)
+ 
+-- Type: 5-panel coefficient/response plot across the temperature distribution.
+-- X-axis: temperature (degrees Celsius), trimmed at the top and bottom 1%.
+-- Y-axis: ozone level (Panels A and B) or marginal effect (Panels C, D, E) in ppb.
+-- Series / panels: linear, 5°C binned, quadratic, cubic specifications. Panel A — ozone–climate-norm relationship; Panel B — ozone–weather-shock relationship; Panel C — marginal climate-norm effect; Panel D — marginal weather-shock effect; Panel E — marginal adaptation.
+-- Key visual finding: The linear specification provides a good first-order approximation; the cubic and binned specifications exhibit an "inverted-U" marginal effect (ozone rises at a decreasing rate at higher temperatures, especially for the climate norm) and a "normal-U" marginal adaptation (adaptation is larger at higher temperatures). The quadratic appears to mis-specify the ozone–weather relationship relative to the other models.
+-- Annotations: linear in solid, binned step function, quadratic smooth curve, cubic smooth curve.
+-- **Figure notes:** For graphing climate-norm effects, weather shock is fixed at zero (sample average); for graphing weather-shock effects, climate norm is fixed at the sample mean (~27.5 C). Trimmed at the top/bottom 1% of the temperature distribution (source: Bento_Miller_Mookerjee_Severnini_2023_JEEM.pdf).
++![Five-panel figure comparing nonlinear ozone-temperature response curves across four model specifications](../wiki/figures/Bento_Miller_Mookerjee_Severnini_2023_JEEM_fig4.jpeg)
+ 
+-**Appendix figures (lower priority for the JMP):** Figures A1–A9 in Appendix A document temperature/ozone trends, weather-station geography, monitor coverage, and supporting decomposition diagnostics. Figure B1 documents heterogeneity over time. Not extracted here; one-line descriptions in the paper indicate they support but do not change the central message.
++- Type: Tier A (line/coefplot — model comparison across 5 panels)
++- X-axis (panels A–B): Temperature (°C), distribution of daily max temp in the sample
++- Y-axis (panels A–B): Predicted ozone level (ppb)
++- X-axis (panels C–E): Temperature (°C)
++- Y-axis (panels C–D): Marginal climate/weather impact (ppb/°C); Y-axis (panel E): Marginal adaptation (ppb/°C)
++- Series / panels: Panel A = ozone vs. climate norm across temperature distribution; Panel B = ozone vs. weather shock; Panel C = marginal climate impact; Panel D = marginal weather impact; Panel E = marginal adaptation ("normal u" shape for binned and cubic)
++- Key visual finding: Marginal adaptation (Panel E) is U-shaped in temperature — agents exert greatest adaptive effort at the highest temperatures; linear spec provides good first-order approximation of the average effect.
++- Annotations: Top and bottom 1% of temperature distribution trimmed; shock set to zero for climate panels; norm set to sample mean (27.5 °C) for shock panels.
++- **Figure notes:** Table B7 reports numerical adaptation comparison across specs.
++
++---
++
++## 12. Equations / formal objects
++
++| Label | Equation | Location |
++|-------|----------|----------|
++| Eq. (1) | $y_i = \alpha + \beta_{CS} x_i + e_i$ | p. 2 |
++| Eq. (2) | $y_{it} = \alpha + \beta_{FE} x_{it} + \mu_i + \lambda_t + \nu_{it}$ | p. 2 |
++| Eq. (3) | $\bar{y}_i = \alpha + \beta_{FE}\bar{x}_i + \mu_i + \bar{\nu}_i$ | p. 2 |
++| Eq. (4) | $(y_{it} - \bar{y}_i) = \beta_{FE}(x_{it} - \bar{x}_i) + \lambda_t + (v_{it} - \bar{v}_i)$ | p. 2 |
++| Eq. (5) | $y_{it} = \alpha + \beta_W(x_{it} - \bar{x}_i) + \beta_C \bar{x}_i + \mu_i + \lambda_t + \nu_{it}$ (ideal, infeasible) | p. 3 |
++| Eq. (6) | $y_{it} = \alpha + \beta_W(x_{it} - \bar{x}_{i\bar{p}}) + \beta_C \bar{x}_{i\bar{p}} + \mu_i + \lambda_s + \nu_{it}$ (feasible unifying) | p. 3 |
++| Eq. (7) | $\bar{y}_i = \alpha + \beta_C \bar{x}_i + \mu_i + \bar{v}_i$ (time-averaged → $\beta_C$) | p. 3 |
++| Eq. (8) | $(y_{it} - \bar{y}_i) = \beta_W(x_{it} - \bar{x}_{i\bar{p}}) + \beta_C(\bar{x}_{i\bar{p}} - \bar{x}_i) + \lambda_s + (v_{it} - \bar{v}_i)$ | p. 3 |
++| Eq. (9) | $x_{it} = \gamma_{imy} + \varepsilon_{it}$ (first-stage FE decomposition) | p. 4 |
++| Eq. (10) | $\text{Temp}_{it} = \text{Temp}_{it}^C + \text{Temp}_{it}^W$ | p. 4 |
++| Eq. (11) | $\bar{x}_{i\bar{p}} \equiv \frac{1}{J}\sum_{j=1}^{J<y}\omega_j \bar{x}_{imj}$ (lagged weighted climate norm) | p. 4–5 |
++| Eq. (12) | $\bar{x}_{i\bar{p}} = \frac{1}{30}\sum_{j=y-30}^{y-1}\bar{x}_{imj}$ (30-year MA, lagged 1 year) | p. 9 |
++| Eq. (13) | $\text{Ozone}_{it} = \beta_W \text{Temp}_{it}^W + \beta_C \bar{\text{Temp}}_{i\bar{p}}^C + X_{it}'\delta + \phi_{is} + \varepsilon_{it}$ | p. 10 |
++| Eq. (14) | Quadratic: Eq. (13) + $\beta_{W2}(x_{it}-\bar{x}_{i\bar{p}})^2 + \beta_{C2}(\bar{x}_{i\bar{p}})^2$ | p. 15 |
++| Eq. (15) | Marginal adaptation (quadratic): $(\beta_W - \beta_C) + 2[\beta_{W2}(x_{it}-\bar{x}_{i\bar{p}}) - \beta_{C2}\bar{x}_{i\bar{p}}]$ | p. 15 |
++| Eq. (16) | Marginal adaptation at $\text{shock} \approx 0$: $\beta_W - \beta_C - 2\beta_{C2}\bar{x}_{i\bar{p}}$ | p. 15 |
++
++**Propositions / key theoretical results**:
++- **FWL Theorem (Lovell 1963, Thm 4.1)**: If regressors in a partitioned regression are orthogonal to a set of nuisance variables, the coefficients on the regressors of interest are the same whether or not the outcome is partialled on the nuisance variables. Applied here: outcome need not be de-seasonalized if both climate-norm and weather-shock regressors are de-seasonalized.
++- **CS/FE equivalence**: Under the unifying model, $\hat{\beta}_W \approx \hat{\beta}_{FE}$ and $\hat{\beta}_C \approx \hat{\beta}_{CS}$ (when the latter is unbiased), verified empirically in Table 1.
++- **Adaptation measure**: $\hat{\beta}_W - \hat{\beta}_C = 0.514$ ppb/°C, implying agents offset ~30.7% of the short-run shock effect through long-run adaptation.

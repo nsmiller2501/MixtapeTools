@@ -1,12 +1,12 @@
 # Common protocol fragments — wiki-update subagent
 
-These sections are shared across Protocols M, E, and S. The main session embeds this file verbatim into every per-paper subagent prompt, alongside exactly one of `protocol_m.md`, `protocol_e.md`, or `protocol_s.md`.
+These sections are shared across Protocols M, E, and S. The main session passes this file by path into every per-paper subagent prompt, alongside exactly one of `protocol_m.md`, `protocol_e.md`, or `protocol_s.md`.
 
 ---
 
 ## `_text.md` structure
 
-Protocols that synthesize `_text.md` (M and S) use this layout:
+Protocols that synthesize `_text.md` (Protocol S and the read-pdf fanout synthesis used by Protocol M) use this layout:
 
 ```markdown
 ## Bibliographic metadata
@@ -52,6 +52,7 @@ This block is the answer to "what's this paper about?" for someone who will not 
 9. **Replication feasibility** — data availability, replication archive
 10. **Tables (project-relevance gated)** — see Tables protocol below
 11. **Figures (project-relevance gated)** — see Figures protocol below
+12. **Equations / formal objects** — labeled equations, model primitives, algorithms, propositions, and other formal objects needed to understand or replicate the paper
 
 ## Tables protocol (project-relevance gated)
 

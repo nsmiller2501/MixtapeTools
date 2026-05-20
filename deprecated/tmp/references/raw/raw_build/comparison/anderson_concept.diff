@@ -1,0 +1,127 @@
+--- real_welfare
++++ b_fanout_welfare
+@@ -1,73 +1,89 @@
+-# Welfare Bounds Fiscal Externality
++# Welfare Bounds for Alert Programs
+ 
+-**Summary**: When better information leaves an optimizing agent weakly better off ($\Delta U \geq 0$), the externality component of social welfare $\Delta E$ alone provides a sharp lower bound on the social welfare change $\Delta W = \Delta U + \Delta E$ from an information intervention (source: Anderson_etal_2022_NBER.pdf). The JMP applies this logic to the air-quality alert program using the FFS Medicare decomposition of inpatient costs into government and out-of-pocket shares.
++**Summary**: Anderson, Hyun, and Lee (2022) develop a welfare-bounds framework that lets researchers estimate a conservative lower bound on the social welfare gain from an information-provision alert program without measuring private utility directly. The key insight: since more accurate information weakly helps private agents, any reduction in publicly reimbursed health costs is a lower bound on total social welfare gain.
+ 
+ **Sources**: Anderson_etal_2022_NBER.pdf
+ 
+-**Last updated**: 2026-05-17
++**Last updated**: 2026-05-19
+ 
+ ---
+ 
+-## The Bound
++## The Decomposition
+ 
+-Consider an agent who, when alerted, has more accurate beliefs about today's pollution. Let $W_i = U_i + E_i$ be social welfare attributable to agent $i$'s choices, decomposed into private utility $U_i$ and the externalities $E_i$ those choices impose on others. The welfare change from an information intervention is
++Welfare for agent $i$ decomposes into private utility and the fiscal externality:
+ 
+-$$\Delta W_i = \Delta U_i + \Delta E_i.$$
++$$
++W_i = U_i(a_i, pm) + E_i
++$$
+ 
+-If the agent could freely ignore the alert, revealed preference implies $\Delta U_i \geq 0$ — more information cannot make a fully-rational agent worse off in private utility (source: Anderson_etal_2022_NBER.pdf). It follows that
++where $U_i$ is private utility net of avoidance costs and $E_i$ is health expenditures borne by the government (publicly reimbursed costs). The change from receiving an alert is:
+ 
+-$$\Delta W_i \geq \Delta E_i,$$
++$$
++\Delta W_i = \Delta U_i + \Delta E_i
++$$
+ 
+-so $\Delta E_i$ is a sharp lower bound on $\Delta W_i$. Aggregated across agents and alert days, $\sum_i \Delta E_i$ bounds the gross social benefit of an alert program from below (source: Anderson_etal_2022_NBER.pdf).
++**Lower-bound argument**: Receiving an accurate alert about high PM (when PM actually is elevated) improves the agent's information set. More accurate information about a health-relevant variable weakly improves private decision-making, so:
+ 
+-For the bound to be nontrivial the researcher needs data on a meaningful externality of avoidance behavior. In healthcare, the publicly-borne share of avoided medical spending serves this role: when an alerted agent avoids exposure and avoids an illness episode, the public insurer saves the publicly-subsidized portion of the costs that would otherwise have been reimbursed.
++$$
++\Delta U_i \geq 0 \implies \Delta E_i \leq \Delta W_i
++$$
+ 
+-## What The Bound Avoids Estimating
++Therefore the estimated reduction in *government-borne* health expenditures $\Delta E_i$ is a lower bound on total welfare gain, even though the alert also triggers avoidance actions that are individually costly.
+ 
+-The challenge that motivates the bounding exercise is that $\Delta U_i$ is hard to quantify directly. Recovering $\Delta U_i$ requires both the disutility of sickness $s_i^{pvt}$ and the benefit function $b_i(a_i)$ over the high-dimensional activity choice $a_i$ — but researchers rarely observe most components of $a_i$, let alone the agent's valuation of each (source: Anderson_etal_2022_NBER.pdf). The avoidance-cost problem is the standard obstacle in this literature. The fiscal-externality bound bypasses it: $\Delta E_i$ requires only the externalized share of avoided healthcare spending, which the researcher can read off insurance-claim data.
++## Why $\Delta U_i \geq 0$
+ 
+-## Why $\Delta E$ Is Net Of Avoidance Costs
++Private utility is:
+ 
+-A subtle but important property: $\Delta E_i$ implicitly nets out the private costs of avoidance, because $\Delta U_i \geq 0$ already encodes the agent's willingness to bear them. If the agent chose to avoid, then by revealed preference the change in private benefits and costs net out to at least zero. Avoidance behavior reduces health spending (lowering $E$ for the public payer), and the avoider also bears whatever private cost the avoidance entailed; the bound on $\Delta W$ already accounts for both sides of the agent's calculation through the $\Delta U \geq 0$ inequality. This means $\Delta E$ is a *clean* lower bound on social welfare and does not double-count or omit avoidance costs (source: Anderson_etal_2022_NBER.pdf).
++$$
++U_i(a_i, pm) = b_i(a_i) - s_i^{\text{pvt}} \cdot p_s(a_i, pm)
++$$
+ 
+-## Identifying $\Delta E$ From Healthcare Cost Decomposition
++where $b_i(a_i)$ is the net benefit of avoidance action minus its cost, $s_i^{\text{pvt}}$ is the private cost-sharing rate, and $p_s(a_i, pm)$ is the probability of an adverse health event. An alert shifts agents' beliefs about PM from $pm^{\text{avg}}$ to $pm^{\text{hi}}$, inducing stronger avoidance actions. Agents who voluntarily take those actions must expect them to increase private utility (revealed preference); the alert just enables them to act on information they did not previously have.
+ 
+-In the Anderson et al. South Korean context, the average out-of-pocket payment ratio is ~30% and the public share is ~70%. They take 70% of the reduced-form FRD coefficient on total spending as the externality saved (source: Anderson_etal_2022_NBER.pdf). This is a single average split applied uniformly.
++The private utility gain from the alert:
+ 
+-The JMP exploits the FFS Medicare cost decomposition in MedPAR claims, which records the government-borne and out-of-pocket portions of each inpatient claim *at the claim level*. This permits estimating two distinct regressions:
++$$
++\Delta U_i = \left[b_i(a_i(pm^{\text{hi}})) - b_i(a_i(pm^{\text{avg}}))\right] - s_i^{\text{pvt}}\left[p_s(a_i(pm^{\text{hi}}), c) - p_s(a_i(pm^{\text{avg}}), c)\right]
++$$
+ 
+-1. **Outcome = government-borne portion of cost of care.** The alert coefficient $\beta_A$ identifies $\Delta E$, a lower bound on $\Delta W$.
+-2. **Outcome = out-of-pocket portion of cost of care.** The alert coefficient $\beta_A$ on OOP costs bounds private willingness-to-pay from above (an alerted agent who chose to avoid was willing to pay at most the avoided private cost; agents who would have paid more would have already avoided absent the alert).
++This can be positive even though avoidance is costly, because health risk reduction dominates.
+ 
+-Together these bounds sandwich the alert program's private welfare value: $\beta_A^{gov} \leq \Delta W \leq \beta_A^{gov} + \beta_A^{OOP}$ in a setting where the only externality is the government-paid medical cost. This is a project-specific extension; Anderson et al. produce only the lower bound because their NHIS data lack a claim-level OOP/public split.
++## Empirical identification of $\Delta E$
+ 
+-## Three Cautionary Notes
++AHL2022 identify $\Delta E$ via the fiscal externality mechanism:
+ 
+-1. **Information must not cause behavioral mistakes.** The revealed-preference logic $\Delta U \geq 0$ rests on the assumption that agents do not become *less* optimal under the alerted information regime. Anderson et al. treat this as automatic given $pm^{hi} \approx c$ (the agent's post-alert belief is approximately accurate). For the JMP, the analogous condition is that the alert announcement is informative about today's pollution shock — true by construction of the AirNow AQAD system, which is forecast-based — but if alerts are sufficiently noisy or trigger overcorrection, $\Delta U \geq 0$ could fail.
++- Government-reimbursed health expenditures ($\approx 70\%$ of total in South Korea) fall when alerts are issued.
++- The RD-estimated coefficient on the alert indicator (using the above-threshold PM running variable as the instrument) identifies the LATE of alert receipt on per-capita government health spending.
++- **Result**: Alert system reduced government-borne health costs by $28.6M over 2016–2017 (contemporaneous), $36.7M including dynamic effects.
++- System maintenance cost ≈$4M. **Minimum BCR: 7.1:1** (contemporaneous) or **9.2:1** (dynamic).
+ 
+-2. **Other externalities can flip the sign.** The bound only counts publicly-borne healthcare cost as the externality. If avoidance behavior generates negative externalities elsewhere — e.g., productivity loss to employers, congestion externalities from substituting indoor for outdoor activity — the bound may underestimate $\Delta E$ (if other externalities saved are missed) or overestimate it (if avoidance imposes new externalities). For ozone alerts in US Medicare data, the dominant externality is plausibly the fee-for-service Medicare cost itself, but workplace and informal-care effects are open margins.
++## JMP application
+ 
+-3. **Distinct from valuing the information channel.** The bound applies to a program that already exists and is being evaluated against a no-alert counterfactual. It does not directly value providing more or different information; that question requires a model of how alerts shift $k$ and $b$ in the project's [[ex-ante-ex-post-adaptation]] framework. The JMP extension uses the program-activation interactions $\beta_P^S - \beta_P^N$ to probe whether alert-program introduction shifts ex-ante defensive investment $k^*$ at all, which would be a second-order effect on top of the Anderson et al. bound.
++The JMP adopts this framework directly. In the JMP estimating equation:
+ 
+-## Project Mapping
++$$
++h_{it} = \cdots + \beta_A A_{it} + \cdots
++$$
+ 
+-For the JMP estimating equation
++when $h_{it}$ is the **government-share** component of Medicare inpatient costs, $\hat{\beta}_A$ identifies $\Delta E$ — the fiscal externality from alert-induced avoidance behavior. This provides a welfare lower bound $\Delta E \leq \Delta W$ and, combined with OOP cost estimates (an upper bound on WTP), brackets the social welfare gain from the alert program.
+ 
+-$$h_{it} = \beta^S (\rho_{it} - P_{im}) + \beta^N P_{im} + \beta_A^S (\rho_{it} - P_{im}) A_{it} + \beta_A^N P_{im} A_{it} + \beta_A A_{it} + X'_{it}\gamma + \alpha_{is} + \delta_{ky} + \nu_{it},$$
++The JMP extends AHL2022's single lower-bound calculation in two ways:
+ 
+-the Anderson et al. framework anchors the interpretation of $\beta_A$ (the infra-marginal alert level effect, not interacted with norm or shock) when the outcome variable is the government-borne share of MedPAR cost of care:
++1. **Two-sided bounding**: Out-of-pocket spending reduction bounds WTP from above, giving $\Delta E \leq \Delta W \leq \Delta \text{WTP}$.
++2. **Shock × alert interactions**: Testing $\beta_A^S$ and $\beta_A^N$ (alert interactions with the shock and norm) probes whether alert introduction shifts ex-ante defensive capital $k^*$, which AHL2022 does not test.
+ 
+-$$\beta_A^{gov} \approx \Delta E \leq \Delta W.$$
++## Generalizability
+ 
+-The same regression with out-of-pocket cost as outcome gives the upper-bound complement:
++The bounds approach applies to any information-provision intervention where:
++1. The externality (fiscal cost, publicly reimbursed expenditure) is separately observable.
++2. More accurate information weakly improves private utility.
+ 
+-$$\beta_A^{OOP} \approx \Delta U^{upper}.$$
++AHL2022 note this framework applies to restaurant hygiene report cards, electricity usage information programs, hospital quality report cards, and similar public-information interventions.
+ 
+-The interaction coefficients $\beta_A^S$ and $\beta_A^N$ are not bounded by this argument directly; they describe how alert-induced avoidance varies with the shock or norm component of exposure. Interpretation of those interactions belongs to the [[ex-ante-ex-post-adaptation]] framework.
+-
+ ## Related pages
+ 
+-- [[anderson-etal-2022-nber]]
+-- [[forecasts-alerts-and-identification]]
++- [[anderson-hyun-lee-2022-nber]]
++- [[air-quality-alerts-and-avoidance-behavior]]
+ - [[ex-ante-ex-post-adaptation]]
+ - [[health-production-and-adaptation]]
++- [[forecasts-alerts-and-identification]]

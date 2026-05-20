@@ -35,7 +35,7 @@ Default `/read-pdf` addresses both by running a local conversion step first. The
 
 ## Default Mode
 
-Convert the PDF to markdown with python:marker (layout-aware, GPU-accelerated), then read the text.
+Convert the PDF to markdown with python:marker (layout-aware, GPU-accelerated), build bounded chunks, then extract through worker notes and one neutral synthesis pass.
 
 ### How It Works
 
@@ -46,7 +46,8 @@ Convert the PDF to markdown with python:marker (layout-aware, GPU-accelerated), 
 | **Check cache** | SHA-256 hash check — skip re-conversion if markdown already cached |
 | **Convert** | `convert.py` runs marker and writes `markdown.md` to a content-hash cache |
 | **Collision** | If `_text.md` already exists, ask: overwrite or save as `_text2.md`? |
-| **Extract** | Read `markdown.md`, write bibliographic metadata + 8-dimension notes |
+| **Prepare substrate** | Split cached `markdown.md` into bounded chunk files plus `manifest.json` |
+| **Extract** | Workers read assigned chunks; synthesis reads worker notes and writes bibliographic metadata + 8-dimension notes |
 | **Persist** | Save final extraction to `<basename>_text.md` alongside the source PDF |
 
 ### Usage

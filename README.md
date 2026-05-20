@@ -144,7 +144,7 @@ A Claude Code **skill** — an invocable `/split-pdf` command that automates the
 
 1. **Acquire** the PDF (web search + download, or use a local file in place)
 2. **Check** for an existing `_text.md` extract or existing splits — offer to reuse
-3. **Split** into 4-page chunks via PyPDF2, stored in a `_build/` directory
+3. **Split** into 4-page chunks via pypdf, stored in a `_build/` directory
 4. **Read** 3 chunks at a time (~12 pages), pausing between batches
 5. **Extract** structured reading notes across 8 dimensions into `notes.md`
 6. **Persist** the final extraction as `<basename>_text.md` alongside the source PDF
