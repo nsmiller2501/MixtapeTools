@@ -1,8 +1,8 @@
-# Protocol M — Converted Markdown
+# Protocol M — Converted Markdown Substrate
 
-*Input:* path to `markdown.md` (in the converter cache), path to the cache directory (for figures), canonical paper basename.
+*Input:* path to `manifest.json` produced by `read-pdf/scripts/prepare_substrate.py`, path to the converter cache directory (for figures), canonical paper basename.
 
-Protocol M reads only the converted `markdown.md`, `meta.json`, and cache-local figure/equation files. Do not inspect the source PDF with `pdftotext` or any other text extractor for substantive synthesis, even if conversion is slow. If conversion is still running, wait.
+Protocol M reads only `manifest.json`, its chunk files, worker notes, `meta.json`, and cache-local figure/equation files. Do not read the whole converted `markdown.md`. Do not inspect the source PDF with `pdftotext` or any other text extractor for substantive synthesis, even if conversion is slow. If conversion or substrate preparation is still running, wait.
 
 ## Step 1: Check for equation fallback
 
@@ -14,17 +14,23 @@ Transcribe it as LaTeX, in display math mode ($$ ... $$). Output only the LaTeX 
 no commentary, no surrounding text. If the equation is not legible, output "[unreadable equation]".
 ```
 
-Edit `<cache-dir>/markdown.md` in place to replace each `![](figures/eq_N.png)` with the transcribed LaTeX. (The cache markdown is scratch — overwriting is fine; `convert.py` regenerates it on a hash miss.)
+Edit the relevant chunk files in place to replace each `![](figures/eq_N.png)` with the transcribed LaTeX. The substrate is scratch and can be regenerated from `markdown.md`.
 
-## Step 2: Synthesize `_text.md`
+## Step 2: Extract bounded worker notes
 
-Read `markdown.md`. Produce `references/raw/<basename>_text.md` following the `_text.md` structure in `common.md` (bib block, plain-English synthesis, 11 structured dimensions). Write or overwrite if a prior partial file exists.
+The main session spawns one worker agent per `manifest.worker_bundles` entry, sequentially. Each worker receives its bundle excerpt, reads the assigned chunk paths only, follows `~/.claude/skills/read-pdf/fanout_worker.md`, and writes one durable note file under `references/raw/raw_build/<basename>_fanout/worker_notes/`.
 
-For the bib metadata block: scan `markdown.md` for the DOI regex `10\.\d{4,}/\S+`. Extract authors, title, year, and venue from the title page text. Record null for any field not found.
+If interrupted, completed worker notes are salvageable and should not be deleted.
 
-## Step 3: Copy and classify relevant figures
+## Step 3: Synthesize `_text.md`
 
-For each figure in `markdown.md` (referenced as `![](figures/fig_N.png)`):
+After all worker notes exist, the main session spawns one synthesis agent. The synthesis agent reads `manifest.json` and all worker note files. It uses `~/.claude/skills/read-pdf/fanout_synthesis.md` plus `common.md` to produce `references/raw/<basename>_text.md` following the project-neutral `_text.md` structure (bib block, plain-English synthesis, structured dimensions, and formal-object inventories). Gap-reread specific chunk files only when worker notes omit a needed table, figure, equation, result, or ambiguous claim. Write or overwrite if a prior partial file exists.
+
+For the bib metadata block, use DOI candidates from `manifest.json` and front-matter worker notes. Extract authors, title, year, and venue from the front-matter chunks and worker notes. Record null for any field not found. Do not read the whole `markdown.md` for metadata.
+
+## Step 4: Copy and classify relevant figures
+
+For each figure inventoried in `manifest.json` or worker notes:
 
 1. Identify the paper figure number from surrounding caption text.
 2. Apply the project-relevance filter. Non-relevant: one-line description + page ref only; do not copy.
@@ -32,7 +38,7 @@ For each figure in `markdown.md` (referenced as `![](figures/fig_N.png)`):
    - Copy from cache to wiki: `cp <cache-dir>/figures/fig_N.png references/wiki/figures/<basename>_fig<M>.png` (where M is the paper's figure number). Before the first copy, run `mkdir -p references/wiki/figures` (idempotent).
    - Classify as Tier A (data figure: scatter, line, bar, coefplot, histogram, density, time series, RD/event-study plot) or Tier B (schematic: DAG, conceptual diagram, map, flowchart, theoretical model). Use the caption text; read the PNG only if the caption is genuinely ambiguous.
 
-## Step 4: Write wiki pages
+## Step 5: Write wiki pages
 
 Use the substantive-change rule and relevance filtering in `common.md`.
 

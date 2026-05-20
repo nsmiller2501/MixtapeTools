@@ -52,6 +52,7 @@ This block is the answer to "what's this paper about?" for someone who will not 
 9. **Replication feasibility** — data availability, replication archive
 10. **Tables (project-relevance gated)** — see Tables protocol below
 11. **Figures (project-relevance gated)** — see Figures protocol below
+12. **Equations / formal objects** — labeled equations, model primitives, algorithms, propositions, and other formal objects needed to understand or replicate the paper
 
 ## Tables protocol (project-relevance gated)
 

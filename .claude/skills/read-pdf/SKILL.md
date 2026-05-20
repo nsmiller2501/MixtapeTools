@@ -9,7 +9,7 @@ argument-hint: [--split] [pdf-path-or-search-query]
 
 Takes a PDF (local or searched) and produces a structured `_text.md` extraction with a bibliographic metadata block and 8-dimension research notes.
 
-Default mode converts the PDF to markdown locally using python:marker, then reads the text. This preserves equation fidelity, table structure, and figure references without image-based context bloat.
+Default mode converts the PDF to markdown locally using python:marker, prepares bounded source chunks, then reads those chunks through a fanout-first extraction workflow. This preserves equation fidelity, table structure, and figure references without image-based context bloat or whole-file `Read` failures.
 
 `--split` mode uses the legacy vision-batch path: split into 4-page chunks, read exactly 3 chunks at a time, update running notes, then write the same `_text.md` contract. This is the compatibility path for `/split-pdf`.
 
@@ -102,9 +102,21 @@ If found, ask:
 
 Proceed using whichever filename the user chooses.
 
-### Step 5: Structured Extraction
+### Step 5: Prepare extraction substrate
 
-Read `markdown.md` and collect notes following the contract in `extraction_schema.md` — a `## Bibliographic metadata` block from the title section, then 8 research dimensions (research question, audience, method, data, statistical methods, findings, contributions, replication feasibility). Read `extraction_schema.md` before starting so you know what to look for.
+Run the deterministic substrate builder:
+
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/prepare_substrate.py "<markdown_path>"
+```
+
+It writes bounded chunk files and `manifest.json` beside the marker cache. The script performs no scholarly interpretation; it only creates a structural manifest over the converted markdown.
+
+### Step 6: Structured Extraction
+
+Use `fanout_worker.md` and `fanout_synthesis.md` with the generated manifest. Run worker bundles sequentially by default. Each worker reads only its assigned chunk paths and writes durable local notes. The synthesis step reads the manifest and worker notes, performs gap-directed rereads of specific chunk files only when needed, and writes the final structured extraction to `<basename>_text.md`.
+
+The final extraction follows `extraction_schema.md`: a `## Bibliographic metadata` block from the title section, then the research dimensions. Read `extraction_schema.md` before synthesis so the output contract is explicit.
 
 Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first. Then notify the user: *"Extract saved to `<basename>_text.md` alongside the source PDF. Future requests on this paper can reuse it without re-reading."*
 
@@ -162,11 +174,14 @@ When `/read-pdf` is invoked by another skill or workflow, the heavy reading step
 
 - `SKILL.md` — this file (acquire → default marker mode or `--split` mode → extract workflow)
 - `extraction_schema.md` — bibliographic metadata block + 8 research dimensions
+- `fanout_worker.md` — bounded worker-note prompt for marker chunks
+- `fanout_synthesis.md` — synthesis prompt for worker notes and final `_text.md`
 - `agent_isolation.md` — isolation mode router
 - `isolation_common.md` — shared parent/subagent rule
 - `isolation_read.md` — marker-mode isolation pattern
 - `isolation_split.md` — split-mode isolation pattern
 - `install.py` — idempotent marker venv installer with monthly advisory check
 - `convert.py` — PDF → markdown converter (writes to SHA-256-keyed cache)
+- `scripts/prepare_substrate.py` — marker markdown → bounded chunks + manifest
 - `scripts/split.py` — pypdf 4-page splitter used by `--split` mode and downstream fallbacks
 - `README.md` — backend details, cache management, GPU notes
