@@ -92,7 +92,7 @@ For relevant figures, classify as Tier A or Tier B using caption text:
 
 ```
 **Figure N:** <verbatim caption> (p. 12)
-![<short description>](../wiki/figures/<basename>_figN.png)
+![<short description>](figures/<basename>_figN.<ext>)
 - Type: <for Tier A: scatter / line / bar / etc.>
 - X-axis: <variable, units, range>    [Tier A only]
 - Y-axis: <variable, units, range>    [Tier A only]
@@ -102,6 +102,8 @@ For relevant figures, classify as Tier A or Tier B using caption text:
 - **Figure notes:** <verbatim notes below the figure, if any>
 [Tier B: replace the structured block with just: One-liner: <what the figure depicts at a glance>]
 ```
+
+All wiki source pages and concept pages are written directly under `references/wiki/`, so embedded figure links must be relative to that directory. For Protocol M, use the path printed by `copy_marker_figure.py`, usually `figures/<basename>_figN.jpg` or `figures/<basename>_figN.png`. Do not use `../figures/...` or `../wiki/figures/...` in wiki pages.
 
 *Protocols E and S* — use CLIP placeholders (described in their respective protocol sections).
 

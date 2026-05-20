@@ -37,9 +37,11 @@ CLIP placeholder format in `_text.md`:
 When a wiki page references a CLIP figure, use a broken image link (it renders as a visible TODO):
 
 ```markdown
-![<short description>](../figures/<basename>_figN.png)
+![<short description>](figures/<basename>_figN.png)
 *<verbatim caption> ([<basename>](../log.md), p. 12)*
 ```
+
+All wiki pages live directly under `references/wiki/`. For Protocol S CLIP placeholders, use `figures/<basename>_figN.png` in wiki markdown, never `../figures/...`.
 
 Before writing any CLIP placeholder that references the figures directory, ensure it exists: `mkdir -p references/wiki/figures`.
 

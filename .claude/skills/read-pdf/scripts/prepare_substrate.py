@@ -19,7 +19,7 @@ from typing import Iterable
 
 DEFAULT_CHUNK_CHAR_LIMIT = 24000
 DEFAULT_TINY_CHUNK_CHAR_LIMIT = 4000
-DEFAULT_WORKER_SOURCE_CHAR_LIMIT = 36000
+DEFAULT_WORKER_SOURCE_CHAR_LIMIT = 50000
 
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 PAGE_ANCHOR_RE = re.compile(r'id="(page-[^"]+)"')

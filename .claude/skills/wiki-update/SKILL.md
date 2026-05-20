@@ -194,7 +194,7 @@ All per-paper wiki-writing prompts include:
 - Optional batch focus string (if provided as the skill argument)
 - Absolute path to exactly one protocol file: `~/.claude/skills/wiki-update/protocol_m.md`, `protocol_e.md`, or `protocol_s.md` depending on the tier. Do not include paths to the other two.
 - Absolute path to `~/.claude/skills/wiki-update/common.md`.
-- For Tier M wiki synthesis only: absolute path to `~/.claude/skills/wiki-update/wiki_synthesis.md`, cache figure directory, and citation-overlap JSON path if one was produced.
+- For Tier M wiki synthesis only: absolute path to `~/.claude/skills/wiki-update/wiki_synthesis.md`, cache `markdown.md` path, cache figure directory, absolute path to `~/.claude/skills/wiki-update/scripts/copy_marker_figure.py`, and citation-overlap JSON path if one was produced.
 
 Tier M worker prompts include only `fanout_worker.md`, the bundle excerpt, assigned chunk paths, and output note path.
 
