@@ -14,7 +14,6 @@ from pathlib import Path
 
 DOI_RE = re.compile(r"10\.\d{4,9}/[^\s\])}>\"']+", re.IGNORECASE)
 BIB_ENTRY_RE = re.compile(r"@\w+\s*\{\s*([^,]+),([\s\S]*?)(?=\n@\w+\s*\{|\Z)")
-BIB_FIELD_RE = re.compile(r"^\s*(\w+)\s*=\s*[\{\"]([\s\S]*?)[\}\"]\s*,?\s*$", re.MULTILINE)
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,10 +40,75 @@ def parse_bib(path: Path) -> list[dict[str, str]]:
         key = match.group(1).strip()
         body = match.group(2)
         fields = {"key": key}
-        for field_match in BIB_FIELD_RE.finditer(body):
-            fields[field_match.group(1).lower()] = field_match.group(2).strip()
+        fields.update(parse_bib_fields(body))
         entries.append(fields)
     return entries
+
+
+def parse_bib_fields(body: str) -> dict[str, str]:
+    """Parse simple BibTeX fields while preserving nested braces."""
+    fields: dict[str, str] = {}
+    i = 0
+    n = len(body)
+
+    while i < n:
+        while i < n and not (body[i].isalpha() or body[i] == "_"):
+            i += 1
+        start = i
+        while i < n and (body[i].isalnum() or body[i] in "_-"):
+            i += 1
+        name = body[start:i].strip().lower()
+        if not name:
+            break
+        while i < n and body[i].isspace():
+            i += 1
+        if i >= n or body[i] != "=":
+            continue
+        i += 1
+        while i < n and body[i].isspace():
+            i += 1
+        if i >= n:
+            break
+
+        if body[i] == "{":
+            i += 1
+            value_start = i
+            depth = 1
+            while i < n and depth:
+                if body[i] == "{":
+                    depth += 1
+                elif body[i] == "}":
+                    depth -= 1
+                i += 1
+            value = body[value_start : i - 1]
+        elif body[i] == '"':
+            i += 1
+            value_start = i
+            escaped = False
+            while i < n:
+                char = body[i]
+                if char == '"' and not escaped:
+                    break
+                escaped = char == "\\" and not escaped
+                if char != "\\":
+                    escaped = False
+                i += 1
+            value = body[value_start:i]
+            if i < n and body[i] == '"':
+                i += 1
+        else:
+            value_start = i
+            while i < n and body[i] not in ",\n":
+                i += 1
+            value = body[value_start:i]
+
+        fields[name] = value.strip()
+        while i < n and body[i] != ",":
+            i += 1
+        if i < n and body[i] == ",":
+            i += 1
+
+    return fields
 
 
 def candidate_reference_text(markdown: str) -> str:

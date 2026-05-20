@@ -6,25 +6,13 @@ Protocol M reads only `manifest.json`, its chunk files, worker notes, `meta.json
 
 The old Version A path, where one Protocol M agent reads `markdown.md` directly and writes both `_text.md` and wiki pages, is deprecated and disallowed. Use direct `markdown.md` reads only for manual emergency debugging outside normal `/wiki-update` ingest, and label that debug session explicitly.
 
-## Step 1: Check for equation fallback
-
-Read `<cache-dir>/meta.json`. If `equation_extraction_mode == "image_fallback"`, equations were extracted as `<cache-dir>/figures/eq_*.png` rather than inline LaTeX. Before synthesis, transcribe each:
-
-```
-Read the image at <eq-png-path>. It is a single equation clipped from an academic paper.
-Transcribe it as LaTeX, in display math mode ($$ ... $$). Output only the LaTeX —
-no commentary, no surrounding text. If the equation is not legible, output "[unreadable equation]".
-```
-
-Edit the relevant chunk files in place to replace each `![](figures/eq_N.png)` with the transcribed LaTeX. The substrate is scratch and can be regenerated from `markdown.md`.
-
-## Step 2: Extract bounded worker notes
+## Step 1: Extract bounded worker notes
 
 The main session spawns one worker agent per `manifest.worker_bundles` entry, sequentially. Each worker receives its bundle excerpt, reads the assigned chunk paths only, follows `~/.claude/skills/read-pdf/fanout_worker.md`, and writes one durable note file under `references/raw/raw_build/<basename>_fanout/worker_notes/`.
 
 If interrupted, completed worker notes are salvageable and should not be deleted.
 
-## Step 3: Synthesize `_text.md`
+## Step 2: Synthesize `_text.md`
 
 After all worker notes exist, the main session spawns one read-pdf synthesis agent. The synthesis agent reads `manifest.json` and all worker note files. It uses `~/.claude/skills/read-pdf/fanout_synthesis.md` plus `~/.claude/skills/read-pdf/extraction_schema.md` to produce `references/raw/<basename>_text.md` following the project-neutral `_text.md` structure (bib block, plain-English synthesis, structured dimensions, and formal-object inventories). Gap-reread specific chunk files only when worker notes omit a needed table, figure, equation, result, or ambiguous claim. Write or overwrite if a prior partial file exists.
 
@@ -32,7 +20,7 @@ For the bib metadata block, use DOI candidates from `manifest.json` and front-ma
 
 The read-pdf synthesis agent must not read project wiki pages, project context files, citation-overlap JSON, or downstream wiki prompts. It writes only `_text.md`.
 
-## Step 4: Write project wiki pages
+## Step 3: Write project wiki pages
 
 After `_text.md` exists, the main session spawns one wiki synthesis agent. It reads:
 
@@ -47,7 +35,7 @@ After `_text.md` exists, the main session spawns one wiki synthesis agent. It re
 
 The wiki synthesis agent must not read worker notes or chunk files unless `_text.md` explicitly marks a gap and the main session approves a targeted recovery read.
 
-## Step 5: Copy and classify relevant figures
+## Step 4: Copy and classify relevant figures
 
 For each relevant figure listed in `_text.md`:
 
@@ -60,7 +48,7 @@ For each relevant figure listed in `_text.md`:
    - Verify copied files exist with `ls references/wiki/figures/<basename>_fig<M>.*`.
    - Classify as Tier A (data figure: scatter, line, bar, coefplot, histogram, density, time series, RD/event-study plot) or Tier B (schematic: DAG, conceptual diagram, map, flowchart, theoretical model). Use the `_text.md` figure description and caption; read the PNG only if genuinely needed for wiki writing.
 
-## Step 6: Wiki figure embeds
+## Step 5: Wiki figure embeds
 
 Use the substantive-change rule and relevance filtering in `common.md`.
 
