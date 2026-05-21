@@ -1,6 +1,6 @@
 # Isolation: Default Marker Mode
 
-The parent runs install/cache/convert steps, prepares the extraction substrate, then launches bounded workers and one synthesis bottleneck.
+The parent runs install/cache/convert steps. If `<cache-dir>/text.md` exists, the parent copies it to `<text_path>` and skips extraction. Otherwise the parent prepares the extraction substrate, launches bounded workers, then runs one synthesis bottleneck.
 
 ```text
 Prepare converted marker markdown for bounded extraction.
@@ -18,6 +18,7 @@ Process:
 2. Parent launches worker bundles sequentially from manifest.worker_bundles.
 3. Each worker reads only assigned chunk paths and writes one durable note file.
 4. Synthesis reads manifest + worker notes, gap-rereads specific chunks only when needed, and writes <text_path>.
+5. Parent copies <text_path> to <cache-dir>/text.md for reuse by future projects using the same PDF hash.
 
 Report when done: page count if available, figures/tables found, one-sentence content summary.
 ```

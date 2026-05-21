@@ -1,6 +1,6 @@
 # `/read-pdf` — Download, Convert, Split, and Deep-Read Academic Papers
 
-`/read-pdf` is the canonical academic-paper reading skill. By default, it uses python:marker to convert the PDF to markdown locally before extracting structured notes. With `--split`, it uses the legacy split-PDF vision-batch path.
+`/read-pdf` is the canonical academic-paper reading skill. By default, it uses python:marker to convert the PDF to markdown locally before extracting structured notes. With `--split`, it uses a split-PDF vision-batch path.
 
 **Skill location:** [`.claude/skills/read-pdf/SKILL.md`](../../.claude/skills/read-pdf/SKILL.md)
 
@@ -15,21 +15,19 @@ Both modes produce the same output contract: bibliographic metadata, plain-Engli
 | Mode | Command | Best for |
 |---|---|---|
 | Marker conversion | `/read-pdf <paper>` | Tables, equations, figures, repeated processing, batch ingest |
-| Split vision reading | `/read-pdf --split <paper>` | Triage, converter failures, no marker setup, legacy `/split-pdf` behavior |
+| Split vision reading | `/read-pdf --split <paper>` | Triage, converter failures, no marker setup |
 
 ---
 
-## Why It Exists
+## Mode Choice
 
-The old split-PDF workflow reads PDFs by having Claude vision-read page images in batches. This works well for most papers but has two limitations:
+Default mode converts the PDF to layout-aware markdown before extraction. Use it for normal paper ingest, tables, equations, figures, repeated processing, and batch wiki updates.
 
-1. **Equation fidelity.** PDF page images render math as bitmaps. Vision-reading bitmaps produces approximate LaTeX transcriptions. Papers heavy with structural equations (e.g., structural IO, dynamic programming models) benefit from native math extraction.
+Use `--split` when marker setup is unavailable, marker cannot parse a malformed PDF, or first-split triage is enough. Split mode has two limitations:
+
+1. **Equation fidelity.** PDF page images render math as bitmaps. Vision-reading bitmaps can produce approximate LaTeX transcriptions.
 
 2. **Table structure.** Complex tables (multi-column headers, merged cells, footnotes) are harder to transcribe accurately from images than from a layout-aware text conversion.
-
-Default `/read-pdf` addresses both by running a local conversion step first. The result is a `markdown.md` file where equations are native LaTeX math mode and tables are pipe-syntax markdown — readable as text rather than image bitmaps.
-
-`--split` remains available because it has different strengths: no model install, first-split triage, and a reliable fallback when marker cannot parse a malformed PDF.
 
 ---
 
@@ -46,9 +44,10 @@ Convert the PDF to markdown with python:marker (layout-aware, GPU-accelerated), 
 | **Check cache** | SHA-256 hash check — skip re-conversion if markdown already cached |
 | **Convert** | `convert.py` runs marker and writes `markdown.md` to a content-hash cache |
 | **Collision** | If `_text.md` already exists, ask: overwrite or save as `_text2.md`? |
+| **Check extract cache** | If `text.md` exists in the converter cache, copy it beside the PDF and skip extraction |
 | **Prepare substrate** | Split cached `markdown.md` into bounded chunk files plus `manifest.json` |
 | **Extract** | Workers read assigned chunks; synthesis reads worker notes and writes bibliographic metadata, plain-English synthesis, and 12-dimension notes |
-| **Persist** | Save final extraction to `<basename>_text.md` alongside the source PDF |
+| **Persist** | Save final extraction to `<basename>_text.md` alongside the source PDF and to `text.md` in the converter cache |
 
 ### Usage
 
@@ -64,7 +63,7 @@ You must tell Claude what paper to read. Provide either a local file path or a s
 
 ## Split Mode
 
-`/read-pdf --split` uses the same directory convention and pause-and-confirm reading flow as the old `/split-pdf` skill:
+`/read-pdf --split` uses this directory convention:
 
 ```text
 articles/
@@ -78,13 +77,11 @@ articles/
         └── notes.md
 ```
 
-The canonical splitter script is:
+The splitter script is:
 
 ```bash
 python3 ~/.claude/skills/read-pdf/scripts/split.py path/to/paper.pdf
 ```
-
-The old `~/.claude/skills/split-pdf/scripts/split.py` path remains as a compatibility shim.
 
 ### What Gets Extracted
 

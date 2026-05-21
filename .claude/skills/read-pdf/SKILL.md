@@ -1,6 +1,6 @@
 ---
 name: read-pdf
-description: Canonical academic-PDF reading skill. By default, downloads or uses a local PDF, converts it to clean markdown via a local layout-aware converter, then writes structured `_text.md` notes. Use `--split` to force the legacy vision-batch path: split into 4-page chunks and read 3 chunks at a time. Use default mode for tables, equations, figures, repeated processing, and batch ingest; use `--split` for triage, converter failures, or environments where marker setup is not available.
+description: Canonical academic-PDF reading skill. By default, downloads or uses a local PDF, converts it to clean markdown via a local layout-aware converter, then writes structured `_text.md` notes. Use `--split` to force the split-PDF vision path: split into 4-page chunks and read 3 chunks at a time. Use default mode for tables, equations, figures, repeated processing, and batch ingest; use `--split` for triage, converter failures, or environments where marker setup is not available.
 allowed-tools: Bash(python3:*), Bash(curl:*), Bash(wget:*), Bash(mkdir:*), Bash(rm:*), Read, Write, WebSearch, WebFetch, Agent
 argument-hint: [--split] [pdf-path-or-search-query]
 ---
@@ -11,7 +11,7 @@ Takes a PDF (local or searched) and produces a structured `_text.md` extraction 
 
 Default mode converts the PDF to markdown locally using python:marker, prepares bounded source chunks, then reads those chunks through a fanout-first extraction workflow. This preserves equation fidelity, table structure, and figure references without image-based context bloat or whole-file `Read` failures.
 
-`--split` mode uses the legacy vision-batch path: split into 4-page chunks, read exactly 3 chunks at a time, update running notes, then write the same `_text.md` contract. This is the compatibility path for `/split-pdf`.
+`--split` mode splits into 4-page chunks, reads exactly 3 chunks at a time, updates running notes, then writes the same `_text.md` contract.
 
 ## When This Skill Is Invoked
 
@@ -24,7 +24,7 @@ The user wants to read, review, or summarize an academic paper. The input is eit
 ## Mode selection
 
 - **Default marker mode:** use unless the user explicitly asks for `--split`, triage-only reading, or no local converter setup.
-- **`--split` mode:** use when the user invokes `/read-pdf --split`, invokes the compatibility `/split-pdf` wrapper, needs first-split triage, or marker conversion fails and the user wants the vision-batch fallback.
+- **`--split` mode:** use when the user invokes `/read-pdf --split`, invokes `/split-pdf`, needs first-split triage, or marker conversion fails and the user wants the vision-batch fallback.
 
 ## Prerequisites
 
@@ -102,6 +102,11 @@ If found, ask:
 
 Proceed using whichever filename the user chooses.
 
+If no local extract exists, check for a cache-level neutral extract at `<markdown_path parent>/text.md`.
+
+- If `text.md` exists in the converter cache, copy it to `<basename>_text.md` beside the PDF and skip Steps 5–6. Notify the user: *"Using cached neutral extract from converter cache; copied to `<basename>_text.md`."*
+- If no cache-level `text.md` exists, continue to Step 5.
+
 ### Step 5: Prepare extraction substrate
 
 Run the deterministic substrate builder:
@@ -118,7 +123,7 @@ Use `fanout_worker.md` and `fanout_synthesis.md` with the generated manifest. Ru
 
 The final extraction follows `extraction_schema.md`: a `## Bibliographic metadata` block from the title section, then the research dimensions. Read `extraction_schema.md` before synthesis so the output contract is explicit.
 
-Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first. Then notify the user: *"Extract saved to `<basename>_text.md` alongside the source PDF. Future requests on this paper can reuse it without re-reading."*
+Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first. Also copy the same neutral extract to `<markdown_path parent>/text.md` so future projects using the same PDF hash can reuse it without repeating fanout extraction. Then notify the user: *"Extract saved to `<basename>_text.md` alongside the source PDF and cached as `text.md` in the converter cache."*
 
 ## `--split` mode
 

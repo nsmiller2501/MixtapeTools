@@ -1,10 +1,8 @@
 # Protocol M — Fanout Extract Then Wiki Synthesis
 
-*Input:* path to `manifest.json` produced by `read-pdf/scripts/prepare_substrate.py`, path to the converter cache directory (for figures), canonical paper basename.
+*Input:* path to `manifest.json` produced by `read-pdf/scripts/prepare_substrate.py`, path to the converter cache directory (for figures and `text.md`), canonical paper basename.
 
-Protocol M reads only `manifest.json`, its chunk files, worker notes, `meta.json`, cache-local figure/equation files, the neutral `_text.md`, and wiki context files. Do not read the whole converted `markdown.md`. Do not inspect the source PDF with `pdftotext` or any other text extractor for substantive synthesis, even if conversion is slow. If conversion or substrate preparation is still running, wait.
-
-The old Version A path, where one Protocol M agent reads `markdown.md` directly and writes both `_text.md` and wiki pages, is deprecated and disallowed. Use direct `markdown.md` reads only for manual emergency debugging outside normal `/wiki-update` ingest, and label that debug session explicitly.
+Protocol M reads only `manifest.json`, its chunk files, worker notes, cache-local figure files, the neutral `_text.md`, and wiki context files. Do not read the whole converted `markdown.md`. Do not inspect the source PDF with `pdftotext` or any other text extractor for substantive synthesis, even if conversion is slow. If conversion or substrate preparation is still running, wait.
 
 ## Step 1: Extract bounded worker notes
 
@@ -15,6 +13,8 @@ If interrupted, completed worker notes are salvageable and should not be deleted
 ## Step 2: Synthesize `_text.md`
 
 After all worker notes exist, the main session spawns one read-pdf synthesis agent. The synthesis agent reads `manifest.json` and all worker note files. It uses `~/.claude/skills/read-pdf/fanout_synthesis.md` plus `~/.claude/skills/read-pdf/extraction_schema.md` to produce `references/raw/<basename>_text.md` following the project-neutral `_text.md` structure (bib block, plain-English synthesis, structured dimensions, and formal-object inventories). Gap-reread specific chunk files only when worker notes omit a needed table, figure, equation, result, or ambiguous claim. Write or overwrite if a prior partial file exists.
+
+After the synthesis agent returns, copy `references/raw/<basename>_text.md` to `<cache-dir>/text.md`. This cache-level neutral extract is project-neutral and reusable by future projects that ingest the same PDF hash.
 
 For the bib metadata block, use DOI candidates from `manifest.json` and front-matter worker notes. Extract authors, title, year, and venue from the front-matter chunks and worker notes. Record null for any field not found. Do not read the whole `markdown.md` for metadata.
 
