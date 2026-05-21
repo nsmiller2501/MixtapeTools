@@ -104,8 +104,18 @@ Proceed using whichever filename the user chooses.
 
 If no local extract exists, check for a cache-level neutral extract at `<markdown_path parent>/text.md`.
 
-- If `text.md` exists in the converter cache, copy it to `<basename>_text.md` beside the PDF and skip Steps 5–6. Notify the user: *"Using cached neutral extract from converter cache; copied to `<basename>_text.md`."*
-- If no cache-level `text.md` exists, continue to Step 5.
+Run:
+
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/cache_text.py check "<markdown_path>"
+```
+
+- If it prints a cache path, run:
+  ```bash
+  python3 ~/.claude/skills/read-pdf/scripts/cache_text.py pull "<markdown_path>" "<local_text_path>"
+  ```
+  Then skip Steps 5–6 and notify the user: *"Using cached neutral extract from converter cache; copied to `<basename>_text.md`."*
+- If it prints `NOT_CACHED`, continue to Step 5.
 
 ### Step 5: Prepare extraction substrate
 
@@ -123,7 +133,13 @@ Use `fanout_worker.md` and `fanout_synthesis.md` with the generated manifest. Ru
 
 The final extraction follows `extraction_schema.md`: a `## Bibliographic metadata` block from the title section, then the research dimensions. Read `extraction_schema.md` before synthesis so the output contract is explicit.
 
-Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first. Also copy the same neutral extract to `<markdown_path parent>/text.md` so future projects using the same PDF hash can reuse it without repeating fanout extraction. Then notify the user: *"Extract saved to `<basename>_text.md` alongside the source PDF and cached as `text.md` in the converter cache."*
+Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first. Then cache the same neutral extract:
+
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/cache_text.py push "<markdown_path>" "<local_text_path>"
+```
+
+Then notify the user: *"Extract saved to `<basename>_text.md` alongside the source PDF and cached as `text.md` in the converter cache."*
 
 ## `--split` mode
 
@@ -188,5 +204,6 @@ When `/read-pdf` is invoked by another skill or workflow, the heavy reading step
 - `install.py` — idempotent marker venv installer with monthly advisory check
 - `convert.py` — PDF → markdown converter (writes to SHA-256-keyed cache)
 - `scripts/prepare_substrate.py` — marker markdown → bounded chunks + manifest
+- `scripts/cache_text.py` — check/pull/push project-neutral `text.md` extracts in the converter cache
 - `scripts/split.py` — pypdf 4-page splitter used by `--split` mode and downstream fallbacks
 - `README.md` — backend details, cache management, GPU notes

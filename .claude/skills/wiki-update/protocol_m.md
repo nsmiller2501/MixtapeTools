@@ -14,7 +14,13 @@ If interrupted, completed worker notes are salvageable and should not be deleted
 
 After all worker notes exist, the main session spawns one read-pdf synthesis agent. The synthesis agent reads `manifest.json` and all worker note files. It uses `~/.claude/skills/read-pdf/fanout_synthesis.md` plus `~/.claude/skills/read-pdf/extraction_schema.md` to produce `references/raw/<basename>_text.md` following the project-neutral `_text.md` structure (bib block, plain-English synthesis, structured dimensions, and formal-object inventories). Gap-reread specific chunk files only when worker notes omit a needed table, figure, equation, result, or ambiguous claim. Write or overwrite if a prior partial file exists.
 
-After the synthesis agent returns, copy `references/raw/<basename>_text.md` to `<cache-dir>/text.md`. This cache-level neutral extract is project-neutral and reusable by future projects that ingest the same PDF hash.
+After the synthesis agent returns, cache the neutral extract with:
+
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/cache_text.py push "<cache-dir>/markdown.md" "references/raw/<basename>_text.md"
+```
+
+This cache-level neutral extract is project-neutral and reusable by future projects that ingest the same PDF hash.
 
 For the bib metadata block, use DOI candidates from `manifest.json` and front-matter worker notes. Extract authors, title, year, and venue from the front-matter chunks and worker notes. Record null for any field not found. Do not read the whole `markdown.md` for metadata.
 

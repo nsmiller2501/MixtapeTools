@@ -9,7 +9,7 @@ argument-hint: [optional focus or theme for this batch]
 
 Maintains a project's reference wiki by ingesting newly-added PDFs from `references/raw/`, summarizing each through the lens of the project's research focus, and updating the wiki atomically per-paper.
 
-**Ingest path is auto-detected per paper.** Use a local `references/raw/<basename>_text.md` when present (Protocol E). Otherwise, run the read-pdf converter: if the converter cache already has `text.md`, copy it locally and proceed to wiki synthesis (Tier M-cache); if not, run marker fanout extraction and cache the resulting neutral extract as `text.md` (Protocol M). If marker conversion fails, use the split-PDF pipeline (Protocol S). All paths produce the same wiki output — the difference is how the neutral extract is obtained and whether cache figures are available.
+**Ingest path is auto-detected per paper.** Use a local `references/raw/<basename>_text.md` when present (Protocol E). Otherwise, run the read-pdf converter: if `cache_text.py check` finds cached `text.md`, use `cache_text.py pull` to copy it locally and proceed to wiki synthesis (Tier M-cache); if not, run marker fanout extraction and cache the resulting neutral extract with `cache_text.py push` (Protocol M). If marker conversion fails, use the split-PDF pipeline (Protocol S). All paths produce the same wiki output — the difference is how the neutral extract is obtained and whether cache figures are available.
 
 **`pdftotext` is not an ingest source.** It is allowed only for narrow pre-flight tasks: first-page filename proposals when the converter is unavailable, metadata checks needed for `/bib-update`, and other explicit bootstrap/diagnostic checks that do not synthesize wiki content. Once a paper is assigned to Protocol M, M-cache, or E, do not use `pdftotext` to read, summarize, validate, or supplement substantive content. Wait for the selected input (`manifest.json` plus bounded chunks, or `_text.md`) and read that source only.
 
@@ -126,7 +126,15 @@ For each new paper (using its post-rename canonical name), determine its ingest 
 
 1. **Tier E — Local cached extract:** `references/raw/<basename>_text.md` exists. No conversion needed.
 
-2. **Tier M-cache — Cached neutral extract in converter cache:** `~/.claude/skills/read-pdf/convert.py` exists, running it for this PDF succeeds, and `<cache-dir>/text.md` exists beside the returned `markdown.md`. Copy `<cache-dir>/text.md` to `references/raw/<basename>_text.md` and proceed directly to wiki synthesis. No worker fanout or read-pdf synthesis is needed.
+2. **Tier M-cache — Cached neutral extract in converter cache:** `~/.claude/skills/read-pdf/convert.py` exists, running it for this PDF succeeds, and:
+   ```bash
+   python3 ~/.claude/skills/read-pdf/scripts/cache_text.py check "<markdown.md path>"
+   ```
+   prints a cache path. Copy it locally with:
+   ```bash
+   python3 ~/.claude/skills/read-pdf/scripts/cache_text.py pull "<markdown.md path>" "references/raw/<basename>_text.md"
+   ```
+   Then proceed directly to wiki synthesis. No worker fanout or read-pdf synthesis is needed.
 
 3. **Tier M — Converted markdown substrate / fanout extract:** `~/.claude/skills/read-pdf/convert.py` exists, **and** running it for this PDF succeeds (cache hit is instant; a miss triggers the full conversion here). Capture the returned `markdown.md` path and cache directory. If `convert.py` was already run during step 4 for this paper, it was cached — re-running is a no-op. Then prepare the read-pdf extraction substrate:
 
@@ -183,7 +191,7 @@ Process papers sequentially. The main session must not read PDF extracts, marker
 
 - **Tier E:** spawn one wiki synthesis agent that reads the local `_text.md` plus project/wiki context and writes wiki artifacts.
 - **Tier M-cache:** spawn one wiki synthesis agent that reads the copied local `_text.md`, cache `markdown.md`/figure paths, and project/wiki context, then writes wiki artifacts.
-- **Tier M:** run a split fanout sequence for the paper. Spawn one bounded worker agent per `manifest.worker_bundles` entry, sequentially. Then spawn one read-pdf synthesis agent that writes only the neutral `_text.md`. Copy the completed local `_text.md` to `<cache-dir>/text.md`. Then spawn one wiki synthesis agent that reads `_text.md` plus project/wiki context and writes wiki artifacts.
+- **Tier M:** run a split fanout sequence for the paper. Spawn one bounded worker agent per `manifest.worker_bundles` entry, sequentially. Then spawn one read-pdf synthesis agent that writes only the neutral `_text.md`. Cache the completed local `_text.md` with `python3 ~/.claude/skills/read-pdf/scripts/cache_text.py push "<markdown.md path>" "references/raw/<basename>_text.md"`. Then spawn one wiki synthesis agent that reads `_text.md` plus project/wiki context and writes wiki artifacts.
 - **Tier S:** spawn one per-paper agent using Protocol S.
 
 **Before spawning each subagent, record the journal** (for rollback on failure): for every wiki page the subagent intends to touch, note whether it exists and its current content if so. This is the rollback snapshot. On failure at any step, restore journaled state and do not write the log entry. The next invocation rediscovers the paper as new and retries cleanly.

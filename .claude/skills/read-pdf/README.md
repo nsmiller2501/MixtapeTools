@@ -190,8 +190,6 @@ Both modes produce identical `_text.md` output format and can be used interchang
 
 ---
 
-## Acknowledgments
+## Origin
 
-The in-place PDF handling, persistent `_text.md` extraction, build directory convention, and agent isolation protocol follow conventions established in the original `/split-pdf` skill, where they were inspired by improvements identified by [Ben Bentzin](https://www.mccombs.utexas.edu) (Associate Professor of Instruction, McCombs School of Business, University of Texas at Austin). The marker integration (`convert.py`, `install.py`) and content-hash caching design are original to this skill.
-
-This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.
+This skill is maintained in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.
