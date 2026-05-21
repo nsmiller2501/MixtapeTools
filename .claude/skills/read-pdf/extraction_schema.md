@@ -1,6 +1,6 @@
 # Extraction Schema
 
-The structured-extraction contract shared by `/read-pdf` default mode, `/read-pdf --split` mode, and downstream `wiki-update` marker ingest. Output is a single project-neutral markdown file (`<basename>_text.md`) consisting of a bibliographic metadata block followed by research notes.
+The structured-extraction contract shared by `/read-pdf` default mode, `/read-pdf --split` mode, and downstream `wiki-update` marker ingest. Output is a single project-neutral markdown file (`<basename>_text.md`) consisting of an optional title, a bibliographic metadata block, plain-English synthesis, and research notes in that order. The bibliographic metadata block must not appear after the research dimensions.
 
 ## Bibliographic metadata (always first)
 

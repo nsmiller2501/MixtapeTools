@@ -13,6 +13,15 @@ Use this prompt after all worker bundles have durable notes.
 
 Read the manifest and every worker note. Write one coherent, project-neutral `_text.md` using `extraction_schema.md`.
 
+Required output order:
+
+1. Optional top-level paper title (`# ...`) if useful.
+2. `## Bibliographic metadata`
+3. `## Plain-English synthesis`
+4. `## Research dimensions`, with dimensions 1 through 12 in schema order.
+
+Do not put the bibliographic metadata block after the research dimensions.
+
 ## Rules
 
 - Treat worker notes as local evidence, not final interpretation.
