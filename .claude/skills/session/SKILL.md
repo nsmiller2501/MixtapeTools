@@ -5,22 +5,24 @@ description: Manages start-of-session and end-of-session lifecycle for research 
 
 ## Args
 - `start` — orient for a new session
+- `start --tasks` — orient as above, then also summarize the task list
 - `end` — close out the session with a progress log
 
 ---
 
 ## start
 
-1. Switch to caveman mode: drop articles, filler, pleasantries. Terse fragments OK. Technical terms stay exact.
+1. Call the `caveman` skill via the Skill tool before doing anything else.
 2. Run `~/.claude/skills/session/scripts/latest_progress_log.sh` to find the most recent file in `progress_logs/`.
 3. Read it. Then read every file (at the line ranges) listed under `## Key Files` in that log.
 4. Report in 3–5 bullets: current state, blockers, next priorities.
+5. If `--tasks` was passed: read `agent_memory/tasklist.md` and append a **Task list** section summarizing every item.
 
 ---
 
 ## end
 
 1. Determine filename: `YYYY-MM-DD_session.md` using today's date. Append `_2`, `_3` on collision.
-2. Write progress log — see [FORMAT.md](./FORMAT.md).
-3. Scan `agent_memory/` for files needing updates based on this session (decisions made, terms defined, plans changed). Update them.
+2. Write progress log — see [FORMAT.md](./FORMAT.md). Use Obsidian task boxes exactly for all task items: `- [ ]` for outstanding tasks and `- [x]` for completed tasks.
+3. Scan `agent_memory/` for files needing updates based on this session (decisions made, terms defined, plans changed, tasks completed). Update them. Treat `agent_memory/tasklist.md` as read-only except for marking existing completed task boxes from `- [ ]` to `- [x]`.
 4. Confirm: log written at `progress_logs/<filename>`, files updated.
