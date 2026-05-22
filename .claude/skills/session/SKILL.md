@@ -22,7 +22,7 @@ description: Manages start-of-session and end-of-session lifecycle for research 
 
 ## end
 
-1. Determine filename: `YYYY-MM-DD_session.md` using today's date. Append `_2`, `_3` on collision.
+1. Determine filename: `YYYY-MM-DD_<session_slug>.md` using today's date. Append `_2`, `_3` on collision.
 2. Write progress log — see [FORMAT.md](./FORMAT.md). Use Obsidian task boxes exactly for all task items: `- [ ]` for outstanding tasks and `- [x]` for completed tasks.
 3. Scan `agent_memory/` for files needing updates based on this session (decisions made, terms defined, plans changed, tasks completed). Update them. Treat `agent_memory/tasklist.md` as read-only except for marking existing completed task boxes from `- [ ]` to `- [x]`.
 4. Confirm: log written at `progress_logs/<filename>`, files updated.

@@ -23,7 +23,7 @@ Tasks completed during this session, when useful to record. Use Obsidian checked
 - [x] Verified wiki-update pulls `text.md` from cache
 ```
 
-Use `- [x]` only for completed task items. Do not use `- [X]`, "done:", strikethrough, or prose-only completion notes.
+Use `- [x]` only for completed task items. Do not use "done:", strikethrough, or prose-only completion notes.
 
 If `agent_memory/tasklist.md` exists, treat it as read-only except for marking already-listed completed tasks from `- [ ]` to `- [x]`. Do not append new tasks there during session end; put newly discovered outstanding tasks in the progress log's `Next Steps` section instead.
 
