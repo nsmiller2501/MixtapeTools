@@ -33,7 +33,11 @@ HEADING_WHITESPACE_RE = re.compile(r"\s+")
 HEADING_MAX_LENGTH = 120
 HEADING_DISPLAY_CAP = 80
 MERGED_HEADING_MAX_PARTS = 2
-PAGE_ANCHOR_RE = re.compile(r'id="(page-[^"]+)"')
+# Marker's markdown renderer emits `{N}<separator>` between pages when run
+# with paginate_output=True. N is the 0-based page index (see convert.py).
+# We normalize to 1-based `page-N` strings so the manifest stays
+# human-friendly. Anchor 'page-12' means physical page 12 in the source PDF.
+PAGE_ANCHOR_RE = re.compile(r"^\{(\d+)\}-{20,}", re.MULTILINE)
 FIGURE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 DOI_RE = re.compile(r"10\.\d{4,9}/[^\s\])}>\"']+", re.IGNORECASE)
 
@@ -224,15 +228,49 @@ def merge_tiny_sections(sections: Iterable[Section], tiny_limit: int, hard_limit
     return merged
 
 
-def metadata_for_chunk(text: str) -> tuple[list[str], list[str], list[str], str]:
-    page_anchors = sorted(set(PAGE_ANCHOR_RE.findall(text)))
+def collect_page_markers(lines: list[str]) -> list[tuple[int, int]]:
+    # Return (line_number, page_id) for every paginate_output marker line.
+    # 1-based line numbers to match Section.start_line semantics.
+    markers: list[tuple[int, int]] = []
+    for i, line in enumerate(lines, start=1):
+        m = PAGE_ANCHOR_RE.match(line)
+        if m:
+            markers.append((i, int(m.group(1))))
+    return markers
+
+
+def pages_for_range(
+    markers: list[tuple[int, int]], start_line: int, end_line: int
+) -> list[str]:
+    # Page anchors a chunk overlaps: the most recent marker at-or-before
+    # start_line (carryover, so chunks that begin mid-page still get a page
+    # number), plus every marker inside [start_line, end_line].
+    page_ids: set[int] = set()
+    carryover: int | None = None
+    for line_no, page_id in markers:
+        if line_no <= start_line:
+            carryover = page_id
+        elif line_no <= end_line:
+            page_ids.add(page_id)
+        else:
+            break
+    if carryover is not None:
+        page_ids.add(carryover)
+    return [f"page-{pid + 1}" for pid in sorted(page_ids)]
+
+
+def metadata_for_chunk(text: str) -> tuple[list[str], list[str], str]:
     figures = sorted(set(FIGURE_RE.findall(text)))
     doi_candidates = sorted(set(match.rstrip(".,;") for match in DOI_RE.findall(text)))
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    return page_anchors, figures, doi_candidates, digest
+    return figures, doi_candidates, digest
 
 
-def write_chunks(sections: list[Section], chunks_dir: Path) -> list[Chunk]:
+def write_chunks(
+    sections: list[Section],
+    chunks_dir: Path,
+    page_markers: list[tuple[int, int]],
+) -> list[Chunk]:
     chunks_dir.mkdir(parents=True, exist_ok=True)
     for old_chunk in chunks_dir.glob("chunk_*.md"):
         old_chunk.unlink()
@@ -241,7 +279,10 @@ def write_chunks(sections: list[Section], chunks_dir: Path) -> list[Chunk]:
     for index, section in enumerate(sections, start=1):
         slug = slugify(section.heading, f"chunk-{index:03d}")
         path = chunks_dir / f"chunk_{index:03d}-{slug}.md"
-        page_anchors, figures, doi_candidates, digest = metadata_for_chunk(section.text)
+        figures, doi_candidates, digest = metadata_for_chunk(section.text)
+        page_anchors = pages_for_range(
+            page_markers, section.start_line, section.end_line
+        )
         path.write_text(section.text, encoding="utf-8")
         chunks.append(
             Chunk(
@@ -316,6 +357,7 @@ def main() -> int:
 
     text = markdown_path.read_text(encoding="utf-8", errors="replace")
     lines = text.splitlines(keepends=True)
+    page_markers = collect_page_markers(lines)
     sections = split_sections(lines)
 
     bounded_sections: list[Section] = []
@@ -325,7 +367,7 @@ def main() -> int:
         bounded_sections, args.tiny_chunk_char_limit, args.chunk_char_limit
     )
 
-    chunks = write_chunks(bounded_sections, chunks_dir)
+    chunks = write_chunks(bounded_sections, chunks_dir, page_markers)
     bundles = bundle_chunks(chunks, args.worker_source_char_limit)
 
     manifest = {
