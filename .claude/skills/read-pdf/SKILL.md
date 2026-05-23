@@ -1,26 +1,37 @@
 ---
 name: read-pdf
-description: Download or use a local academic PDF, convert to clean markdown locally (python:marker, layout-aware), then extract structured reading notes into `_text.md`. Same output contract as /split-pdf — bibliographic metadata block + 8-dimension research notes — but uses local conversion instead of Claude vision-reading PDF images. Preserves equation fidelity, table structure, and figure references. Use when you want higher-fidelity math/table extraction, or when you already have a local file.
-allowed-tools: Bash(python3:*), Bash(curl:*), Bash(wget:*), Bash(mkdir:*), Read, Write, WebSearch, WebFetch, Agent
-argument-hint: [pdf-path-or-search-query]
+description: Canonical academic-PDF reading skill. By default, downloads or uses a local PDF, converts it to clean markdown via a local layout-aware converter, then writes structured `_text.md` notes. Use `--split` to force the split-PDF vision path: split into 4-page chunks and read 3 chunks at a time. Use default mode for tables, equations, figures, repeated processing, and batch ingest; use `--split` for triage, converter failures, or environments where marker setup is not available.
+allowed-tools: Bash(python3:*), Bash(curl:*), Bash(wget:*), Bash(mkdir:*), Bash(rm:*), Read, Write, WebSearch, WebFetch, Agent
+argument-hint: [--split] [pdf-path-or-search-query]
 ---
 
 # Read-PDF: Download, Convert, and Deep-Read Academic Papers
 
-Same I/O contract as /split-pdf: takes a PDF (local or searched), produces a structured `_text.md` extraction with a bibliographic metadata block and 8-dimension research notes. The difference is the reading mechanism: instead of Claude vision-reading PDF page images in chunks, read-pdf converts the PDF to markdown locally using python:marker, then reads the text. This preserves equation fidelity, table structure, and figure references without image-based context bloat.
+Takes a PDF (local or searched) and produces a structured `_text.md` extraction with a bibliographic metadata block, a plain-English synthesis, and 12-dimension research notes.
+
+Default mode converts the PDF to markdown locally using python:marker, prepares bounded source chunks, then reads those chunks through a fanout-first extraction workflow. This preserves equation fidelity, table structure, and figure references without image-based context bloat or whole-file `Read` failures.
+
+`--split` mode splits into 4-page chunks, reads exactly 3 chunks at a time, updates running notes, then writes the same `_text.md` contract.
 
 ## When This Skill Is Invoked
 
-The user wants to read, review, or summarize an academic paper and either: (a) wants layout-aware equation/table extraction, or (b) already has a local PDF. The input is either:
+The user wants to read, review, or summarize an academic paper. The input is either:
 - A file path to a local PDF (e.g., `~/Documents/papers/smith_2024.pdf`)
 - A search query or paper title (e.g., `"Gentzkow Shapiro Sinkinson 2014 competition newspapers"`)
 
 **Important:** You cannot search for a paper you don't know exists. Provide either a file path or a specific query. If the user invokes this skill without specifying a paper, ask them.
 
+## Mode selection
+
+- **Default marker mode:** use unless the user explicitly asks for `--split`, triage-only reading, or no local converter setup.
+- **`--split` mode:** use when the user invokes `/read-pdf --split`, invokes `/split-pdf`, needs first-split triage, or marker conversion fails and the user wants the vision-batch fallback.
+
 ## Prerequisites
 
 - **Python ≥ 3.10** must be available. `install.py` refuses to proceed on Python 3.9 or older. If needed: `brew install python@3.12`, `apt install python3.11`, or python.org installer.
 - **Optional GPU acceleration** is auto-detected: NVIDIA CUDA → CPU. (MPS on Apple Silicon is excluded — surya's layout model crashes on MPS at runtime.)
+
+These prerequisites apply only to default marker mode. `--split` mode requires pypdf for `scripts/split.py`; if missing, install it with `python3 -m pip install pypdf`.
 
 ## Step 1: Acquire the PDF
 
@@ -37,15 +48,27 @@ The user wants to read, review, or summarize an academic paper and either: (a) w
 
 **CRITICAL: Always preserve the original PDF.** Never delete, move, or overwrite it at any point in this workflow.
 
-## Step 2: Ensure the converter is installed
+## Default marker mode
+
+### Step 2: Ensure the converter is installed
 
 ```bash
 python3 ~/.claude/skills/read-pdf/install.py
 ```
 
-Idempotent. First run creates a venv at `~/.cache/claude-pdf-converter/venv-marker/` and downloads marker models (~500 MB, 1–3 min). Surface the "First run" message to the user verbatim if it appears — they should know why this invocation is slow.
+Idempotent. First run creates a venv at `~/.cache/claude-pdf-converter/venv-marker/` and downloads marker models (~500 MB, 1–3 min). Later runs reuse that venv if `marker` imports cleanly; they do **not** auto-upgrade marker.
 
-## Step 3: Convert
+Once every 30 days, `install.py` performs a lazy PyPI check for marker major-version updates. If it prints a `read-pdf notice: marker-pdf has a major update available` advisory, pause and surface it to the user. Ask whether they want to upgrade now with:
+
+```bash
+python3 ~/.claude/skills/read-pdf/install.py --upgrade-marker
+```
+
+Do not purge caches automatically. Explain that existing cached conversions remain valid but were produced by the older marker version. If the user wants fresh conversions after upgrading, delete selected cache entries under `~/.cache/claude-pdf-converter/cache/marker/`, or delete that whole directory; rebuilding a large cache can be very time-consuming.
+
+Surface the "First run" message to the user verbatim if it appears — they should know why this invocation is slow.
+
+### Step 3: Convert
 
 **Before converting, check for a cached conversion.** Compute the SHA-256 hash of the PDF and check whether `markdown.md` already exists in the cache:
 
@@ -70,7 +93,7 @@ print(markdown_path if os.path.exists(markdown_path) else "NOT_CACHED")
   ```
   It prints the absolute path to `markdown.md` on success and exits 0. For born-digital PDFs with a usable embedded text layer, `convert.py` uses that text layer and disables marker's full-document OCR path while preserving marker's layout/table processing. **Do not fall back to pdftotext or any other tool on failure** — surface the error and stop. The whole point of this skill is the layout-aware conversion; a degraded fallback produces silently-wrong output.
 
-## Step 4: Check for existing `_text.md`
+### Step 4: Check for existing `_text.md`
 
 Look for `<basename>_text.md` in the same folder as the PDF.
 
@@ -79,86 +102,108 @@ If found, ask:
 
 Proceed using whichever filename the user chooses.
 
-## Step 5: Structured Extraction
+If no local extract exists, check for a cache-level neutral extract at `<markdown_path parent>/text.md`.
 
-Read `markdown.md` and collect information along these dimensions:
+Run:
 
-0. **Bibliographic metadata** — From the title section of the markdown, extract:
-   ```
-   ## Bibliographic metadata
-   doi: <10.xxxx/yyyy if present, else null>
-   authors: [LastName1, LastName2, ...]
-   title: <verbatim title>
-   year: <year>
-   venue: <journal/working paper series/etc., verbatim>
-   venue_type: journal | working_paper | book_chapter | other
-   ```
-   If a field is not visible, record `null`.
-
-1. **Research question** — What is the paper asking and why does it matter?
-2. **Audience** — Which sub-community of researchers cares about this?
-3. **Method** — How do they answer the question? What is the identification strategy?
-4. **Data** — What data do they use? Where precisely did they find it? Unit of observation? Sample size? Time period?
-5. **Statistical methods** — What econometric or statistical techniques? Key specifications?
-6. **Findings** — Main results? Key coefficient estimates and standard errors?
-7. **Contributions** — What is learned that we didn't know before?
-8. **Replication feasibility** — Public data? Replication archive? Data appendix? URLs?
-
-## The Output File
-
-Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first, followed by the research notes.
-
-Notify the user:
-> "Extract saved to `smith_2024_text.md` alongside the source PDF. Future requests on this paper can reuse it without re-reading."
-
-This file is the persistent, reusable artifact.
-
-## Agent Isolation Protocol
-
-**When read-pdf is invoked by another skill**, the conversion steps (Steps 2–3) run in the parent context — they are lightweight bash calls. The reading and extraction (Steps 4–5) MUST run inside a subagent. The converted `markdown.md` can be large, and reading it in the parent context of an active workflow accumulates permanent token cost. The subagent reads `markdown.md`, writes plain-text `_text.md`, and the parent reads only that.
-
-**Pattern:**
-
-The parent skill handles install.py, the SHA-256 cache check, convert.py if needed, and the `_text.md` collision check. Then it launches an Agent:
-
-```
-Read a converted markdown file and produce structured extraction notes.
-
-Markdown input: <markdown_path>
-Text output: <text_path>
-
-Process:
-1. Read <markdown_path> using the Read tool
-2. From the title section, extract a bibliographic metadata block:
-   ## Bibliographic metadata
-   doi: <10.xxxx/yyyy if present, else null>
-   authors: [LastName1, LastName2, ...]
-   title: <verbatim title>
-   year: <year>
-   venue: <journal/working paper series/etc., verbatim>
-   venue_type: journal | working_paper | book_chapter | other
-3. Extract: research question, audience, method, data (sources, sample size, time period),
-   statistical methods, findings, contributions, replication feasibility
-4. Write the final structured extraction to <text_path>, with the
-   ## Bibliographic metadata block first, followed by the research notes.
-
-Report when done: page count, figures/tables found, one-sentence content summary.
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/cache_text.py check "<markdown_path>"
 ```
 
-After the agent returns, the parent reads `_text.md` (plain text, not the large `markdown.md`) and continues its workflow.
+- If it prints a cache path, run:
+  ```bash
+  python3 ~/.claude/skills/read-pdf/scripts/cache_text.py pull "<markdown_path>" "<local_text_path>"
+  ```
+  Then skip Steps 5–6 and notify the user: *"Using cached neutral extract from converter cache; copied to `<basename>_text.md`."*
+- If it prints `NOT_CACHED`, continue to Step 5.
 
-**Standalone invocations** (user calls `/read-pdf` directly) read `markdown.md` in the main conversation and write `_text.md` directly — no subagent needed for a one-off read.
+### Step 5: Prepare extraction substrate
 
-## Quick Reference
+Run the deterministic substrate builder:
 
-| Step | Action |
-|------|--------|
-| **Acquire** | Download via web search or use local file in place |
-| **Install** | `python3 ~/.claude/skills/read-pdf/install.py` (idempotent; downloads models on first run) |
-| **Check cache** | SHA-256 → `~/.cache/claude-pdf-converter/cache/marker/<hash>/markdown.md` |
-| **Convert** | `python3 ~/.claude/skills/read-pdf/convert.py <pdf>` if not cached |
-| **Collision** | Ask overwrite vs `_text2.md` if `_text.md` already exists |
-| **Extract** | Bibliographic metadata + 8-dimension notes from `markdown.md` |
-| **Persist** | Save to `<basename>_text.md` alongside the source PDF |
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/prepare_substrate.py "<markdown_path>"
+```
 
-For backend details, cache management, and GPU notes, see [README.md](README.md).
+It writes bounded chunk files and `manifest.json` beside the marker cache. The script performs no scholarly interpretation; it only creates a structural manifest over the converted markdown.
+
+### Step 6: Structured Extraction
+
+Use `fanout_worker.md` and `fanout_synthesis.md` with the generated manifest. Run worker bundles sequentially by default. Each worker reads only its assigned chunk paths and writes durable local notes. The synthesis step reads the manifest and worker notes, performs gap-directed rereads of specific chunk files only when needed, and writes the final structured extraction to `<basename>_text.md`.
+
+The final extraction follows `extraction_schema.md`: a `## Bibliographic metadata` block from the title section, then the research dimensions. Read `extraction_schema.md` before synthesis so the output contract is explicit.
+
+Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first. Then cache the same neutral extract:
+
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/cache_text.py push "<markdown_path>" "<local_text_path>"
+```
+
+Then notify the user: *"Extract saved to `<basename>_text.md` alongside the source PDF and cached as `text.md` in the converter cache."*
+
+## `--split` mode
+
+Use this branch only when selected by the Mode selection rules above.
+
+**Critical rule:** Never read a full PDF in split mode. Only read the 4-page split files, and only 3 splits at a time (~12 pages).
+
+### Step S2: Reuse or split
+
+1. Look for `<basename>_text.md` next to the PDF. If found, ask: *"An extract already exists (`<basename>_text.md`). Use it, or re-read from scratch?"* On **Use**, read `_text.md` as the source notes and skip the rest of split mode. On **Re-read**, continue.
+2. Look for `<foldername>_build/split_<pdf-basename>/*.pdf`. If found, ask: *"Splits already exist (N chunks). Reuse, or re-split?"* On **Reuse**, proceed with existing files. On **Re-split**, delete the split folder and continue.
+
+Create splits by running:
+
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/split.py path/to/paper.pdf
+```
+
+Directory convention:
+
+```text
+articles/
+├── smith_2024.pdf
+├── smith_2024_text.md
+└── articles_build/
+    └── split_smith_2024/
+        ├── smith_2024_pp1-4.pdf
+        ├── smith_2024_pp5-8.pdf
+        ├── smith_2024_pp9-12.pdf
+        └── notes.md
+```
+
+### Step S3: Read in batches of 3 splits
+
+Read exactly 3 split files at a time. After each batch:
+
+1. Read the 3 split PDFs using the Read tool.
+2. Update `notes.md` in the split directory.
+3. Pause and tell the user: *"I have finished reading splits [X-Y] and updated the notes. I have [N] more splits remaining. Would you like me to continue with the next 3?"*
+4. Wait for confirmation before reading the next batch.
+
+Do not read ahead.
+
+### Step S4: Structured extraction
+
+As you read, collect notes into `notes.md` following `extraction_schema.md`. After all batches are complete, write the final notes to `<basename>_text.md` next to the source PDF, with the `## Bibliographic metadata` block first. Keep both `notes.md` and `_text.md`.
+
+## Agent Isolation
+
+When `/read-pdf` is invoked by another skill or workflow, the heavy reading step must run in a subagent. See `agent_isolation.md` for the mode router and `isolation_read.md` / `isolation_split.md` for branch-specific launch patterns.
+
+## Files in this skill
+
+- `SKILL.md` — this file (acquire → default marker mode or `--split` mode → extract workflow)
+- `extraction_schema.md` — bibliographic metadata block + 8 research dimensions
+- `fanout_worker.md` — bounded worker-note prompt for marker chunks
+- `fanout_synthesis.md` — synthesis prompt for worker notes and final `_text.md`
+- `agent_isolation.md` — isolation mode router
+- `isolation_common.md` — shared parent/subagent rule
+- `isolation_read.md` — marker-mode isolation pattern
+- `isolation_split.md` — split-mode isolation pattern
+- `install.py` — idempotent marker venv installer with monthly advisory check
+- `convert.py` — PDF → markdown converter (writes to SHA-256-keyed cache)
+- `scripts/prepare_substrate.py` — marker markdown → bounded chunks + manifest
+- `scripts/cache_text.py` — check/pull/push project-neutral `text.md` extracts in the converter cache
+- `scripts/split.py` — pypdf 4-page splitter used by `--split` mode and downstream fallbacks
+- `README.md` — backend details, cache management, GPU notes

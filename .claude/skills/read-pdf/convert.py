@@ -12,15 +12,15 @@ On backend failure, exits non-zero with the error on stderr — no fallback.
 
 Cache layout:
     ~/.cache/claude-pdf-converter/cache/marker/<sha256>/
-        markdown.md       # verbatim conversion with inline ![](figures/...)
-        figures/*.png     # extracted figures
+        markdown.md       # conversion with inline ![](figures/*)
+        figures/*         # extracted figures with byte-matching extensions
         meta.json         # backend, version, page/figure counts, source path
 """
 
 import hashlib
+import importlib.metadata
 import json
 import os
-import platform
 import re
 import subprocess
 import sys
@@ -30,12 +30,7 @@ from pathlib import Path
 BACKEND = "marker"
 CACHE_ROOT = Path.home() / ".cache" / "claude-pdf-converter"
 CACHE_DIR = CACHE_ROOT / "cache" / BACKEND
-VENV_DIR = CACHE_ROOT / f"venv-{BACKEND}"
-VENV_PYTHON = (
-    VENV_DIR / "Scripts" / "python.exe"
-    if platform.system() == "Windows"
-    else VENV_DIR / "bin" / "python"
-)
+VENV_PYTHON = CACHE_ROOT / f"venv-{BACKEND}" / "bin" / "python"
 SKILL_DIR = Path(__file__).resolve().parent
 
 
@@ -139,6 +134,58 @@ def normalize_footnotes(text: str) -> str:
     return '\n\n'.join(result_paras)
 
 
+def canonical_image_suffix(image_format: str | None, fallback: str) -> str:
+    """Return a common lowercase suffix for a PIL image format."""
+    if image_format == "JPEG":
+        return ".jpg"
+    if image_format == "PNG":
+        return ".png"
+    if image_format:
+        return f".{image_format.lower()}"
+    return fallback.lower()
+
+
+def normalize_cached_figures(out_dir: Path) -> None:
+    """Ensure cached figure refs include figures/ and extensions match bytes."""
+    figures_dir = out_dir / "figures"
+    md_path = out_dir / "markdown.md"
+    if not figures_dir.is_dir() or not md_path.is_file():
+        return
+
+    try:
+        from PIL import Image
+    except ImportError:
+        return
+
+    rewrites: dict[str, str] = {}
+    for path in figures_dir.iterdir():
+        if not path.is_file():
+            continue
+
+        try:
+            with Image.open(path) as image:
+                suffix = canonical_image_suffix(image.format, path.suffix)
+        except Exception as exc:  # pragma: no cover
+            print(f"warn: cached figure {path.name} inspection failed: {exc}", file=sys.stderr)
+            continue
+
+        canonical_path = path.with_suffix(suffix)
+        new_ref = f"figures/{canonical_path.name}"
+
+        if canonical_path != path and not canonical_path.exists():
+            path.rename(canonical_path)
+
+        rewrites[path.name] = new_ref
+        rewrites[f"figures/{path.name}"] = new_ref
+
+    if rewrites:
+        text = md_path.read_text(encoding="utf-8", errors="replace")
+        for old_ref in sorted(rewrites, key=len, reverse=True):
+            new_ref = rewrites[old_ref]
+            text = text.replace(old_ref, new_ref)
+        md_path.write_text(text, encoding="utf-8")
+
+
 def sha256_of(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -165,7 +212,7 @@ def text_layer_chars(path: Path, pages: int = 3) -> int:
 
 
 def in_venv() -> bool:
-    return Path(sys.prefix).resolve() == VENV_DIR.resolve()
+    return Path(sys.prefix).resolve() == VENV_PYTHON.parent.parent.resolve()
 
 
 def reexec_in_venv(args: list[str]) -> None:
@@ -183,7 +230,13 @@ def convert_with_marker(pdf_path: Path, out_dir: Path) -> dict:
 
     text_chars = text_layer_chars(pdf_path)
     use_text_layer = text_chars >= 500
-    config = {"disable_ocr": True} if use_text_layer else {}
+    # paginate_output makes marker emit `{N}<sep>` page boundary markers in
+    # the markdown stream, where N is the 0-based page index. prepare_substrate
+    # consumes those to populate per-chunk page_anchors so reader agents can
+    # cite "p. N" instead of line ranges.
+    config: dict = {"paginate_output": True}
+    if use_text_layer:
+        config["disable_ocr"] = True
     converter = PdfConverter(artifact_dict=create_model_dict(), config=config)
     rendered = converter(str(pdf_path))
     text, _, images = text_from_rendered(rendered)
@@ -191,20 +244,30 @@ def convert_with_marker(pdf_path: Path, out_dir: Path) -> dict:
     figures_dir = out_dir / "figures"
     figures_dir.mkdir(exist_ok=True)
 
+    image_path_rewrites: dict[str, str] = {}
     fig_count = 0
     for name, img in (images or {}).items():
-        out_name = figures_dir / Path(name).name
+        source_name = Path(name).name
         try:
+            suffix = canonical_image_suffix(getattr(img, "format", None), Path(source_name).suffix)
+            out_name = figures_dir / f"{Path(source_name).stem}{suffix}"
             img.save(out_name)
+            new_ref = f"figures/{out_name.name}"
+            image_path_rewrites[source_name] = new_ref
+            image_path_rewrites[f"figures/{source_name}"] = new_ref
             fig_count += 1
         except Exception as exc:  # pragma: no cover
             print(f"warn: figure {name} save failed: {exc}", file=sys.stderr)
 
     text = normalize_footnotes(text)
+    for old_path in sorted(image_path_rewrites, key=len, reverse=True):
+        text = text.replace(old_path, image_path_rewrites[old_path])
     (out_dir / "markdown.md").write_text(text, encoding="utf-8")
 
     return {
         "backend": "marker",
+        "backend_package": "marker-pdf",
+        "backend_package_version": importlib.metadata.version("marker-pdf"),
         "page_count": None,
         "figure_count": fig_count,
         "text_layer_chars_sample": text_chars,
@@ -235,6 +298,7 @@ def main() -> int:
     out_dir = CACHE_DIR / digest
     md_path = out_dir / "markdown.md"
     if md_path.is_file():
+        normalize_cached_figures(out_dir)
         print(str(md_path))
         return 0
 
@@ -253,6 +317,7 @@ def main() -> int:
     (out_dir / "meta.json").write_text(
         json.dumps(info, indent=2), encoding="utf-8"
     )
+    normalize_cached_figures(out_dir)
     print(str(md_path))
     return 0
 

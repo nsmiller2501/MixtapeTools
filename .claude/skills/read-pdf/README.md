@@ -1,6 +1,6 @@
-# `/read-pdf` — Download, Convert, and Deep-Read Academic Papers
+# `/read-pdf` — Download, Convert, Split, and Deep-Read Academic Papers
 
-**Same workflow as `/split-pdf`, but uses python:marker to convert the PDF to markdown locally first, instead of having Claude vision-read PDF page images.** This makes equation, table, and figure extraction more faithful, and avoids image-based context bloat in the parent conversation.
+`/read-pdf` is the canonical academic-paper reading skill. By default, it uses python:marker to convert the PDF to markdown locally before extracting structured notes. With `--split`, it uses a split-PDF vision-batch path.
 
 **Skill location:** [`.claude/skills/read-pdf/SKILL.md`](../../.claude/skills/read-pdf/SKILL.md)
 
@@ -8,50 +8,84 @@
 
 ## What This Skill Does
 
-You give Claude a paper — either a local PDF file or a search query — and it does the rest. It finds and downloads the paper (or uses your local file in place), converts it to clean markdown using python:marker, then reads that markdown to write structured notes. When finished, it saves a persistent `_text.md` extraction alongside the source PDF, in the same format produced by `/split-pdf`.
+You give Claude a paper — either a local PDF file or a search query — and it does the rest. It finds and downloads the paper (or uses your local file in place), reads it through the selected backend, and writes a persistent `_text.md` extraction alongside the source PDF.
+
+Both modes produce the same output contract: bibliographic metadata, plain-English synthesis, and 12-dimension research notes.
+
+| Mode | Command | Best for |
+|---|---|---|
+| Marker conversion | `/read-pdf <paper>` | Tables, equations, figures, repeated processing, batch ingest |
+| Split vision reading | `/read-pdf --split <paper>` | Triage, converter failures, no marker setup |
 
 ---
 
-## Why It Exists
+## Mode Choice
 
-`/split-pdf` reads PDFs by having Claude vision-read page images in batches. This works well for most papers but has two limitations:
+Default mode converts the PDF to layout-aware markdown before extraction. Use it for normal paper ingest, tables, equations, figures, repeated processing, and batch wiki updates.
 
-1. **Equation fidelity.** PDF page images render math as bitmaps. Vision-reading bitmaps produces approximate LaTeX transcriptions. Papers heavy with structural equations (e.g., structural IO, dynamic programming models) benefit from native math extraction.
+Use `--split` when marker setup is unavailable, marker cannot parse a malformed PDF, or first-split triage is enough. Split mode has two limitations:
+
+1. **Equation fidelity.** PDF page images render math as bitmaps. Vision-reading bitmaps can produce approximate LaTeX transcriptions.
 
 2. **Table structure.** Complex tables (multi-column headers, merged cells, footnotes) are harder to transcribe accurately from images than from a layout-aware text conversion.
 
-`/read-pdf` addresses both by running a local conversion step first. The result is a `markdown.md` file where equations are native LaTeX math mode and tables are pipe-syntax markdown — readable as text rather than image bitmaps.
-
 ---
 
-## The Solution
+## Default Mode
 
-Convert the PDF to markdown with python:marker (layout-aware, GPU-accelerated), then read the text.
+Convert the PDF to markdown with python:marker (layout-aware, GPU-accelerated), build bounded chunks, then extract through worker notes and one neutral synthesis pass.
 
 ### How It Works
 
 | Step | Action |
 |------|--------|
 | **Acquire** | Download the PDF (via web search) or use a local file in place |
-| **Install** | `install.py` sets up the marker venv on first run (~500 MB, one-time) |
+| **Install** | `install.py` sets up the marker venv on first run (~500 MB, one-time), then reuses it; monthly advisory check for marker major updates |
 | **Check cache** | SHA-256 hash check — skip re-conversion if markdown already cached |
 | **Convert** | `convert.py` runs marker and writes `markdown.md` to a content-hash cache |
 | **Collision** | If `_text.md` already exists, ask: overwrite or save as `_text2.md`? |
-| **Extract** | Read `markdown.md`, write bibliographic metadata + 8-dimension notes |
-| **Persist** | Save final extraction to `<basename>_text.md` alongside the source PDF |
+| **Check extract cache** | If `text.md` exists in the converter cache, copy it beside the PDF and skip extraction |
+| **Prepare substrate** | Split cached `markdown.md` into bounded chunk files plus `manifest.json` |
+| **Extract** | Workers read assigned chunks; synthesis reads worker notes and writes bibliographic metadata, plain-English synthesis, and 12-dimension notes |
+| **Persist** | Save final extraction to `<basename>_text.md` alongside the source PDF and to `text.md` in the converter cache |
 
 ### Usage
 
 ```
 /read-pdf path/to/paper.pdf
 /read-pdf "Gentzkow Shapiro Sinkinson 2014 competition newspapers"
+/read-pdf --split path/to/paper.pdf
 ```
 
-As with `/split-pdf`, you must tell Claude what paper to read. Provide either a local file path or a search query specific enough to find the paper.
+You must tell Claude what paper to read. Provide either a local file path or a search query specific enough to find the paper.
+
+---
+
+## Split Mode
+
+`/read-pdf --split` uses this directory convention:
+
+```text
+articles/
+├── smith_2024.pdf
+├── smith_2024_text.md
+└── articles_build/
+    └── split_smith_2024/
+        ├── smith_2024_pp1-4.pdf
+        ├── smith_2024_pp5-8.pdf
+        ├── smith_2024_pp9-12.pdf
+        └── notes.md
+```
+
+The splitter script is:
+
+```bash
+python3 ~/.claude/skills/read-pdf/scripts/split.py path/to/paper.pdf
+```
 
 ### What Gets Extracted
 
-Same 8 dimensions as `/split-pdf`, plus a bibliographic metadata block at the top of `_text.md`:
+Both modes extract the same 12 dimensions, plus a bibliographic metadata block and plain-English synthesis at the top of `_text.md`:
 
 ```
 ## Bibliographic metadata
@@ -66,11 +100,15 @@ venue_type: journal | working_paper | book_chapter | other
 1. **Research question** — What is the paper asking and why does it matter?
 2. **Audience** — Which sub-community of researchers cares about this?
 3. **Method** — How do they answer the question? What is the identification strategy?
-4. **Data** — What data do they use? Where did they find it? Unit of observation? Sample size? Time period?
-5. **Statistical methods** — What econometric or statistical techniques? Key specifications?
-6. **Findings** — Main results? Key coefficient estimates and standard errors?
-7. **Contributions** — What is learned that we didn't know before?
-8. **Replication feasibility** — Public data? Replication archive? Data appendix? URLs?
+4. **Target parameter** — What estimand or causal/statistical object is targeted?
+5. **Data** — What data do they use? Where did they find it? Unit of observation? Sample size? Time period?
+6. **Statistical methods** — What econometric or statistical techniques? Key specifications?
+7. **Findings** — Main results? Key coefficient estimates and standard errors?
+8. **Contributions** — What is learned that we didn't know before?
+9. **Replication feasibility** — Public data? Replication archive? Data appendix? URLs?
+10. **Tables** — Inventory tables; extract machine-readable tables when central.
+11. **Figures** — Inventory figures, captions, and key visual claims.
+12. **Equations / formal objects** — Inventory equations, model primitives, algorithms, propositions, and labeled specifications.
 
 ---
 
@@ -81,6 +119,16 @@ venue_type: journal | working_paper | book_chapter | other
 The conversion backend is **marker** (`marker-pdf`). Selected after a head-to-head bake-off against docling on a representative set of empirical-economics PDFs; marker won on equation fidelity, table structure, and figure extraction quality.
 
 Backend selection is fixed in `convert.py`. There is no runtime override — if the bake-off needs to be redone for a future backend candidate, edit the `BACKEND` constant in `convert.py` explicitly so the cache namespace and venv are regenerated cleanly.
+
+`install.py` installs the current PyPI `marker-pdf` release only when the marker venv is first created. If marker already imports cleanly, setup reuses it and performs at most one lightweight PyPI check every 30 days. It warns only when PyPI has crossed a marker major-version boundary, and it never auto-upgrades.
+
+If the user opts into a major upgrade, run:
+
+```bash
+python3 ~/.claude/skills/read-pdf/install.py --upgrade-marker
+```
+
+Existing cached conversions remain in place. To force fresh conversions after upgrading, delete selected cache entries under `~/.cache/claude-pdf-converter/cache/marker/`, or delete that whole directory. Rebuilding a large cache can be very time-consuming.
 
 ### Born-digital PDFs and OCR
 
@@ -98,7 +146,7 @@ Cache entries are not auto-evicted. To force a re-conversion:
 ```bash
 rm -rf ~/.cache/claude-pdf-converter/cache/marker/<hash>/
 ```
-To wipe the entire cache (e.g., after a backend upgrade):
+To wipe the entire cache (e.g., after a marker upgrade, if you explicitly want all conversions rerun):
 ```bash
 rm -rf ~/.cache/claude-pdf-converter/cache/
 ```
@@ -106,17 +154,20 @@ The venv at `~/.cache/claude-pdf-converter/venv-marker/` is untouched.
 
 ### `_text.md` collision handling
 
-If a `_text.md` already exists alongside the PDF (e.g., from a prior `/split-pdf` run), the skill asks whether to overwrite it or save the new extraction as `_text2.md`. This lets you compare extractions from both methods on the same paper without losing earlier work.
+If a `_text.md` already exists alongside the PDF, default mode asks whether to overwrite it or save the new extraction as `_text2.md`. Split mode asks whether to reuse the existing extract or re-read from scratch.
 
 ### Agent isolation protocol
 
-When another skill calls `/read-pdf`, the conversion runs in the parent context (lightweight bash call) and the reading runs inside a subagent. The subagent reads `markdown.md`, writes plain-text `_text.md`, and the parent reads only the text output. This prevents the converted markdown from accumulating token cost in a busy workflow conversation.
+When another skill calls `/read-pdf`, heavy reading runs inside a subagent. The mode-specific protocols live in:
+
+- `isolation_read.md` for marker mode.
+- `isolation_split.md` for `--split` mode.
 
 ---
 
-## `/read-pdf` vs `/split-pdf` — When to Use Which
+## Mode Tradeoffs
 
-| | `/split-pdf` | `/read-pdf` |
+| | `--split` | default marker mode |
 |---|---|---|
 | **Reading mechanism** | Claude vision-reads PDF page images | Marker converts to markdown; Claude reads text |
 | **Setup required** | None | `install.py` (~500 MB, one-time) |
@@ -127,18 +178,18 @@ When another skill calls `/read-pdf`, the conversion runs in the parent context 
 | **Works without internet** | No (unless PDF already local) | Yes (after install) |
 | **Output format** | `_text.md` | `_text.md` (same format) |
 
-Both skills produce identical `_text.md` output format and can be used interchangeably by downstream skills like `/bib-update` and `/wiki-update`.
+Both modes produce identical `_text.md` output format and can be used interchangeably by downstream skills like `/bib-update` and `/wiki-update`.
 
 ---
 
 ## Limitations
 
 - **Requires local setup.** First run downloads ~500 MB of models. Not suitable for environments where you can't write to `~/.cache/`.
-- **Conversion can fail on malformed PDFs.** If `convert.py` errors, the skill stops — it does not fall back to a degraded alternative. Fix the PDF or use `/split-pdf` instead.
-- **Not for triage.** If you just need to decide whether a paper is relevant, use `/split-pdf` (no setup, works immediately on first split).
+- **Conversion can fail on malformed PDFs.** If `convert.py` errors, the default mode stops — it does not fall back silently. Use `--split` if you want the vision-batch fallback.
+- **Default mode is not ideal for triage.** If you just need to decide whether a paper is relevant, use `--split` and read the first split.
 
 ---
 
-## Acknowledgments
+## Origin
 
-The in-place PDF handling, persistent `_text.md` extraction, build directory convention, and agent isolation protocol follow conventions established in the `/split-pdf` skill, where they were inspired by improvements identified by [Ben Bentzin](https://www.mccombs.utexas.edu) (Associate Professor of Instruction, McCombs School of Business, University of Texas at Austin). The marker integration (`convert.py`, `install.py`) and content-hash caching design are original to this skill.
+This skill is maintained in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.
