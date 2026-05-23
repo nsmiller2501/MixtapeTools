@@ -1,16 +1,6 @@
 ---
 name: wiki-update
-description: >-
-  Ingest new PDFs from a project's references/raw/ folder into the project's wiki,
-  following the project's wiki conventions and filtering for relevance to the
-  project's research focus. Auto-detects the best ingest path: converted markdown
-  (via read-pdf's converter, if installed) for high-fidelity tables, figures, and
-  equations; cached structured extract (_text.md) if available; or full split-PDF
-  pipeline as fallback. Creates `references/raw/`, `references/wiki/`, and
-  `references/CLAUDE.md` on first invocation if absent. Calls `/bib-update`
-  automatically at the end to refresh `references/references.bib`. Use when the
-  user adds new papers to references/raw/ and asks to update the wiki, or says
-  "ingest new references", "update the wiki", or similar.
+description: Ingests new PDFs from a project's `references/raw/` folder into the project's wiki, summarizing each through the lens of the project's research focus and auto-detecting the best conversion path (local `_text.md` → cached neutral `text.md` → marker fanout → split-pdf fallback). Scaffolds `references/raw/`, `references/wiki/`, and `references/CLAUDE.md` on first run, and calls `/bib-update` at the end to refresh `references/references.bib`. Use when the user adds new PDFs to `references/raw/` and says "ingest new references", "update the wiki", or similar.
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash(ls*), Bash(pdftotext:*), Bash(python3:*), Bash(mv:*), Bash(cp:*), Bash(mkdir:*), Bash(touch:*), Agent
 argument-hint: [optional focus or theme for this batch]
 ---
@@ -19,9 +9,9 @@ argument-hint: [optional focus or theme for this batch]
 
 Maintains a project's reference wiki by ingesting newly-added PDFs from `references/raw/`, summarizing each through the lens of the project's research focus, and updating the wiki atomically per-paper.
 
-**Ingest path is auto-detected per paper.** If the read-pdf converter is installed, it runs first for high-fidelity markdown (Protocol M: best tables, figures, and equation handling). If only a cached `_text.md` extract exists, that feeds wiki writing directly (Protocol E). Otherwise the full split-PDF vision pipeline runs (Protocol S). All three paths produce the same wiki output — the difference is quality of table and figure capture.
+**Ingest path is auto-detected per paper.** Use a local `references/raw/<basename>_text.md` when present (Protocol E). Otherwise, run the read-pdf converter: if `cache_text.py check` finds cached `text.md`, use `cache_text.py pull` to copy it locally and proceed to wiki synthesis (Tier M-cache); if not, run marker fanout extraction and cache the resulting neutral extract with `cache_text.py push` (Protocol M). If marker conversion fails, use the split-PDF pipeline (Protocol S). All paths produce the same wiki output — the difference is how the neutral extract is obtained and whether cache figures are available.
 
-**`pdftotext` is not an ingest source.** It is allowed only for narrow pre-flight tasks: first-page filename proposals when the converter is unavailable, metadata checks needed for `/bib-update`, and other explicit bootstrap/diagnostic checks that do not synthesize wiki content. Once a paper is assigned to Protocol M or Protocol E, do not use `pdftotext` to read, summarize, validate, or supplement substantive content. Wait for the selected input (`markdown.md` or `_text.md`) and read that source only.
+**`pdftotext` is not an ingest source.** It is allowed only for narrow pre-flight tasks: first-page filename proposals when the converter is unavailable, metadata checks needed for `/bib-update`, and other explicit bootstrap/diagnostic checks that do not synthesize wiki content. Once a paper is assigned to Protocol M, M-cache, or E, do not use `pdftotext` to read, summarize, validate, or supplement substantive content. Wait for the selected input (`manifest.json` plus bounded chunks, or `_text.md`) and read that source only.
 
 ## When this skill is invoked
 
@@ -33,39 +23,13 @@ Run all checks before any ingest work. If anything fails, stop and ask the user.
 
 ### 0. Lazy scaffolding (first invocation in a project)
 
-Before the other pre-flight checks, self-bootstrap the wiki structure if it's absent. All steps are idempotent — re-invocations against an already-scaffolded project are no-ops.
+Run the scaffold script — idempotent, safe to re-run:
 
-**a. Check for `references/`.** If `./references/` does not exist:
-
-1. Create the directory tree:
-   ```bash
-   mkdir -p references/raw references/wiki references/wiki/figures
-   ```
-2. Render `references/CLAUDE.md` from the template at `~/.claude/skills/wiki-update/templates/references_CLAUDE.md`, substituting `{{PROJECT_NAME}}` with the current project's name (use the basename of the project root — typically the current working directory).
-3. Initialize `references/wiki/index.md`:
-   ```markdown
-   # Wiki Index — [project-name]
-
-   | Page | Description |
-   |------|-------------|
-   ```
-4. Initialize `references/wiki/log.md`:
-   ```markdown
-   # Wiki Log — [project-name]
-
-   | Date | Source | Changes |
-   |------|--------|---------|
-   ```
-
-If `./references/` already exists, skip. Do not clobber any existing files.
-
-**b. Append a wiki-references entry to the project's root `CLAUDE.md` (idempotent).** If `./CLAUDE.md` exists at the project root and does NOT already contain a reference to `references/CLAUDE.md` (grep for the literal string `references/CLAUDE.md`), append:
-
-```markdown
-- See `references/CLAUDE.md` for wiki conventions and the project's reference library.
+```bash
+~/.claude/skills/wiki-update/scripts/scaffold_wiki.sh
 ```
 
-If `./CLAUDE.md` does not exist, skip silently.
+It creates `references/{raw,wiki,wiki/figures}/`, renders `references/CLAUDE.md` from the template (substituting the project name), initializes empty `wiki/index.md` and `wiki/log.md`, and appends a `references/CLAUDE.md` pointer to the project root `CLAUDE.md` if one exists. All steps no-op when the target already exists.
 
 After this self-bootstrap, the rest of the pre-flight (steps 1–6 below) runs as before.
 
@@ -160,21 +124,56 @@ For each new paper (using its post-rename canonical name), determine its ingest 
 
 **Check order (stop at the first match):**
 
-1. **Tier M — Converted markdown:** `~/.claude/skills/read-pdf/convert.py` exists, **and** running it for this PDF succeeds (cache hit is instant; a miss triggers the full conversion here). Capture the returned `markdown.md` path and cache directory. If `convert.py` was already run during step 4 for this paper, it was cached — re-running is a no-op.
+1. **Tier E — Local cached extract:** `references/raw/<basename>_text.md` exists. No conversion needed.
 
-   If `convert.py` exists but fails for a specific paper (conversion error), report the error, skip tier M for that paper, and fall through to tier E or S. Do not use `pdftotext` as a temporary or parallel substitute while conversion is running or after conversion fails.
+2. **Tier M-cache — Cached neutral extract in converter cache:** `~/.claude/skills/read-pdf/convert.py` exists, running it for this PDF succeeds, and:
+   ```bash
+   python3 ~/.claude/skills/read-pdf/scripts/cache_text.py check "<markdown.md path>"
+   ```
+   prints a cache path. Copy it locally with:
+   ```bash
+   python3 ~/.claude/skills/read-pdf/scripts/cache_text.py pull "<markdown.md path>" "references/raw/<basename>_text.md"
+   ```
+   Then proceed directly to wiki synthesis. No worker fanout or read-pdf synthesis is needed.
 
-2. **Tier E — Cached extract:** `references/raw/<basename>_text.md` exists. No conversion needed.
+3. **Tier M — Converted markdown substrate / fanout extract:** `~/.claude/skills/read-pdf/convert.py` exists, **and** running it for this PDF succeeds (cache hit is instant; a miss triggers the full conversion here). Capture the returned `markdown.md` path and cache directory. If `convert.py` was already run during step 4 for this paper, it was cached — re-running is a no-op. Then prepare the read-pdf extraction substrate:
 
-3. **Tier S — Split-PDF pipeline:** Neither of the above. Check whether `references/raw/raw_build/split_<basename>/` already exists (splits cached from a prior interrupted run) — pass this as `splits_exist=true|false` to the subagent.
+   ```bash
+   python3 ~/.claude/skills/read-pdf/scripts/prepare_substrate.py "<markdown.md path>"
+   ```
+
+   Capture the printed `manifest.json` path. Protocol M workers consume this manifest and chunk files; they must not read the whole `markdown.md`.
+
+   If `references/references.bib` exists, also run the mechanical citation-overlap scan:
+
+   ```bash
+   python3 ~/.claude/skills/wiki-update/scripts/citation_overlap.py \
+     "<markdown.md path>" references/references.bib \
+     --output "references/raw/raw_build/<basename>_citation_overlap.json"
+   ```
+
+   Pass the output JSON path to the Protocol M subagent. These are candidate overlaps only; the subagent decides whether any are substantively useful for wiki links.
+
+   If `convert.py` exists but fails for a specific paper (conversion error), report the error, skip marker tiers for that paper, and fall through to tier S. Do not use `pdftotext` as a temporary or parallel substitute while conversion is running or after conversion fails.
+
+4. **Tier S — Split-PDF pipeline:** Neither of the above. For each tier-S paper, run the read-pdf split backend from the main session so the subagent receives a populated splits directory:
+
+   ```bash
+   python3 ~/.claude/skills/read-pdf/scripts/split.py \
+     references/raw/<basename>.pdf \
+     --output-dir references/raw/raw_build/split_<basename>
+   ```
+
+   `split.py` is the pypdf splitter for tier-S ingestion. It is idempotent at the chunk-file level: if the output directory already contains the expected `<basename>_pp<X>-<Y>.pdf` files from a prior interrupted run, re-running rewrites them with identical content. Do not invoke `/split-pdf` or `/read-pdf --split` as a skill — the interactive pause-and-confirm flow cannot be answered from a subagent context. Call the script only.
 
 **Report tier breakdown once, before spawning subagents:**
 
 ```
 Ingest tiers for this batch:
+  E (local cached extract): N papers
+  M-cache (cached neutral extract): N papers
   M (converted markdown): N papers
-  E (cached extract):     M papers
-  S (full pipeline):      K papers  [X with cached splits]
+  S (full pipeline):      K papers
 
 [If any converter failures:]
   ⚠ Converter failed for: <filenames> — falling back to E or S
@@ -186,298 +185,46 @@ Load `./references/wiki/index.md` once. Pass it into each per-paper subagent so 
 
 ---
 
-## Per-paper ingest (subagent)
+## Per-paper ingest (agents)
 
-Spawn one Agent per paper, sequentially. The main session must not read PDF extracts or markdown directly — delegate deep reading to subagents to bound context.
+Process papers sequentially. The main session must not read PDF extracts, marker chunks, or split contents directly — delegate deep reading to agents to bound context.
 
-Each subagent prompt must be self-contained — the agent has no memory of this conversation. Include:
+- **Tier E:** spawn one wiki synthesis agent that reads the local `_text.md` plus project/wiki context and writes wiki artifacts.
+- **Tier M-cache:** spawn one wiki synthesis agent that reads the copied local `_text.md`, cache `markdown.md`/figure paths, and project/wiki context, then writes wiki artifacts.
+- **Tier M:** run a split fanout sequence for the paper. Spawn one bounded worker agent per `manifest.worker_bundles` entry, sequentially. Then spawn one read-pdf synthesis agent that writes only the neutral `_text.md`. Cache the completed local `_text.md` with `python3 ~/.claude/skills/read-pdf/scripts/cache_text.py push "<markdown.md path>" "references/raw/<basename>_text.md"`. Then spawn one wiki synthesis agent that reads `_text.md` plus project/wiki context and writes wiki artifacts.
+- **Tier S:** spawn one per-paper agent using Protocol S.
 
-- Absolute paths: PDF, input source (markdown.md, `_text.md`, or PDF/splits), `references/raw/`, `references/wiki/`, `references/wiki/figures/`, `references/CLAUDE.md`
-- The tier (M, E, or S) and `splits_exist` flag if tier S
+**Before spawning each subagent, record the journal** (for rollback on failure): for every wiki page the subagent intends to touch, note whether it exists and its current content if so. This is the rollback snapshot. On failure at any step, restore journaled state and do not write the log entry. The next invocation rediscovers the paper as new and retries cleanly.
+
+Each agent prompt must be self-contained — the agent has no memory of this conversation.
+
+All per-paper wiki-writing prompts include:
+
+- Absolute paths: PDF, input source (`_text.md` for Tier M, M-cache, and E, or populated splits directory for Tier S), `references/raw/`, `references/wiki/`, `references/wiki/figures/`, `references/CLAUDE.md`
+- The tier (M, M-cache, E, or S)
 - Current `wiki/index.md` contents (for disambiguation)
 - Project context block: research question, data sources, identification strategy (from `./CLAUDE.md`)
 - Optional batch focus string (if provided as the skill argument)
-- The verbatim protocol for this tier (M, E, or S — from the sections below)
-- The common verbatim sections: structured-extraction dimensions, tables protocol, figures protocol variant for this tier, substantive-change rule, concept page disambiguation, relevance filtering, subagent return value
+- Absolute path to exactly one protocol file: `~/.claude/skills/wiki-update/protocol_m.md`, `protocol_e.md`, or `protocol_s.md` depending on the tier. Do not include paths to the other two.
+- Absolute path to `~/.claude/skills/wiki-update/common.md`.
+- For Tier M and M-cache wiki synthesis only: absolute path to `~/.claude/skills/wiki-update/wiki_synthesis.md`, cache `markdown.md` path, absolute cache figure directory, absolute project `references/wiki/figures` directory, absolute path to `~/.claude/skills/wiki-update/scripts/copy_marker_figure.py`, and citation-overlap JSON path if one was produced.
 
----
+Tier M worker prompts include only `fanout_worker.md`, the bundle excerpt, assigned chunk paths, and output note path.
 
-### Protocol M — Converted Markdown
+Tier M read-pdf synthesis prompts include only `fanout_synthesis.md`, `extraction_schema.md`, `manifest.json`, worker note paths, and output `_text.md` path. They do not include PDF path, wiki paths, project context, protocol_m.md, common.md, or citation-overlap JSON.
 
-*Input:* path to `markdown.md` (in the converter cache), path to the cache directory (for figures), canonical paper basename.
+Do not embed the protocol or common files verbatim. Instead, the first instruction in each wiki-writing prompt must be:
 
-Protocol M reads only the converted `markdown.md`, `meta.json`, and cache-local figure/equation files. Do not inspect the source PDF with `pdftotext` or any other text extractor for substantive synthesis, even if conversion is slow. If conversion is still running, wait.
-
-**Step 1: Check for equation fallback.**
-
-Read `<cache-dir>/meta.json`. If `equation_extraction_mode == "image_fallback"`, equations were extracted as `<cache-dir>/figures/eq_*.png` rather than inline LaTeX. Before synthesis, transcribe each:
-
-```
-Read the image at <eq-png-path>. It is a single equation clipped from an academic paper.
-Transcribe it as LaTeX, in display math mode ($$ ... $$). Output only the LaTeX —
-no commentary, no surrounding text. If the equation is not legible, output "[unreadable equation]".
+```text
+Before doing any paper work:
+1. Read the protocol file at <absolute protocol path>.
+2. Read the common file at <absolute common path>.
+3. Follow those instructions exactly for this paper.
 ```
 
-Edit `<cache-dir>/markdown.md` in place to replace each `![](figures/eq_N.png)` with the transcribed LaTeX. (The cache markdown is scratch — overwriting is fine; `convert.py` regenerates it on a hash miss.)
+Tier M worker prompts use `fanout_worker.md` and should include only the bundle excerpt for that worker, not the full manifest unless needed. Tier M read-pdf synthesis prompts use `fanout_synthesis.md`, `extraction_schema.md`, the manifest path, and all worker note paths; they must not include wiki paths or project context. Tier M wiki synthesis prompts use `protocol_m.md`, `common.md`, `wiki_synthesis.md`, `_text.md`, citation-overlap JSON if present, and wiki context; they must not include worker note paths or marker chunk paths unless gap recovery is explicitly approved.
 
-**Step 2: Synthesize `_text.md`.**
-
-Read `markdown.md`. Produce `references/raw/<basename>_text.md` following the `_text.md` structure below (bib block, plain-English synthesis, 11 structured dimensions). Write or overwrite if a prior partial file exists.
-
-For the bib metadata block: scan `markdown.md` for the DOI regex `10\.\d{4,}/\S+`. Extract authors, title, year, and venue from the title page text. Record null for any field not found.
-
-**Step 3: Copy and classify relevant figures.**
-
-For each figure in `markdown.md` (referenced as `![](figures/fig_N.png)`):
-1. Identify the paper figure number from surrounding caption text.
-2. Apply the project-relevance filter. Non-relevant: one-line description + page ref only; do not copy.
-3. For relevant figures:
-   - Copy from cache to wiki: `cp <cache-dir>/figures/fig_N.png references/wiki/figures/<basename>_fig<M>.png` (where M is the paper's figure number). Before the first copy, run `mkdir -p references/wiki/figures` (idempotent).
-   - Classify as Tier A (data figure: scatter, line, bar, coefplot, histogram, density, time series, RD/event-study plot) or Tier B (schematic: DAG, conceptual diagram, map, flowchart, theoretical model). Use the caption text; read the PNG only if the caption is genuinely ambiguous.
-
-**Step 4: Write wiki pages** using the substantive-change rule and relevance filtering below.
-
-For relevant figures embedded in wiki concept pages, use this format regardless of Tier A/B:
-
-```markdown
-**Figure N:** <verbatim caption> (p. 12)
-
-![<short description>](../figures/<basename>_figN.png)
-
-- Key visual finding: <one sentence — what the eye sees / the point of the figure>
-- **Figure notes:** <verbatim notes printed below the figure in the paper, if any>
-```
-
-The Tier A/B distinction lives in `_text.md` only (full optical decomposition for Tier A; schematic one-liner for Tier B). Wiki pages use the same lightweight embed format for all figures.
-
-**Return value additions for Protocol M:**
-
-```
-Figures copied: [list of {source_cache_path, dest_wiki_path, paper_figure_label}]
-Equation fallback used: <true/false> (with count and any "[unreadable equation]" instances if true)
-```
-
----
-
-### Protocol E — Cached Extract
-
-*Input:* path to `references/raw/<basename>_text.md`.
-
-**Step 1: Read the extract.**
-
-Read `_text.md` in full. Extract the `## Bibliographic metadata` block for the return value. Note any CLIP placeholders in the figures sections (these were created by a prior Protocol S run and are still pending).
-
-Protocol E reads only the cached `_text.md` and any figure files it references. Do not re-read the PDF with `pdftotext` to expand or validate the extract.
-
-**Step 2: Write wiki pages** using the substantive-change rule and relevance filtering below.
-
-For figures: if `_text.md` references wiki figure paths that already exist on disk (from a prior Protocol M run), embed them in wiki pages using the same lightweight format as Protocol M. If `_text.md` contains CLIP placeholders, pass them through to the wiki and aggregate them into the Pending CLIPs return field.
-
-Do **not** re-synthesize or overwrite `_text.md` — it is the canonical extract for this paper.
-
-**Return value additions for Protocol E:**
-
-```
-Pending CLIPs: [list of {target_path, source_paper, page_number, one_liner} — forwarded from _text.md]
-```
-
----
-
-### Protocol S — Split-PDF Pipeline
-
-*Input:* absolute path to the PDF, absolute path to the splits directory (`references/raw/raw_build/split_<basename>/`), `splits_exist` boolean.
-
-**Step 1: Split (if needed).**
-
-If `splits_exist=false`: split the PDF into 4-page chunks using PyPDF2, writing to `<splits-dir>/`. The canonical splits directory is `references/raw/raw_build/split_<basename>/` — use this exact path. Do not derive it yourself.
-
-**Step 2: Read splits in batches of 3.**
-
-Read each split sequentially in batches of 3, without pausing or asking for confirmation. After each batch, append findings to `<splits-dir>/notes.md` under the structured-extraction dimensions below, preceded by a batch boundary comment:
-
-```
-<!-- batch N: pp X-Y -->
-```
-
-If `notes.md` already exists (prior interrupted run), read it first and resume from where it left off — do not overwrite earlier content. `notes.md` is append-mostly and permanent; never delete it.
-
-**Step 3: Synthesize `_text.md`.**
-
-After all splits are read, write `references/raw/<basename>_text.md` from the accumulated `notes.md` content. Follow the `_text.md` structure below (bib block, plain-English synthesis, 11 dimensions).
-
-For the bib metadata block: scan the first split for the DOI regex `10\.\d{4,}/\S+`. Extract authors, title, year, and venue from the first-split text. Record null for any field not found.
-
-`notes.md` is permanent — do not delete it after writing `_text.md`.
-
-**Step 4: Write wiki pages** using the substantive-change rule and relevance filtering below.
-
-For figures: Protocol S does not have extracted figure images. Use CLIP placeholders for all Tier B figures and for any Tier A data figures that cannot be adequately described in text. A structured Tier A block suffices when the data description is complete; use a CLIP placeholder when it isn't.
-
-CLIP placeholder format in `_text.md`:
-
-```
-> **Figure N (CLIP):** <verbatim caption> (p. 12)
-> One-liner: <what the figure depicts at a glance>
-> ACTION: clip from PDF, save to references/wiki/figures/<basename>_fig<N>.png
-```
-
-When a wiki page references a CLIP figure, use a broken image link (it renders as a visible TODO):
-
-```markdown
-![<short description>](../figures/<basename>_figN.png)
-*<verbatim caption> ([<basename>](../log.md), p. 12)*
-```
-
-Before writing any CLIP placeholder that references the figures directory, ensure it exists: `mkdir -p references/wiki/figures`.
-
-**Return value additions for Protocol S:**
-
-```
-Pending CLIPs: [list of {target_path, source_paper, page_number, one_liner}]
-```
-
----
-
-### Common: `_text.md` structure
-
-All protocols that synthesize `_text.md` (M and S) use this layout:
-
-```markdown
-## Bibliographic metadata
-doi: <10.xxxx/yyyy if found, else null>
-authors: [LastName1, LastName2, ...]
-title: <verbatim title>
-year: <year>
-venue: <journal/WP series/etc., verbatim>
-venue_type: journal | working_paper | book_chapter | other
-
-## Plain-English synthesis
-[~200 words, see below]
-
-## 1. Research question
-...
-## 2. Audience
-...
-[continue through dimension 11]
-```
-
-### Common: Plain-English synthesis block
-
-Hard cap: ~200 words. No jargon. Cover:
-
-- Research question (1 sentence)
-- Motivation / why it matters (1–2 sentences)
-- What they estimate and how, in plain terms (2–3 sentences)
-- What they found (1–2 sentences)
-- The take-away — what someone should walk away believing or doing differently (1 sentence)
-
-This block is the answer to "what's this paper about?" for someone who will not read the rest. Anyone with a college degree should be able to read it without a glossary. If you find yourself writing "endogeneity" or "LATE" or "first-stage F-stat," rewrite in plainer terms.
-
-### Common: Structured-extraction dimensions
-
-1. **Research question** — what the paper asks and why it matters
-2. **Audience** — sub-community of researchers who care
-3. **Method / identification strategy** — how they answer the question
-4. **Target parameter** — the estimand in plain terms (e.g., "ATE of schooling on log wages, conditional on age and state-by-year FE"). Distinct from method and identification assumptions.
-5. **Data** — sources, unit of observation, sample size, time period
-6. **Statistical methods / specifications** — econometric techniques, key specifications, key equations (extract verbatim in LaTeX math mode where available — Protocol M gets these from the converter; Protocol S extracts them from split text)
-7. **Findings** — key coefficients and standard errors
-8. **Contributions** — what is learned that we didn't know before
-9. **Replication feasibility** — data availability, replication archive
-10. **Tables (project-relevance gated)** — see Tables protocol below
-11. **Figures (project-relevance gated)** — see Figures protocol below
-
-### Common: Tables protocol (project-relevance gated)
-
-Apply the project-relevance filter. For tables *directly relevant* to the project's research focus, extract in machine-readable markdown. For non-relevant tables, one-line description with page reference.
-
-For relevant tables:
-
-```
-**Table N:** <verbatim caption> (p. 12)
-
-| Variable | (1) | (2) | (3) |
-|---|---|---|---|
-| Schooling | 0.087*** | 0.091*** | 0.085*** |
-|           | (0.012)  | (0.013)  | (0.011)  |
-| N         | 12,450   | 12,450   | 12,450   |
-| R²        | 0.34     | 0.36     | 0.38     |
-
-Notes: <verbatim table notes — SE clustering, FE structure, etc.>
-```
-
-Preserve column headers verbatim, numerical values verbatim (including SEs in parentheses and significance stars), and table notes verbatim. Pipe-syntax markdown only; no HTML tables. Table notes are part of the table's content — capture them.
-
-*Protocol M advantage:* the converter already produces pipe-syntax tables from the PDF. Extract them with light cleanup rather than re-reading the figures.
-
-### Common: Figures protocol (project-relevance gated, two-tier)
-
-Apply the project-relevance filter. Non-relevant figures: one-line description with page reference only.
-
-For relevant figures, classify as Tier A or Tier B using caption text:
-
-- **Tier A — Data figures**: scatter, line, bar, coefplot, histogram, density, time series, RD/event-study plot. The data IS the content.
-- **Tier B — Schematic figures**: DAGs, conceptual diagrams, maps, flowcharts, theoretical model schematics. Do NOT attempt optical decomposition. Default to Tier B when uncertain — a structured Tier A block written for a schematic is misleading; a Tier B for a data figure just makes the reader look at the image.
-
-**In `_text.md`:**
-
-*Protocol M* — figures are copied to `references/wiki/figures/`. Record:
-
-```
-**Figure N:** <verbatim caption> (p. 12)
-![<short description>](../wiki/figures/<basename>_figN.png)
-- Type: <for Tier A: scatter / line / bar / etc.>
-- X-axis: <variable, units, range>    [Tier A only]
-- Y-axis: <variable, units, range>    [Tier A only]
-- Series / panels: <brief list>       [Tier A only]
-- Key visual finding: <one sentence>
-- Annotations: <labels, reference lines, shaded regions>  [Tier A only]
-- **Figure notes:** <verbatim notes below the figure, if any>
-[Tier B: replace the structured block with just: One-liner: <what the figure depicts at a glance>]
-```
-
-*Protocols E and S* — use CLIP placeholders (described in their respective protocol sections).
-
-### Common: Substantive-change rule (passed to subagent verbatim)
-
-The subagent applies non-destructive edits directly. Destructive edits to existing pages must be returned as proposed unified diffs — not applied.
-
-| Edit | Apply directly? |
-|---|---|
-| Create new wiki page | Yes |
-| Append new section / bullet / paragraph to existing page | Yes |
-| Add `[[backlink]]` (inline or under "Related pages") | Yes |
-| Update `**Last updated**` date | Yes |
-| Append a new source to `**Sources**` | Yes |
-| Note a contradiction between sources (additive note) | Yes |
-| Reorganize section order (no content lost) | Yes |
-| Update `wiki/index.md` (append new entries, edit existing one-liners) | Yes |
-| Copy an extracted figure into `references/wiki/figures/` | Yes |
-| Edit the `**Summary**` field on an existing page | **Return as diff** |
-| Delete any existing line | **Return as diff** |
-| Modify the wording of an existing claim | **Return as diff** |
-
-### Common: Concept page disambiguation (subagent)
-
-Before creating a new concept page, check `wiki/index.md` for existing pages covering the same concept — including obvious synonyms (e.g., "RDD" vs "regression discontinuity"). If a near-match exists but you aren't confident, do **not** create a new page; return the ambiguity to the main session as a question for the user.
-
-### Common: Relevance filtering (subagent)
-
-Apply "compress, don't omit": sections directly relevant to the project's research focus get full treatment. Less-relevant sections get a one-line description plus page reference. Nothing is fully omitted.
-
-### Common: Subagent return value
-
-```
-Pages created: [list]
-Pages modified non-destructively: [list with brief description]
-Proposed destructive edits: [list of {page, unified diff, rationale}]
-Disambiguation questions: [list of {concept, candidate existing pages}]
-Proposed log entry: [single line for wiki/log.md]
-Pending CLIPs: [list of {target_path, source_paper, page_number, one_liner}]
-[Protocol M only] Figures copied: [list of {source_cache_path, dest_wiki_path, paper_figure_label}]
-[Protocol M only] Equation fallback used: <true/false>
-Errors: [any issues encountered]
-```
+This keeps spawned prompts small while still making the protocol explicit through normal file reads.
 
 ---
 
@@ -485,15 +232,17 @@ Errors: [any issues encountered]
 
 For each paper, the main session uses a **journal-and-rollback** pattern to guarantee the wiki is never left in an inconsistent state.
 
+**Before spawning the subagent:**
+Record a snapshot of every wiki page the subagent intends to touch — pages to be created (note they don't exist yet); pages to be modified (read and save current content). This is the rollback journal.
+
 **Execute the write sequence:**
 1. Spawn the subagent and wait for its return summary.
 2. If there are disambiguation questions, ask the user; pass answers back via a follow-up SendMessage to the same agent (or apply decisions directly if simple).
-3. Build the rollback journal from the returned page lists and proposed diffs: for every wiki page that will be created, note that it does not exist; for every wiki page that will be modified, read and save its current content.
-4. Apply all non-destructive edits.
-5. If there are proposed destructive edits, present them to the user as a single batched approval request (one prompt per paper). User can approve all, reject all, or selectively approve. Apply approved edits.
-6. **Last:** append the log entry to `wiki/log.md`.
+3. Apply all non-destructive edits.
+4. If there are proposed destructive edits, present them to the user as a single batched approval request (one prompt per paper). User can approve all, reject all, or selectively approve. Apply approved edits.
+5. **Last:** append the log entry to `wiki/log.md`.
 
-**On failure at any step after the rollback journal exists:** roll back: restore each touched page to its journaled state (delete newly-created pages; restore original content for modified pages). Do not write the log entry. The next invocation will rediscover the paper as new and retry cleanly.
+**On failure at any step 1–5:** roll back: restore each touched page to its journaled state (delete newly-created pages; restore original content for modified pages). Do not write the log entry. The next invocation will rediscover the paper as new and retry cleanly.
 
 Do not implement partial-resume logic. The journal guarantees retry is always safe.
 
@@ -532,7 +281,7 @@ After all papers are processed, report:
 
 ## Rules
 
-- **Never modify source PDFs in `references/raw/` without approval.** Canonical renames require the batched approval flow. `_text.md` extracts are generated artifacts and may be created by Protocol M/S; Protocol E treats existing `_text.md` extracts as canonical input and does not rewrite them.
+- **Never modify anything in `references/raw/`.** PDFs and their cached `_text.md` extracts are immutable. The converter cache at `~/.cache/claude-pdf-converter/` is scratch and may be overwritten.
 - **Never read PDF extracts, markdown, or splits in the main session.** Always delegate deep reading to subagents. The main session's job is orchestration and approval.
 - **Never write the log entry before wiki edits complete.** The log is the source of truth for "what's been ingested" — it must lag behind, not lead.
 - **Never invent project context.** If `CLAUDE.md` placeholders are unfilled, stop and ask. Do not guess the research question.

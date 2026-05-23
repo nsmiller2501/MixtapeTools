@@ -8,10 +8,10 @@
 
 You drop one or more PDFs into a project's `references/raw/` folder, run `/wiki-update`, and the skill ingests each paper into a structured wiki at `references/wiki/`. For each paper it:
 
-1. **Auto-detects the best ingest path** (see below) and produces or reuses a structured 11-dimension extract (`<basename>_text.md`) with a 200-word plain-English synthesis at the top.
+1. **Auto-detects the best ingest path** (see below) and produces a structured 11-dimension extract (`<basename>_text.md`) with a 200-word plain-English synthesis at the top.
 2. **Updates the wiki:** creates new concept pages, appends to existing ones, embeds or references figures, and adds backlinks. Destructive edits to existing pages are returned as diffs for user approval rather than applied silently.
 3. **Atomically logs** the ingest in `wiki/log.md` only after wiki edits succeed — failed runs leave nothing partially committed.
-4. **Updates BibTeX** by calling `/bib-update` after successful wiki ingest.
+4. **Assembles BibTeX entries** for each ingested paper via a DOI → CrossRef → OpenAlex → LLM-fallback cascade, appended to `references/references.bib`.
 
 The wiki is shaped by per-project conventions in `references/CLAUDE.md`, which the skill reads first and treats as authoritative.
 
@@ -27,11 +27,11 @@ The skill picks the best available path per paper, in order:
 | **E — Cached extract** | `_text.md` already exists | Reads the existing structured extract and writes wiki pages directly |
 | **S — Split-PDF pipeline** | Neither above | Splits PDF into 4-page chunks, reads in batches with vision, synthesizes `_text.md` |
 
-**Protocol M** is the richest path: the marker-based layout converter used by `/read-pdf` produces pipe-syntax tables ready for copy-paste, figure PNGs that are copied directly into `references/wiki/figures/`, and LaTeX equations. It requires a one-time venv install (~500 MB, 1–3 min, handled lazily by `/read-pdf`). After that, conversions are cached by content hash — re-ingesting the same PDF is free.
+**Protocol M** is the richest path: the marker layout-aware converter produces pipe-syntax tables ready for copy-paste, pixel-accurate figure PNGs that are copied directly into `references/wiki/figures/`, and verbatim LaTeX equations. It requires a one-time venv install (~500 MB, 1–3 min, handled lazily by `/read-pdf`). After that, conversions are cached by content hash — re-ingesting the same PDF is free.
 
 **Protocol S** is the zero-install fallback. Tables and figures are still captured — tables via careful reading of the PDF splits, figures via CLIP placeholders that you fill in by manually clipping from the PDF. It costs more tokens than Protocol M.
 
-The skill reports which protocol each paper was assigned before spawning any subagents.
+The skill reports which tier each paper was assigned before spawning any subagents.
 
 `pdftotext` is not a substantive ingest path. It may be used for narrow pre-flight checks such as first-page filename proposals when the converter is unavailable or metadata/bootstrap checks, but Protocol M must read from converted `markdown.md`, and Protocol E must read from the cached `_text.md`.
 
@@ -44,7 +44,7 @@ project-root/
 ├── CLAUDE.md                          # research question, data, identification (must be filled in)
 └── references/
     ├── CLAUDE.md                      # wiki conventions (rendered from skill template on first run)
-    ├── references.bib                 # BibTeX entries (maintained by /bib-update)
+    ├── references.bib                 # BibTeX entries (appended by this skill)
     ├── raw/                           # immutable source PDFs + per-paper structured extracts
     │   ├── Smith_2024_AER.pdf
     │   ├── Smith_2024_AER_text.md     # written by this skill — reusable cross-session
@@ -65,11 +65,12 @@ project-root/
 ```
 /wiki-update
 /wiki-update "focus on IV strategies and instrument validity"
+/wiki-update --rebuild-bib
 ```
 
 The optional focus string applies to this batch in addition to the project's standing context (research question, data, identification strategy, read from `./CLAUDE.md`).
 
-To regenerate `references.bib` from scratch, run `/bib-update --rebuild-bib` explicitly after ingest.
+`--rebuild-bib` re-runs the BibTeX fetch cascade for all previously-ingested papers using cached `_text.md` metadata — useful for repairing or updating `references.bib` without re-reading any PDFs.
 
 ---
 
@@ -105,7 +106,7 @@ Plus a `Bibliographic metadata` block at the top (DOI, authors, title, year, ven
 
 ## Per-Paper Subagent Isolation
 
-Each paper is ingested by a dedicated subagent so that converted markdown and extracted figures don't accumulate in the main session's context across papers. The main session orchestrates: spawning subagents, surfacing user-approval prompts, journal-and-rollback for wiki pages on failure, and writing the log entry only after wiki edits succeed.
+Each paper is ingested by a dedicated subagent so that converted markdown and extracted figures don't accumulate in the main session's context across papers. The main session orchestrates: spawning subagents, surfacing user-approval prompts, journal-and-rollback on failure, and writing the log entry only after wiki edits succeed.
 
 ---
 
@@ -121,4 +122,6 @@ Each paper is ingested by a dedicated subagent so that converted markdown and ex
 
 Inspired by Andrej Karpathy's [LLM Wiki](https://karpathy.bearblog.dev/llm-wiki/) pattern — a structured, interlinked knowledge base maintained by an LLM, curated by a human. The Tier A / Tier B figure protocol, the project-relevance gate, and the substantive-change rule are workflow refinements specific to academic-paper ingest at scale.
 
-The local-conversion path (Protocol M) relies on [marker](https://github.com/VikParuchuri/marker), the open-source layout-aware PDF parser used by `/read-pdf`.
+The local-conversion path (Protocol M) relies on [marker](https://github.com/VikParuchuri/marker), an open-source layout-aware PDF parser whose authors did the actual hard work.
+
+This skill originated in [Scott Cunningham](https://github.com/scunning1975/MixtapeTools)'s MixtapeTools repository.
