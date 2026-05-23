@@ -230,7 +230,13 @@ def convert_with_marker(pdf_path: Path, out_dir: Path) -> dict:
 
     text_chars = text_layer_chars(pdf_path)
     use_text_layer = text_chars >= 500
-    config = {"disable_ocr": True} if use_text_layer else {}
+    # paginate_output makes marker emit `{N}<sep>` page boundary markers in
+    # the markdown stream, where N is the 0-based page index. prepare_substrate
+    # consumes those to populate per-chunk page_anchors so reader agents can
+    # cite "p. N" instead of line ranges.
+    config: dict = {"paginate_output": True}
+    if use_text_layer:
+        config["disable_ocr"] = True
     converter = PdfConverter(artifact_dict=create_model_dict(), config=config)
     rendered = converter(str(pdf_path))
     text, _, images = text_from_rendered(rendered)
