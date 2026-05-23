@@ -21,10 +21,46 @@ DEFAULT_CHUNK_CHAR_LIMIT = 24000
 DEFAULT_TINY_CHUNK_CHAR_LIMIT = 4000
 DEFAULT_WORKER_SOURCE_CHAR_LIMIT = 50000
 
+# Heading hygiene: marker sometimes promotes long paragraphs to `#` lines and
+# mangles section numbers like `1.6` into `1.[^6]`. We sanitize and guard so
+# that the manifest's heading/navigation signal stays useful on non-academic
+# PDFs (engineering references, reports with quirky front-matter).
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+HEADING_FOOTNOTE_ARTIFACT_RE = re.compile(r"\[\^([^\]]+)\]")
+HEADING_SUP_FOOTNOTE_RE = re.compile(r"<sup>[^<]*</sup>", re.IGNORECASE)
+HEADING_EMPHASIS_RE = re.compile(r"\*+")
+HEADING_WHITESPACE_RE = re.compile(r"\s+")
+HEADING_MAX_LENGTH = 120
+HEADING_DISPLAY_CAP = 80
+MERGED_HEADING_MAX_PARTS = 2
 PAGE_ANCHOR_RE = re.compile(r'id="(page-[^"]+)"')
 FIGURE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 DOI_RE = re.compile(r"10\.\d{4,9}/[^\s\])}>\"']+", re.IGNORECASE)
+
+
+def sanitize_heading(text: str) -> str:
+    # Strip footnote artifacts (`1.[^6]` -> `1.6`), HTML superscript
+    # footnote refs (`<sup>1</sup>`), markdown emphasis, and collapse
+    # whitespace. Leaves real heading content untouched.
+    text = HEADING_FOOTNOTE_ARTIFACT_RE.sub(r"\1", text)
+    text = HEADING_SUP_FOOTNOTE_RE.sub("", text)
+    text = HEADING_EMPHASIS_RE.sub("", text)
+    text = HEADING_WHITESPACE_RE.sub(" ", text).strip()
+    return text
+
+
+def format_merged_heading(parts: list[str]) -> str:
+    if len(parts) <= MERGED_HEADING_MAX_PARTS:
+        return " / ".join(parts)
+    head = " / ".join(parts[:MERGED_HEADING_MAX_PARTS])
+    extra = len(parts) - MERGED_HEADING_MAX_PARTS
+    return f"{head} (+{extra} more)"
+
+
+def display_heading(heading: str, cap: int = HEADING_DISPLAY_CAP) -> str:
+    if len(heading) <= cap:
+        return heading
+    return heading[: cap - 3].rstrip() + "..."
 
 
 @dataclass
@@ -92,8 +128,15 @@ def split_sections(lines: list[str]) -> list[Section]:
     starts: list[tuple[int, int, str]] = []
     for i, line in enumerate(lines, start=1):
         match = HEADING_RE.match(line)
-        if match:
-            starts.append((i, len(match.group(1)), match.group(2).strip()))
+        if not match:
+            continue
+        clean = sanitize_heading(match.group(2))
+        # Reject suspiciously long "headings": marker sometimes promotes a
+        # full body paragraph (e.g. a mailing-address block) to a `#` line.
+        # Treat those as body content so the section boundary isn't false.
+        if not clean or len(clean) > HEADING_MAX_LENGTH:
+            continue
+        starts.append((i, len(match.group(1)), clean))
 
     if not starts or starts[0][0] != 1:
         starts.insert(0, (1, 0, "front-matter"))
@@ -150,16 +193,22 @@ def split_oversized_section(section: Section, char_limit: int) -> list[Section]:
 def merge_tiny_sections(sections: Iterable[Section], tiny_limit: int, hard_limit: int) -> list[Section]:
     merged: list[Section] = []
     pending: Section | None = None
+    # Track the original heading parts that were merged into `pending` so the
+    # resulting heading can be summarized (first N + "(+K more)") instead of
+    # concatenating every subsection name into a multi-hundred-char blob.
+    pending_parts: list[str] = []
 
     for section in sections:
         if pending is None:
             pending = section
+            pending_parts = [section.heading]
             continue
 
         combined_len = len(pending.text) + len(section.text)
         if len(pending.text) < tiny_limit and combined_len <= hard_limit:
+            pending_parts.append(section.heading)
             pending = Section(
-                heading=f"{pending.heading} / {section.heading}",
+                heading=format_merged_heading(pending_parts),
                 level=min(pending.level, section.level),
                 start_line=pending.start_line,
                 end_line=section.end_line,
@@ -168,6 +217,7 @@ def merge_tiny_sections(sections: Iterable[Section], tiny_limit: int, hard_limit
         else:
             merged.append(pending)
             pending = section
+            pending_parts = [section.heading]
 
     if pending is not None:
         merged.append(pending)
@@ -229,7 +279,7 @@ def bundle_chunks(chunks: list[Chunk], source_limit: int) -> list[dict[str, obje
                 "chunk_indexes": [chunk.index for chunk in current],
                 "chunk_paths": [str(chunk.path) for chunk in current],
                 "char_count": current_chars,
-                "headings": [chunk.heading for chunk in current],
+                "headings": [display_heading(chunk.heading) for chunk in current],
             }
         )
         current = []
