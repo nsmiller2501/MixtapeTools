@@ -6,7 +6,7 @@
 
 ## What This Skill Does
 
-You give Claude a paper — either a local PDF file or a search query like "Gentzkow Shapiro 2014 competition newspapers" — and it does the rest. It finds the paper online and downloads it (or uses your local file in place), splits it into 4-page chunks using PyPDF2, then reads those chunks in small batches (3 at a time, ~12 pages), pausing between each batch for your review. As it reads, it writes structured notes into a `notes.md` file, extracting specific information across 8 dimensions. When finished, it saves a persistent `_text.md` extraction alongside the source PDF so future invocations can skip re-reading entirely.
+You give Claude a paper — either a local PDF file or a search query like "Gentzkow Shapiro 2014 competition newspapers" — and it does the rest. It finds the paper online and downloads it (or uses your local file in place), splits it into 4-page chunks using pypdf, then reads those chunks in small batches (3 at a time, ~12 pages), pausing between each batch for your review. As it reads, it writes structured notes into a `notes.md` file, extracting specific information across 8 dimensions. When finished, it saves a persistent `_text.md` extraction alongside the source PDF so future invocations can skip re-reading entirely.
 
 ---
 
@@ -32,7 +32,7 @@ Split the PDF into 4-page chunks, read 3 chunks at a time (~12 pages), and write
 |------|--------|
 | **Acquire** | Download the PDF (via web search) or use a local file in place |
 | **Check** | Look for existing `_text.md` extract or existing splits — offer to reuse |
-| **Split** | PyPDF2 splits into 4-page chunks in `<foldername>_build/split_<name>/` |
+| **Split** | pypdf splits into 4-page chunks in `<foldername>_build/split_<name>/` |
 | **Read** | Read 3 splits at a time, pause after each batch |
 | **Extract** | Update running `notes.md` with structured information |
 | **Persist** | Save final extraction to `<basename>_text.md` alongside the source PDF |

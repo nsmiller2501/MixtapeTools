@@ -74,7 +74,7 @@ The build directory convention (`<foldername>_build/`) keeps split artifacts, co
 
 The original PDF remains permanently. The splits are working copies. If anything goes wrong, you can always re-split from the original.
 
-If PyPDF2 is not installed, install it: `pip install PyPDF2`
+If pypdf is not installed, install it: `pip install pypdf`
 
 ## Step 3: Read in Batches of 3 Splits
 
