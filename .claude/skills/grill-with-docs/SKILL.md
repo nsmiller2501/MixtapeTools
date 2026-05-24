@@ -1,90 +1,112 @@
 ---
 name: grill-with-docs
-description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions.
+description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates scoped documentation (CONTEXT.md, NOTES.md, ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions. Supports nested scopes for research projects with multi-stage pipelines.
 ---
 
 <what-to-do>
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+Interview the user relentlessly about every aspect of the plan until you reach shared understanding. Walk down each branch of the design tree, resolving dependencies one decision at a time. For each question, propose your recommended answer.
 
-Ask the questions one at a time, waiting for feedback on each question before continuing.
+Ask one question at a time. Wait for feedback before continuing.
 
-If a question can be answered by exploring the codebase, explore the codebase instead.
+If a question can be answered by exploring the codebase or reading existing docs, do that instead of asking.
 
 </what-to-do>
 
+<orchestration>
+
+This skill orchestrates four phases. Each phase delegates to a helper file for the details. Read the helper when you enter the phase.
+
+### Phase 1 — Resolve scope (entry)
+
+Before the first question, determine the scope of this session. See [SCOPE-RESOLUTION.md](./SCOPE-RESOLUTION.md).
+
+Outcome: a scope path (e.g. `acquire/firm_registry`, or `root` for single-purpose mode), confirmed with the user.
+
+### Phase 2 — Load merged glossary + scan cross-cutting (entry, continued)
+
+With scope locked, load the merged glossary across the scope tree (root → stage → ... → current scope) per [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md). Surface any shadowing conflicts before grilling begins.
+
+Scan top-level `agent_memory/*.md` for cross-cutting files (e.g. `sample_restrictions.md`, `key_decisions.md`, `codebook.md`, `dropped_analyses.md`) so you know what's available to read when topics touch them. See [CROSS-CUTTING.md](./CROSS-CUTTING.md).
+
+### Phase 3 — Grill, write inline
+
+Drive the interview. When a term is resolved, write it to the appropriate scope's `CONTEXT.md` immediately per [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md). When a methodology decision crystallises, write it to that scope's `NOTES.md` per [NOTES-FORMAT.md](./NOTES-FORMAT.md). Offer an ADR only for project-wide, hard-to-reverse, surprising decisions per [ADR-FORMAT.md](./ADR-FORMAT.md).
+
+When the user signals interest in a deeper sub-scope, ask explicitly before nesting — never descend on your own. See SCOPE-RESOLUTION.md for the descent protocol.
+
+When the topic touches a known cross-cutting file, read it. Do not write to top-level cross-cutting files mid-session.
+
+After any structural change (new scope directory at any depth, new cross-cutting file detected), run the deterministic helper to rebuild the map:
+
+```bash
+python3 ~/.claude/skills/grill-with-docs/scripts/build-context-map.py <path-to-agent_memory>
+```
+
+See [CONTEXT-MAP-FORMAT.md](./CONTEXT-MAP-FORMAT.md) for the map shape and helper contract.
+
+### Phase 4 — Grilling resolution (promotion + handoff)
+
+Trigger when one of these happens:
+
+- **Implicit**: no open branches remain on the design tree.
+- **Explicit**: user says "ready to write", "let's implement", "done grilling", "wrap grilling", or similar.
+- **Ambiguous "wrap up"**: ask the user — "wrap grilling, or end the full `/session`?" — these are distinct (this skill governs grilling resolution only; `/session end` is a separate skill for the parent work session).
+
+At resolution:
+
+1. Walk back through scope `NOTES.md` entries written this session. For any that look genuinely cross-cutting (apply outside the current scope), nominate them for promotion to a top-level cross-cutting file per [CROSS-CUTTING.md](./CROSS-CUTTING.md). User confirms each promotion individually.
+2. Refresh CONTEXT-MAP.md via the helper script.
+3. Offer the natural next action: "shall we write the spec, plan the implementation, or hand off?"
+
+</orchestration>
+
 <supporting-info>
 
-## Domain awareness
-
-During codebase exploration, also look for existing documentation:
-
-### File structure
-
-All documentation lives under `agent_memory/`. If `agent_memory/` doesn't exist, create it lazily on first write.
-
-Most repos have a single context:
+### File layout produced by this skill
 
 ```
-/
-└── agent_memory/
+agent_memory/
+├── CONTEXT.md                       ← project-wide glossary (cross-cutting terms)
+├── CONTEXT-MAP.md                   ← auto-generated tree + cross-cutting registry
+├── NOTES.md                         ← project-wide methodology notes (rare; usually scoped)
+├── sample_restrictions.md           ← user-owned cross-cutting files (optional, varies by project)
+├── key_decisions.md
+├── codebook.md
+├── dropped_analyses.md
+├── docs/
+│   └── adr/                         ← project-wide hard-to-reverse decisions only
+│       ├── 0001-event-sourced-orders.md
+│       └── 0002-postgres-for-write-model.md
+├── acquire/                         ← stage scope (lazy)
+│   ├── CONTEXT.md                   ← stage-level glossary
+│   ├── NOTES.md                     ← stage-level methodology notes
+│   └── firm_registry/               ← sub-scope (lazy, user-confirmed)
+│       ├── CONTEXT.md
+│       └── NOTES.md
+└── analyze/
     ├── CONTEXT.md
-    └── docs/
-        └── adr/
-            ├── 0001-event-sourced-orders.md
-            └── 0002-postgres-for-write-model.md
-```
-
-If a `CONTEXT-MAP.md` exists in `agent_memory/`, the repo has multiple contexts. The map points to where each one lives:
-
-```
-/
-└── agent_memory/
-    ├── CONTEXT-MAP.md
-    ├── docs/
-    │   └── adr/                          ← system-wide decisions
-    ├── ordering/
-    │   ├── CONTEXT.md
-    │   └── docs/adr/                     ← context-specific decisions
-    └── billing/
+    └── structural/
         ├── CONTEXT.md
-        └── docs/adr/
+        └── NOTES.md
 ```
 
-Create files lazily — only when you have something to write. If no `agent_memory/CONTEXT.md` exists, create it (and `agent_memory/` if needed) when the first term is resolved. If no `agent_memory/docs/adr/` exists, create it when the first ADR is needed.
+All directories and files are created **lazily**, only when the first write to that scope happens. The skill never pre-creates structure.
 
-## During the session
+### What goes where
 
-### Challenge against the glossary
+| Artifact | Location | When |
+|----------|----------|------|
+| Glossary term | `<scope>/CONTEXT.md` at the level where it's first relevant | When term is resolved |
+| Methodology decision (scope-local) | `<scope>/NOTES.md` as `## Decision` | When user commits to an approach |
+| Methodology note (lighter than decision) | `<scope>/NOTES.md` as `## Note` | Observations, open questions, context |
+| Hard-to-reverse, project-wide decision | `agent_memory/docs/adr/NNNN-slug.md` | Rare. Three criteria in ADR-FORMAT.md |
+| Cross-cutting claim (sample, codebook, etc.) | Top-level `agent_memory/<file>.md` | **Promotion step only**, at grilling resolution |
 
-When the user uses a term that conflicts with the existing language in `agent_memory/CONTEXT.md`, call it out immediately. "Your glossary defines 'cancellation' as X, but you seem to mean Y — which is it?"
+### Non-goals
 
-### Sharpen fuzzy language
-
-When the user uses vague or overloaded terms, propose a precise canonical term. "You're saying 'account' — do you mean the Customer or the User? Those are different things."
-
-### Discuss concrete scenarios
-
-When domain relationships are being discussed, stress-test them with specific scenarios. Invent scenarios that probe edge cases and force the user to be precise about the boundaries between concepts.
-
-### Cross-reference with code
-
-When the user states how something works, check whether the code agrees. If you find a contradiction, surface it: "Your code cancels entire Orders, but you just said partial cancellation is possible — which is right?"
-
-### Update CONTEXT.md inline
-
-When a term is resolved, update `agent_memory/CONTEXT.md` right there. Don't batch these up — capture them as they happen. Use the format in [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md).
-
-`agent_memory/CONTEXT.md` should be totally devoid of implementation details. Do not treat it as a spec, a scratch pad, or a repository for implementation decisions. It is a glossary and nothing else.
-
-### Offer ADRs sparingly
-
-Only offer to create an ADR when all three are true:
-
-1. **Hard to reverse** — the cost of changing your mind later is meaningful
-2. **Surprising without context** — a future reader will wonder "why did they do it this way?"
-3. **The result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
-
-If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md).
+- Do not maintain a graph of links between ADRs and NOTES. `NOTES.md` may reference an ADR one-way; ADRs hold no back-references.
+- Do not edit `CONTEXT-MAP.md` by hand. The Python helper is the source of truth for structure; descriptions are user-editable text after the `—` separator.
+- Do not write to top-level cross-cutting files mid-session. Read freely; write only at the promotion step.
 
 </supporting-info>
