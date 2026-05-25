@@ -2,7 +2,7 @@
 """Copy a marker-extracted paper figure into a project's wiki figure folder.
 
 The caller supplies the paper's figure number, not a cache filename. The script
-finds the nearest markdown image before the matching ``Figure N:`` caption,
+finds the nearest markdown image around the matching ``Figure N:`` caption,
 copies it to ``references/wiki/figures/``, and prints the wiki-relative link.
 """
 
@@ -26,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--basename", required=True, help="Canonical paper basename")
     parser.add_argument("--figure", required=True, help="Paper figure label, e.g. 4 or A.1")
     parser.add_argument("--lookback-lines", type=int, default=8)
+    parser.add_argument("--lookahead-lines", type=int, default=8)
     return parser.parse_args()
 
 
@@ -40,18 +41,31 @@ def canonical_suffix(path: Path) -> str:
     return path.suffix.lower()
 
 
-def find_source_ref(markdown: str, figure_label: str, lookback_lines: int) -> str:
+def find_source_ref(
+    markdown: str,
+    figure_label: str,
+    lookback_lines: int,
+    lookahead_lines: int,
+) -> str:
     lines = markdown.splitlines()
     caption_re = re.compile(rf"\bFigure\s+{re.escape(figure_label)}\s*:", re.IGNORECASE)
     for i, line in enumerate(lines):
         if not caption_re.search(line):
             continue
+
+        # Marker may emit figure images either before or after captions. Keep the
+        # nearest image, preferring the old backward behavior on equal distance.
         start = max(0, i - lookback_lines)
-        candidates: list[str] = []
-        for nearby in lines[start : i + 1]:
-            candidates.extend(IMAGE_RE.findall(nearby))
+        stop = min(len(lines), i + lookahead_lines + 1)
+        candidates: list[tuple[int, int, int, str]] = []
+        for line_number in range(start, stop):
+            source_refs = IMAGE_RE.findall(lines[line_number])
+            for ref_number, source_ref in enumerate(source_refs):
+                direction_priority = 0 if line_number <= i else 1
+                ref_priority = -ref_number if line_number <= i else ref_number
+                candidates.append((abs(line_number - i), direction_priority, ref_priority, source_ref))
         if candidates:
-            return candidates[-1]
+            return min(candidates)[3]
     raise SystemExit(f"figure {figure_label} image reference not found")
 
 
@@ -76,7 +90,7 @@ def main() -> int:
     wiki_figures_dir = args.wiki_figures_dir.expanduser().resolve()
     markdown = markdown_path.read_text(encoding="utf-8", errors="replace")
 
-    source_ref = find_source_ref(markdown, args.figure, args.lookback_lines)
+    source_ref = find_source_ref(markdown, args.figure, args.lookback_lines, args.lookahead_lines)
     source_path = resolve_source_path(markdown_path, source_ref)
 
     suffix = canonical_suffix(source_path)
