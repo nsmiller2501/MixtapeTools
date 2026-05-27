@@ -1,7 +1,7 @@
 ---
 name: beautiful_deck
 description: End-to-end creation of beautiful Beamer decks. Designs an original theme for a specific audience, restructures content via the Rhetoric of Decks (ethos / pathos / logos), generates figures and tables from R/Python/Stata code first, embeds code in slides, produces standalone walkthrough scripts, compiles to zero warnings, runs `/tikz` for collision cleanup, and dispatches a graphics-only audit agent. Use when asked to build a Beamer presentation, design a custom slide theme, or convert lecture notes or paper drafts into a polished talk.
-allowed-tools: Bash, Bash(~/.claude/skills/beautiful_deck/scripts/compile_loop.sh:*), Read, Write, Edit, Glob, Grep, Task
+allowed-tools: Bash, Bash(~/.claude/skills/beautiful_deck/scripts/compile_loop.sh:*), Bash(~/.claude/skills/beautiful_deck/scripts/check_title_widths.sh:*), Bash(~/.claude/skills/beautiful_deck/scripts/check_word_breaks.sh:*), Read, Write, Edit, Glob, Grep, Task
 argument-hint: "[audience] [content-path-or-description]"
 ---
 
@@ -374,11 +374,31 @@ If the Overfull / Underfull count is nonzero, fix every instance:
 
 Font warnings usually mean a required font package is missing — install it and recompile. Any `LaTeX Warning: Reference ... undefined` or `There were undefined references` must be resolved — either by defining the missing label, removing the reference, or running the compile script again to pick up forward references.
 
-After the script exits cleanly, **open the PDF and visually inspect.**
+After the script exits cleanly, run the two layout gates:
+
+```bash
+~/.claude/skills/beautiful_deck/scripts/check_title_widths.sh <deck>.tex
+~/.claude/skills/beautiful_deck/scripts/check_word_breaks.sh <deck>.tex
+```
+
+- **`check_title_widths.sh`** flags any page whose frametitle wraps onto 2+ lines. Style-agnostic — uses `pdftohtml -xml` to find the topmost text line per page and counts distinct baselines within 1.6× that line's font height. Wrapped lines (same font, just below) are caught; smaller body text below the title is filtered out. Required because LaTeX does NOT emit Overfull for a 2-line frametitle that fits in its allotted box.
+- **`check_word_breaks.sh`** flags any line ending in `\w+-\n\w+` (auto-hyphenation, or compound word wrapping at its internal hyphen). Applies to prose, TikZ nodes, table cells, listings, captions — everywhere text appears.
+
+Both gates exit nonzero on flagged pages. If either fires, fix per the in-script guidance (or, for verified false positives like a deliberate 2-line title slide, re-run with `--ignore-pages N,M`) and recompile.
+
+After all three checks (compile + 2 layout gates) pass, **open the PDF and visually inspect.**
    ```bash
    open <deck>.pdf
    ```
    Scroll through. Does every slide look clean? Are there any visual glitches you can't attribute to a specific warning? These are the silent failures — continue to Steps 6–8 to catch them.
+
+**For visual inspection of rendered pages** (when investigating a layout issue that the Read tool needs to ingest as images), use:
+
+```bash
+~/.claude/skills/beautiful_deck/scripts/compile_loop.sh <deck>.tex --render-pages
+```
+
+The `--render-pages` flag dumps PNG previews to a temp dir (`mktemp -d`) and prints the path. PNGs never go in the deck folder — keep scratch artifacts out of the deliverable.
 
 ### The circuit breaker — do not spiral
 
@@ -404,7 +424,7 @@ This skill has multiple compile checkpoints:
 - After Step 8 (post graphics audit fixes)
 - Step 9 (final compile)
 
-**At each checkpoint, the full compile check above must pass with zero warnings before proceeding.** If you proceed to Step 7 with a lingering Overfull warning, you are not following the protocol. Fix it first.
+**At each checkpoint, the full compile check above must pass with zero warnings AND `check_title_widths.sh` + `check_word_breaks.sh` must both exit zero before proceeding.** If you proceed to Step 7 with a lingering Overfull warning OR a flagged title-wrap OR a mid-word break, you are not following the protocol. Fix it first.
 
 ### The final-compile gate
 
@@ -422,11 +442,15 @@ LaTeX warnings catch box overflow but not TikZ collisions, clipped matplotlib la
 
 Dispatch a sub-agent (via the Task tool) to evaluate the deck against the Rhetoric of Decks principles. The full sub-agent prompt — nine numbered checks covering assertion titles, line discipline, one-idea-per-slide, MB/MC, narrative arc, Devil's Advocate, and audience fit — lives at `~/.claude/skills/beautiful_deck/rhetoric_audit_prompt.md`. Read it, substitute `<deck>` with the actual deck name, and pass verbatim. When the sub-agent returns, apply every Major concern and as many Minor concerns as feasible, then go back to Step 5 and recompile.
 
+**After any fix that touches a `\frametitle{...}`, a narrow TikZ node with `text width`, or a tight table cell, re-run `check_title_widths.sh` and `check_word_breaks.sh` before declaring this step done.** Rewriting titles is the failure mode that motivates the gates — a deterministic re-check after every revision catches the marginal wrap the human eye misses.
+
 ---
 
 ## Step 8: Graphics Audit — Third Agent
 
 Dispatch a second sub-agent focused ONLY on graphics. This is the step most people skip. Graphics errors don't trigger LaTeX warnings and don't show up in rhetoric audits — they must be caught by explicit coordinate verification. The full sub-agent prompt — seven numbered checks covering numerical accuracy, label positioning, axis coherence, color consistency, font sizing, table formatting, and captions — lives at `~/.claude/skills/beautiful_deck/graphics_audit_prompt.md`. Read it, substitute `<deck>`, and pass verbatim. Apply every fix, then recompile (Step 5) and re-run `/tikz` (Step 6).
+
+**After any fix that re-flows text inside a TikZ node, table cell, or caption, re-run `check_word_breaks.sh` before declaring this step done.** Narrow-box word breaks are the failure mode this gate exists for.
 
 ---
 
@@ -499,6 +523,9 @@ All in this skill directory (`~/.claude/skills/beautiful_deck/`):
 - `graphics_audit_prompt.md` — verbatim sub-agent prompt for Step 8.
 - `~/.claude/skills/tikz/tikz_rules.md` — measurement-based collision-prevention rules (lives in the `tikz` skill folder; this skill **depends on `/tikz` being installed**). READ before writing any TikZ figure (Step 4.4). Rule 9 is Beamer-specific and applies to deck generation.
 - `~/.claude/skills/tikz/scripts/audit_passes.sh` — deterministic `/tikz` precheck and compile-warning wrapper used during Step 6. It indexes likely collision candidates but does not replace `tikz_rules.md`.
+- `scripts/compile_loop.sh` — runs `pdflatex`, parses the `.log`, exits nonzero on any fatal/Overfull/Underfull/font/reference warning. Pass `--render-pages` to additionally dump PNG previews to a temp dir for visual inspection.
+- `scripts/check_title_widths.sh` — Step 5 gate. Flags frametitles that wrap onto 2+ lines via `pdftohtml -xml` coordinate analysis. Style-agnostic; supports `--ignore-pages` for verified false positives.
+- `scripts/check_word_breaks.sh` — Step 5 gate. Flags any `\w+-\n\w+` pattern (auto-hyphen at line break, or compound word wrapping at its internal hyphen). Applies to prose, TikZ nodes, table cells, listings.
 
 ## Supporting skills
 
