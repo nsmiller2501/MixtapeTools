@@ -9,8 +9,7 @@ if [ ! -d "$log_dir" ]; then
 fi
 
 latest="$(
-  find "$log_dir" -maxdepth 1 -type f -name '*.md' -print \
-    | sort -r \
+  find "$log_dir" -maxdepth 1 -type f -name '*.md' -exec ls -t {} + \
     | head -n 1
 )"
 
