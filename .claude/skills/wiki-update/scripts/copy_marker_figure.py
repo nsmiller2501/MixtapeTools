@@ -2,7 +2,8 @@
 """Copy a marker-extracted paper figure into a project's wiki figure folder.
 
 The caller supplies the paper's figure number, not a cache filename. The script
-finds the nearest markdown image around the matching ``Figure N:`` caption,
+finds the nearest markdown image around the matching ``Figure N:`` or
+``Figure N.`` caption,
 copies it to ``references/wiki/figures/``, and prints the wiki-relative link.
 """
 
@@ -17,6 +18,14 @@ from PIL import Image
 
 
 IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
+
+
+def caption_regex(figure_label: str) -> re.Pattern[str]:
+    """Match common figure captions without confusing Figure 1.2 for Figure 1."""
+    return re.compile(
+        rf"\bFigure\s+{re.escape(figure_label)}\s*(?::|\.(?=\s|$))",
+        re.IGNORECASE,
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -48,7 +57,7 @@ def find_source_ref(
     lookahead_lines: int,
 ) -> str:
     lines = markdown.splitlines()
-    caption_re = re.compile(rf"\bFigure\s+{re.escape(figure_label)}\s*:", re.IGNORECASE)
+    caption_re = caption_regex(figure_label)
     for i, line in enumerate(lines):
         if not caption_re.search(line):
             continue

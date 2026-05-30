@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""Regression tests for marker figure caption matching."""
+
+from __future__ import annotations
+
+import importlib.util
+import unittest
+from pathlib import Path
+
+
+SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "copy_marker_figure.py"
+
+
+def load_module():
+    spec = importlib.util.spec_from_file_location("copy_marker_figure", SCRIPT_PATH)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+class CopyMarkerFigureTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.module = load_module()
+
+    def test_finds_colon_caption(self) -> None:
+        markdown = "\n".join(
+            [
+                "![estimate plot](figures/figure-1.png)",
+                "Figure 1: Main estimate.",
+            ]
+        )
+
+        self.assertEqual(
+            self.module.find_source_ref(markdown, "1", 2, 2),
+            "figures/figure-1.png",
+        )
+
+    def test_finds_period_caption(self) -> None:
+        markdown = "\n".join(
+            [
+                "![estimate plot](figures/figure-1.png)",
+                "Figure 1. Main estimate.",
+            ]
+        )
+
+        self.assertEqual(
+            self.module.find_source_ref(markdown, "1", 2, 2),
+            "figures/figure-1.png",
+        )
+
+    def test_period_caption_does_not_match_decimal_subfigure(self) -> None:
+        markdown = "\n".join(
+            [
+                "![appendix plot](figures/figure-1-2.png)",
+                "Figure 1.2 Appendix estimate.",
+            ]
+        )
+
+        with self.assertRaisesRegex(SystemExit, "figure 1 image reference not found"):
+            self.module.find_source_ref(markdown, "1", 2, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()
