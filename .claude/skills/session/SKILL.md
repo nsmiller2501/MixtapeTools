@@ -1,6 +1,6 @@
 ---
 name: session
-description: Manages start-of-session and end-of-session lifecycle for research and coding projects. On `start`, activates terse mode and orients by reading the latest progress log and key files; on `end`, writes a dated progress log and updates `agent_memory/` files. Use when the user says `/session start`, `/session end`, "start a session", "wrap up the session", or similar — pass `start` or `end` as the sub-command.
+description: Manages start-of-session and end-of-session lifecycle for research and coding projects. On `start`, orients by reading the latest progress log and key files; on `end`, writes a dated progress log and updates `agent_memory/` files. Use when the user says `/session start`, `/session end`, "start a session", "wrap up the session", or similar — pass `start` or `end` as the sub-command.
 ---
 
 ## Args
@@ -12,11 +12,10 @@ description: Manages start-of-session and end-of-session lifecycle for research 
 
 ## start
 
-1. Call the `caveman` skill via the Skill tool before doing anything else.
-2. Run `~/.claude/skills/session/scripts/latest_progress_log.sh` to find the most recent file in `progress_logs/`.
-3. Read it. Then read every file (at the line ranges) listed under `## Key Files` in that log.
-4. Report in 3–5 bullets: current state, blockers, next priorities.
-5. If `--tasks` was passed: read `agent_memory/tasklist.md` and append a **Task list** section summarizing every item.
+1. Run `~/.claude/skills/session/scripts/latest_progress_log.sh` to find the most recent file in `progress_logs/`.
+2. Read it. Then read every file (at the line ranges) listed under `## Key Files` in that log.
+3. Report in 3–5 bullets: current state, blockers, next priorities.
+4. If `--tasks` was passed: read `agent_memory/tasklist.md` and append a **Task list** section summarizing every item.
 
 ---
 

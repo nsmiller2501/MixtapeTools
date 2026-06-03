@@ -120,17 +120,6 @@ def bash_policy(command):
             None,
         )
 
-    latex_bins = ("pdflatex", "lualatex", "xelatex", "latexmk", "biber", "bibtex")
-    bare_latex = any(re.search(rf"(^|[;&|]\s*){name}\b", command) for name in latex_bins)
-    full_latex = "/Library/TeX/texbin/" in command
-    if bare_latex and not full_latex:
-        return (
-            "deny",
-            "latex_path",
-            "Use full TeX path, e.g. /Library/TeX/texbin/latexmk.",
-            None,
-        )
-
     dangerous_git = (
         r"\bgit\s+reset\s+--hard\b",
         r"\bgit\s+clean\s+-[^\s]*f",
