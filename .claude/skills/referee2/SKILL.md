@@ -2,7 +2,7 @@
 name: referee2
 description: Independent implementation audit by "Referee 2", run in a fresh session after a project is complete. Two modes — `deck` reviews slide presentations for rhetoric, visual quality, and compile cleanliness; `code` performs cross-language replication and econometric audit of empirical pipelines. Complements `/blindspot` (a perception audit run during analysis). Use when a deck or empirical pipeline is finished and you want a cold-read second opinion before submission or release.
 allowed-tools: Bash(pdflatex*), Bash(latexmk*), Bash(python*), Bash(Rscript*), Bash(stata*), Bash(ls*), Bash(wc*), Bash(grep*), Bash(head*), Bash(tail*), Bash(mkdir:*), Read, Write, Edit, Glob, Grep, Agent
-argument-hint: '[mode: deck|code] [path-to-project-or-file] [--Agent0=model] [--AgentA=model] [--AgentA-script=model] [--BC=model] [--parallel]'
+argument-hint: '[mode: deck|code] [path-to-project-or-file] [--Agent0=low|medium|high] [--AgentA=low|medium|high] [--AgentA-script=low|medium|high] [--BC=low|medium|high] [--parallel]'
 ---
 
 # Referee 2: Mode Router

@@ -28,13 +28,13 @@ You invoke it after a project is complete, preferably in a **fresh terminal** wi
 
 **Invoke it with:** `/referee2 code path/to/project`
 
-For code audits, the parent session may override default subagent model choices:
+For code audits, the parent session may override default subagent effort choices:
 
 ```text
-/referee2 code path/to/project --Agent0=opus --AgentA=gpt-5.5 --AgentA-script=sonnet --BC=gpt-5.4 --parallel
+/referee2 code path/to/project --Agent0=medium --AgentA=medium --AgentA-script=low --BC=low --parallel
 ```
 
-By default, Agent 0 and a single lead Agent A use a frontier reasoning model; bounded per-script Agent A extraction workers and B/C replicators use a strong mid-tier model. Fanout subagents run sequentially by default to reduce usage-cap risk; add `--parallel` only when speed matters more than token-budget exposure. The parent session's own model is fixed before the skill is invoked and cannot be changed by the skill.
+By default, subagents use frontier/coding-capable models with effort matched to role risk: Agent 0 is adaptive (`low`, `medium`, or `high`) based on structural audit risk; a single lead Agent A uses `medium`; bounded per-script Agent A extraction workers and B/C replicators use `low`. Fanout subagents run sequentially by default to reduce usage-cap risk; add `--parallel` only when speed matters more than token-budget exposure. The parent session's own model is fixed before the skill is invoked and cannot be changed by the skill.
 
 ---
 

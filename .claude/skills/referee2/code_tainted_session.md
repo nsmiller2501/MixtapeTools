@@ -42,30 +42,38 @@ The discipline is still **transcription, not interpretation**. Quote verbatim. D
 
 The parent session's model is already fixed when the user invokes the skill; the skill cannot downgrade or upgrade the parent. It can choose model tiers only when spawning role subagents, subject to the host tool's available model names.
 
-Default subagent model tiers:
+Default subagent model tiers and effort:
 
-| Role | Default model tier | Rationale |
+| Role | Default model tier / effort | Rationale |
 |---|---|---|
-| Agent 0 | frontier reasoning model, e.g. Opus or GPT-5.5 | Materiality judgments, econometric stakes, comment/code divergence, and scope ambiguity are high-risk. |
-| Agent A, single lead translator | frontier reasoning model, e.g. Opus or GPT-5.5 | Full-pipeline compression into a prose/math spec is high-risk when one agent handles the whole scope. |
-| Per-script Agent A extraction workers | strong mid-tier model, e.g. Sonnet or GPT-5.4 | Bounded script transcription is mostly extraction; the lead Agent A owns synthesis. |
-| Agents B/C | strong mid-tier model, e.g. Sonnet, GPT-5.4, or GPT-5.3-Codex | Replication work needs coding reliability more than frontier judgment. |
+| Agent 0 | frontier reasoning model, adaptive effort (`low`, `medium`, or `high`) | Materiality judgments, econometric stakes, comment/code divergence, and scope ambiguity are high-risk; the parent should choose effort from structural risk signals before spawning Agent 0. |
+| Agent A, single lead translator | frontier reasoning model, `medium` effort | Full-pipeline compression into a prose/math spec is high-risk when one agent handles the whole scope. |
+| Per-script Agent A extraction workers | frontier reasoning model, `low` effort | Bounded script transcription is mostly extraction; the lead Agent A owns synthesis. |
+| Agents B/C | frontier/coding-capable model, `low` effort | Replication work needs coding reliability and bounded reasoning, usually with lower marginal value from higher effort. |
 
-Respect explicit user model choices. The user may add optional flags to the `/referee2` invocation:
+Agent 0 adaptive effort rule:
+
+- Use `low` for small, clear, single-file/script audits.
+- Use `medium` for ordinary referee2 code audits.
+- Use `high` for multi-script scopes, stale-output risk, comment/code ambiguity, unclear scope, or high-stakes empirical claims.
+
+The parent should make this choice from structural signals only: scope size, language count, output-artifact state, invocation ambiguity, and similar metadata. Do not pre-audit substantive code behavior in the parent session.
+
+Respect explicit user effort choices. The user may add optional flags to the `/referee2` invocation:
 
 ```text
---Agent0=<model>
---AgentA=<model>
---AgentA-script=<model>
---BC=<model>
+--Agent0=<low|medium|high>
+--AgentA=<low|medium|high>
+--AgentA-script=<low|medium|high>
+--BC=<low|medium|high>
 --parallel
 ```
 
-`--BC=<model>` applies to both B and C. B and C exist only to run different replication languages, so they use the same model selection. Exact model names are host-dependent; accept common aliases when unambiguous, such as `opus`, `sonnet`, `gpt5.5`, `gpt-5.5`, `gpt5.4`, `gpt-5.4`, `gpt5.3-codex`, `gpt-5.3-codex`, `gpt5.4-mini`, and `gpt-5.4-mini`.
+`--BC=<low|medium|high>` applies to both B and C. B and C exist only to run different replication languages, so they use the same effort selection. User effort overrides are allowed even when the parent would choose a higher default. If the user requests a specific concrete model in the natural-language invocation, respect it when the host supports that model unambiguously; otherwise, keep the role's default model tier and apply the requested effort.
 
 By default, parent-owned fanout runs sequentially: complete one per-script Agent A worker before starting the next, and complete each B/C replication unit before starting the next unit. This avoids spending large amounts of tokens on multiple one-shot subagents that may all fail if the user hits a usage cap mid-stage. If the user supplies `--parallel`, the parent may run same-stage fanout workers concurrently when the host supports it. `--parallel` does not change the isolation rule: each subagent still gets only its assigned role context and must not spawn further subagents.
 
-If the requested model is unavailable, tell the user which role cannot use it and fall back to the nearest available model in the same tier. Do not silently ignore user model choices.
+If the requested effort or concrete model is unavailable, tell the user which role cannot use it and fall back to the nearest available option in the same tier. Do not silently ignore user choices.
 
 Role-subagent prompt header template:
 
