@@ -34,7 +34,7 @@ For code audits, the parent session may override default subagent effort choices
 /referee2 code path/to/project --Agent0=medium --AgentA=medium --AgentA-script=low --BC=low --parallel
 ```
 
-By default, subagents use frontier/coding-capable models with effort matched to role risk: Agent 0 is adaptive (`low`, `medium`, or `high`) based on structural audit risk; a single lead Agent A uses `medium`; bounded per-script Agent A extraction workers and B/C replicators use `low`. Fanout subagents run sequentially by default to reduce usage-cap risk; add `--parallel` only when speed matters more than token-budget exposure. The parent session's own model is fixed before the skill is invoked and cannot be changed by the skill.
+By default, subagents use frontier/coding-capable models with effort matched to role risk: Agent 0 is adaptive (`low`, `medium`, or `high`) based on structural audit risk; standalone Agent A spec writers and integrated Agent A leads use `medium`; bounded integrated extraction workers and B/C replicators use `low`. Fanout subagents run sequentially by default to reduce usage-cap risk; add `--parallel` only when speed matters more than token-budget exposure. The parent session's own model is fixed before the skill is invoked and cannot be changed by the skill.
 
 ---
 
@@ -48,7 +48,7 @@ Creates independent replication scripts in two additional languages (R → Stata
 
 Replication is routed through a plain-language specification bottleneck. Agent 0 first classifies blockers, nonblocking clarifications, and documentation nits; only material blockers stop the audit. Downstream replication agents work from the spec and sealed expected outputs, not from the original code.
 
-For large multi-script projects, the parent orchestrator may fan out bounded per-script Agent A extraction workers before a lead Agent A synthesizes the final spec. This is an orchestration choice made by the parent; subagents should not be expected to spawn their own subagents. If Agent A is fanned out, B/C should be fanned out on the same script or script-group units, sequentially unless the user supplied `--parallel`.
+The parent chooses the Agent A path from cheap structural signals only. Obvious independent analysis units get standalone Agent A spec writers and skip a lead. Integrated pipelines use a lead Agent A; large integrated pipelines may first fan out bounded extraction workers whose notes feed the lead. If a standalone spec writer discovers cross-unit dependencies, it returns `requires_lead_A=yes` and the parent escalates to the integrated path. B/C follows the same unit structure, sequentially unless the user supplied `--parallel`.
 
 ### Audit 3: Directory & Replication Package Audit
 Checks folder structure, relative paths, naming conventions, master script, README, and dependencies. Scores replication readiness on a 1–10 scale. The standard: can a stranger reproduce this from scratch?
@@ -116,7 +116,7 @@ Blindspot runs in the same session because it's auditing perception — you need
 
 ## Installation
 
-The skill lives at `.claude/skills/referee2/SKILL.md`. Deck protocol lives in `deck.md`. Code protocol starts at `code.md`, uses `code_role_context.md` as the compact shared context for code subagents, and then loads role-specific files: `agent_0.md`, `agent_A_full.md`, `agent_A_single.md`, or `agent_BC.md`. The large `referee2.md` persona remains available for deck/full-report context, but code role subagents should not load it by default.
+The skill lives at `.claude/skills/referee2/SKILL.md`. Deck protocol lives in `deck.md`. Code protocol starts at `code.md`, uses `code_role_context.md` as the compact shared context for code subagents, and then loads role-specific files: `agent_0.md`, `agent_A_spec.md`, `agent_A_extract.md`, `agent_A_lead.md`, or `agent_BC.md`. The large `referee2.md` persona remains available for deck/full-report context, but code role subagents should not load it by default.
 
 To use it, ensure this repo is on your Claude Code skills path. Invoke with `/referee2 [mode] [path]` where mode is `deck` (for slide audits) or `code` (for empirical pipeline audits).
 

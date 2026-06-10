@@ -15,8 +15,9 @@ For role subagents, load the narrowest set that covers the assigned role:
 | Role | Required files |
 |---|---|
 | Agent 0 | `code_role_context.md`, `agent_0.md` |
-| Agent A full translator | `code_role_context.md`, `agent_A_full.md` |
-| Agent A extraction worker | `code_role_context.md`, `agent_A_single.md` |
+| Agent A standalone spec writer | `code_role_context.md`, `agent_A_spec.md` |
+| Agent A integrated extraction worker | `code_role_context.md`, `agent_A_extract.md` |
+| Agent A integrated lead translator | `code_role_context.md`, `agent_A_lead.md` |
 | Agent B/C | `code_role_context.md`, `agent_BC.md` |
 | Parent final report aggregation | `code_role_context.md`, `code_reporting.md`; read `referee2.md` only if the local report template is insufficient |
 
@@ -27,7 +28,8 @@ If unsure which phase applies, read the files in the parent-orchestration order 
 - `code_tainted_session.md`
 - `code_role_context.md`
 - `agent_0.md`
-- `agent_A_full.md`
-- `agent_A_single.md`
+- `agent_A_spec.md`
+- `agent_A_extract.md`
+- `agent_A_lead.md`
 - `agent_BC.md`
 - `code_reporting.md`

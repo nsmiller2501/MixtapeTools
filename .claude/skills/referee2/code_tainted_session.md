@@ -33,7 +33,10 @@ When the user picks subagents, you (the parent) do not delegate the whole refere
 4. Read active overrides from `correspondence/referee2/referee2_overrides.md`, if it exists. Create the ledger lazily only when the first override is needed.
 5. Spawn Agent 0 and wait for the gate result.
 6. Gate only on material blockers. If Agent 0 finds uncovered blockers, stop for user review and use the blocking menu below. If it finds only nonblocking clarifications or documentation nits, proceed and pass relevant flag artifact paths to Agent A.
-7. Spawn Agent A and wait for `ready_for_BC=yes`. For large multi-script projects, the parent may instead fan out bounded per-script Agent A extraction workers, then spawn a lead Agent A to synthesize their artifacts into the final spec and expected-output extracts. This fanout is parent-owned; per-script workers must not spawn subagents. The parent passes extraction artifact paths to the lead Agent A, not parent-written summaries.
+7. Choose the Agent A path from cheap structural signals only, then spawn Agent A and wait for `ready_for_BC=yes`:
+   - `independent-units`: if filenames, folder layout, or the user's wording make separate analysis units obvious, spawn one `agent_A_spec.md` per unit. No lead Agent A is needed.
+   - `integrated-pipeline`: otherwise spawn `agent_A_lead.md`. For large integrated pipelines, the parent may first fan out bounded `agent_A_extract.md` workers, then pass their artifact paths to `agent_A_lead.md`.
+   Parent must not read substantive code to infer dependency graphs. If an `agent_A_spec.md` worker returns `requires_lead_A=yes`, stop B/C handoff and escalate that unit or bundle to `integrated-pipeline`.
 8. Write the restricted B/C manifest at `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`, listing allowed pre-first-run files, sealed target paths, and prohibited files.
 9. Verify B/C handoff availability. If B and C cannot run as separate isolated subagents, stop with `Status: partial-audit-replication-blocked` and preserve Agent A artifacts for later resume.
 10. Spawn Agents B and C and wait for their triage results. If Agent A was fanned out, B/C should be fanned out on the same script or script-group units: each Agent A extraction unit gets one B replicator and one C replicator in the assigned replication languages.
@@ -100,8 +103,9 @@ Default subagent model tiers and effort:
 | Role | Default model tier / effort | Rationale |
 |---|---|---|
 | Agent 0 | frontier reasoning model, adaptive effort (`low`, `medium`, or `high`) | Materiality judgments, econometric stakes, comment/code divergence, and scope ambiguity are high-risk; the parent should choose effort from structural risk signals before spawning Agent 0. |
-| Agent A, single lead translator | frontier reasoning model, `medium` effort | Full-pipeline compression into a prose/math spec is high-risk when one agent handles the whole scope. |
-| Per-script Agent A extraction workers | frontier reasoning model, `low` effort | Bounded script transcription is mostly extraction; the lead Agent A owns synthesis. |
+| Agent A standalone spec writer | frontier reasoning model, `medium` effort | Complete per-unit spec writing is high-risk but bounded when units are independent. |
+| Agent A integrated lead translator | frontier reasoning model, `medium` effort | Full-pipeline compression into a prose/math spec is high-risk when one agent handles the whole scope. |
+| Agent A integrated extraction workers | frontier reasoning model, `low` effort | Bounded script transcription is mostly extraction; the lead Agent A owns synthesis. |
 | Agents B/C | frontier/coding-capable model, `low` effort | Replication work needs coding reliability and bounded reasoning, usually with lower marginal value from higher effort. |
 
 Agent 0 adaptive effort rule:

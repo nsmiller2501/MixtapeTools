@@ -1,11 +1,11 @@
-# Agent A Extraction Worker
+# Agent A: Integrated Extraction Worker
 
 Read `code_role_context.md` first. You are one bounded referee2 role subagent.
 Do not spawn further subagents. Do not perform Agent 0, lead Agent A, B, or C
 work.
 
-Use this role only when the parent chooses Agent A fanout for a large
-multi-script project. Your job is extraction for assigned scripts, not synthesis.
+Use this role only when the parent chooses integrated-pipeline fanout. Your job
+is extraction for assigned scripts, not synthesis.
 
 ## Read
 
