@@ -1,43 +1,8 @@
-## Discrepancy Triage and Reporting
+## Parent Reporting
 
-### Discrepancy triage — classify at finding-time
-
-When the cross-language replication produces different numbers, classify each discrepancy IMMEDIATELY into one of three categories before drilling further. The category determines what to do next.
-
-| Category | What it means | What to do |
-|---|---|---|
-| **Substantive** | Different model, estimator, identifying variation, or target parameter | Real finding. Deep dive. Likely a bug in original or replication. |
-| **Ancillary, specified in spec** | The replicator implemented section 2/3/4 contrary to the spec | Auditor error. Fix the replication and rerun. |
-| **Ancillary, absent from spec** | Replication used a different default for something the spec didn't pin down | **Sensitivity finding, not a bug.** Report as: "result depends on choice X; you may want to make that intentional." |
-
-The third category is the key reframe. It is NOT "wasted time hunting a phantom bug." It is a finding: *the headline number is sensitive to a choice the author didn't realize they were making.* Published replication failures often trace back to undocumented nuisance choices, not to bugs in either implementation.
-
-**Output format reflects the triage** — discrepancies are tagged with category and treated differently:
-
-```
-Cross-language comparison (Stata original vs. R replication):
-
-Coefficient on schooling:
-  Stata: 0.087 (SE 0.012)
-  R:     0.091 (SE 0.013)
-  Diff:  +0.004 (4.6%)
-  Category: Ancillary, absent from spec
-  Reason: Stata default = listwise deletion; R replication = complete-case on
-          regressors only. Spec section 4 did not pin this down.
-  Recommendation: pin down missingness in spec section 4 and rerun both.
-
-Coefficient on age²:
-  Stata:  -0.0003
-  R:      -0.0003
-  Diff:   <0.001%
-  Category: Match (within numerical precision)
-```
-
-For each discrepancy, the workflow is:
-1. **Classify** into one of the three categories
-2. **Conjecture** the specific source (package default, syntax, precision, spec gap)
-3. **Test** the conjecture where feasible (e.g., force matching missingness handling and re-run)
-4. **Report** the finding with category tag and evidence
+This file is for parent aggregation and report filing after role subagents
+return. Discrepancy classification belongs to `agent_BC.md`; preserve B/C's
+category labels when aggregating.
 
 ### The Five Audits
 
@@ -69,47 +34,7 @@ You READ, RUN, and CREATE your own audit artifacts. You NEVER edit the author's 
 
 ---
 
-## Subagent operationalization (when running under the tainted-session catch)
-
-When referee2 runs under Step -1's tainted-session catch, the parent session remains the orchestrator. Do not spawn one "referee2 subagent" and expect it to run the whole protocol; role subagents may not be able to spawn other subagents. The parent must spawn each fresh role subagent directly and wait for that role's return before deciding the next step.
-
-For large multi-script code audits, the parent may choose a fanout Agent A pattern: spawn one bounded extraction worker per script or coherent script group, then have a lead Agent A synthesize the final seven-section spec and expected-output artifacts from those extraction artifacts. Use this only when it reduces context bloat or cost without weakening the spec bottleneck. Per-script workers write extraction notes only; they do not write the final spec, run replications, compare outputs, or spawn further subagents. The parent passes extraction artifact paths to lead Agent A rather than summarizing the workers' findings. If Agent A is fanned out, B/C should be fanned out on the same script or script-group units. Run fanout units sequentially by default; use parallel fanout only when the user supplied `--parallel`.
-
-The Agent 0 gate is materiality-based:
-
-- No blockers: parent spawns Agent A next.
-- Active overrides: parent proceeds to Agent A, and Agent A carries override flags into the spec.
-- Nonblocking flags: parent proceeds to Agent A, and Agent A carries relevant flags into the spec.
-- Blocking findings not covered by active overrides: parent stops with `Status: blocked-on-user-review` and reports Agent 0's findings plus the blocking menu.
-- Agent A handoff unavailable after Agent 0: parent stops with `Status: partial-audit-replication-blocked` after preserving Agent 0 findings. A later invocation may resume at Agent A if source state is unchanged.
-- B/C handoff unavailable after Agent A: parent stops with `Status: partial-audit-replication-blocked` after preserving Agent A artifacts. A later invocation may resume at B/C if source state is unchanged.
-
-If the parent stops on blockers, the user can fix code/comments outside referee2, add overrides, cancel, or rerun after changes. A later fresh Agent 0 subagent re-runs against the current source; it never relies on prior audit narrative.
-
-If the parent stops because a role handoff is unavailable, return only the resumable artifact paths for completed stages. On a later invocation, the parent may offer to resume from the next missing role if those artifacts are the newest matching round for the same scope and the source files/source-output artifacts listed in the full scope manifest have not changed. If source state changed, start over at Agent 0.
-
-### Liberal gap-flagging in Agent A
-
-Even after Agent 0's audit is clean, Agent A may find the original code is silent on something in spec section 5 (missingness, edge cases) or sections 2/4 (sample, variable construction). Agent A cannot pause to ask the user — it is also single-shot. Do NOT skip the section and do NOT refuse to proceed. Do both:
-
-1. **Record the gap explicitly** in the spec:
-   ```
-   ## 5. Missingness and edge-case handling
-   ORIGINAL CODE SILENT on missingness — no explicit drop_na, no `if !missing()`, no `dropna()`.
-   ```
-2. **Pick a defensible default and document the choice:**
-   ```
-   Replication assumption: listwise deletion across all model variables
-   (matches Stata's `regress` default; this is the most common econometric
-   convention). If author intended otherwise, this becomes an "Open question
-   for the user" in the final report.
-   ```
-
-Agent A proceeds with documented assumptions. Refusing to proceed because of gaps would make the audit unactionable.
-
-**The triage table is the report format, not mid-run dialogue.** Classify each discrepancy yourself, include reasoning, present the three categories distinctly in the final report.
-
-**Final report structure (subagent return value after a completed B/C handoff):**
+**Final report structure after completed B/C handoff:**
 
 ```markdown
 ## Spec

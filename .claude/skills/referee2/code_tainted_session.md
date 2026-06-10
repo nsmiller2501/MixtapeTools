@@ -27,16 +27,69 @@ There is no "(c) proceed anyway" option. Proceeding in a tainted main session pr
 
 When the user picks subagents, you (the parent) do not delegate the whole referee2 protocol to one subagent. Subagents cannot be assumed to spawn other subagents. The parent stays in charge of orchestration and spawns each role-specific fresh subagent itself:
 
-1. Parent performs path enumeration/scope confirmation using only paths, not project narrative.
-2. Parent writes or reuses the full scope manifest and reads active override ledger state.
-3. Parent spawns Agent 0 and waits for the gate result.
-4. If Agent 0 blocks, parent reports blockers to the user and stops.
-5. If Agent 0 does not block, parent spawns Agent A and waits for `ready_for_BC=yes`. For large multi-script projects, the parent may instead fan out bounded per-script Agent A extraction workers, then spawn or retain a lead Agent A to synthesize their artifacts into the final spec and expected-output extracts. This fanout is parent-owned; per-script workers must not spawn subagents. The parent passes extraction artifact paths to the lead Agent A, not parent-written summaries of those artifacts.
-6. Parent writes the restricted B/C manifest.
-7. Parent spawns Agents B and C and waits for their triage results. By default, fanout subagents run sequentially to reduce usage-cap risk; if the user supplied `--parallel`, the parent may run same-stage fanout subagents in parallel. If the parent used Agent A fanout, B/C should be fanned out on the same script or script-group units: each Agent A extraction unit gets one B replicator and one C replicator in the assigned replication languages.
-8. Parent aggregates role-subagent reports and writes the final report.
+1. Discover and confirm the scope bundle. Default to audited entrypoints, sourced/imported code, configs, required inputs, and source-of-truth output artifacts. If the user narrows scope, honor and record that guardrail.
+2. Check for resumable artifacts. Resume Agent A only when Agent 0 findings exist with no blockers and source state is unchanged. Resume B/C only when Agent A spec, expected outputs, notes, and restricted manifest exist and source state is unchanged. If source state changed, start a new round from Agent 0.
+3. Write the full scope manifest for a new round at `correspondence/referee2/YYYY-MM-DD_roundN_scope.md`. Infer `roundN` from existing files for today's date. Include path, file size, modified time, and hashes where feasible for original code/config/source-output artifacts.
+4. Read active overrides from `correspondence/referee2/referee2_overrides.md`, if it exists. Create the ledger lazily only when the first override is needed.
+5. Spawn Agent 0 and wait for the gate result.
+6. Gate only on material blockers. If Agent 0 finds uncovered blockers, stop for user review and use the blocking menu below. If it finds only nonblocking clarifications or documentation nits, proceed and pass relevant flag artifact paths to Agent A.
+7. Spawn Agent A and wait for `ready_for_BC=yes`. For large multi-script projects, the parent may instead fan out bounded per-script Agent A extraction workers, then spawn a lead Agent A to synthesize their artifacts into the final spec and expected-output extracts. This fanout is parent-owned; per-script workers must not spawn subagents. The parent passes extraction artifact paths to the lead Agent A, not parent-written summaries.
+8. Write the restricted B/C manifest at `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`, listing allowed pre-first-run files, sealed target paths, and prohibited files.
+9. Verify B/C handoff availability. If B and C cannot run as separate isolated subagents, stop with `Status: partial-audit-replication-blocked` and preserve Agent A artifacts for later resume.
+10. Spawn Agents B and C and wait for their triage results. If Agent A was fanned out, B/C should be fanned out on the same script or script-group units: each Agent A extraction unit gets one B replicator and one C replicator in the assigned replication languages.
+11. Run output automation checks only if the user explicitly requested rerun/reproducibility checking. This is parent-owned diagnostic evidence, not Agent A work.
+12. Aggregate role-subagent outputs and write the final report.
 
 The discipline is still **transcription, not interpretation**. Quote verbatim. Do not paraphrase substantive project behavior in any role prompt.
+
+#### Blocking menu and override ledger
+
+If Agent 0 finds uncovered blockers, present this bounded menu and stop until
+the user chooses:
+
+```markdown
+Agent 0 found blocking divergences. Referee2 cannot proceed to Agent A until each blocker is resolved or explicitly overridden.
+
+For each blocker, choose one:
+1. I will fix the code/comment outside referee2, then rerun.
+2. Mark as intentional and add an active override.
+3. Proceed with unresolved risk and add an active override.
+4. Cancel the audit for now.
+```
+
+Option 1 stops referee2. The user fixes code/comments outside referee2 and
+reruns.
+
+Options 2 and 3 append entries to `correspondence/referee2/referee2_overrides.md`.
+Override IDs use `REFEREE2_FLAG[OVR-YYYY-MM-DD-###]`; choose the next unused
+number for the date. Overrides are always user-decided and agent-entered: draft
+and append the ledger entry only after the user explicitly chooses an override
+for a specific Agent 0 blocker.
+
+Ledger template:
+
+```markdown
+# Referee2 Override Ledger
+
+If source code/comments are later changed so an override no longer applies, mark the entry `Status: retired` and explain the retirement reason. Agents read only active overrides for blocking decisions.
+
+## REFEREE2_FLAG[OVR-YYYY-MM-DD-001]
+Status: active
+Tier: blocking-user-overridden | blocking-unresolved-user-proceed
+Date created: YYYY-MM-DD
+Date retired:
+Created from finding: REFEREE2_FLAG[A0-YYYY-MM-DD-###]
+Scope path: <path>
+Issue fingerprint: <short stable description>
+User decision: <verbatim or concise user decision>
+Do not block if: <condition under which this override still applies>
+Still block if: <condition under which this override no longer applies>
+Spec flag required: yes
+```
+
+Agent 0 reads active overrides to avoid re-blocking adjudicated issues. Agent A
+reads active overrides only to encode localized `REFEREE2_FLAG[...]` assumptions
+in the spec. Agents B and C never read the override ledger.
 
 #### Subagent model defaults and user overrides
 

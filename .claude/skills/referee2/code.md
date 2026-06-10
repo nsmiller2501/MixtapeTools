@@ -8,19 +8,16 @@ For parent orchestration, read these files in order:
 
 1. `code_tainted_session.md` — independence check, tainted-session catch, model overrides, path enumeration, and re-invocation rules.
 2. `code_role_context.md` — compact code-audit stance, boundaries, scope calibration, audit areas, and evidence standard.
-3. `code_protocol.md` — code-mode boundary, four-agent architecture, round protocol, Agent 0 materiality gate, and override ledger.
-4. `code_subagent_prompts.md` — role prompt components for Agent 0, Agent A, optional Agent A extraction workers, and Agents B/C.
-5. `code_spec_outputs.md` — spec template, comment handling, expected-output extraction, sealed targets, first-run locks, and figure targets.
-6. `code_reporting.md` — discrepancy triage, final audit outputs, tainted-session operationalization, report format, and file locations.
+3. `code_reporting.md` — final audit outputs, aggregation rules, report format, and file locations.
 
 For role subagents, load the narrowest set that covers the assigned role:
 
 | Role | Required files |
 |---|---|
-| Agent 0 | `code_role_context.md`, `code_protocol.md`, `code_subagent_prompts.md` |
-| Agent A | `code_role_context.md`, `code_protocol.md`, `code_subagent_prompts.md`, `code_spec_outputs.md` |
-| Agent A extraction worker | `code_role_context.md`, `code_subagent_prompts.md`, `code_spec_outputs.md` |
-| Agent B/C | `code_role_context.md`, `code_subagent_prompts.md`, `code_spec_outputs.md`, `code_reporting.md` |
+| Agent 0 | `code_role_context.md`, `agent_0.md` |
+| Agent A full translator | `code_role_context.md`, `agent_A_full.md` |
+| Agent A extraction worker | `code_role_context.md`, `agent_A_single.md` |
+| Agent B/C | `code_role_context.md`, `agent_BC.md` |
 | Parent final report aggregation | `code_role_context.md`, `code_reporting.md`; read `referee2.md` only if the local report template is insufficient |
 
 If unsure which phase applies, read the files in the parent-orchestration order above. Do not skip `code_tainted_session.md` before any code audit work in the parent session.
@@ -29,7 +26,8 @@ If unsure which phase applies, read the files in the parent-orchestration order 
 
 - `code_tainted_session.md`
 - `code_role_context.md`
-- `code_protocol.md`
-- `code_subagent_prompts.md`
-- `code_spec_outputs.md`
+- `agent_0.md`
+- `agent_A_full.md`
+- `agent_A_single.md`
+- `agent_BC.md`
 - `code_reporting.md`
