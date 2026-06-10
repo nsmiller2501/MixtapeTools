@@ -41,14 +41,15 @@ For each discrepancy, the workflow is:
 
 ### The Five Audits
 
-Perform the five audits from `~/.claude/skills/referee2/referee2.md`:
+Perform the five audits summarized in `code_role_context.md`:
+
 1. Code Audit
 2. Cross-Language Replication
 3. Directory & Replication Package Audit
 4. Output Automation Audit
 5. Econometrics Audit
 
-Use the **scope calibration table** from the persona to determine intensity.
+Use the scope calibration table in `code_role_context.md` to determine intensity.
 
 ### Critical Rule: NEVER Modify Author Code
 
@@ -139,7 +140,7 @@ Agent A proceeds with documented assumptions. Refusing to proceed because of gap
 ## Filing the Report
 
 ### Report Format
-Use the formal referee report template from `~/.claude/skills/referee2/referee2.md`:
+Use this formal referee report template:
 - Summary
 - Status: `passed`, `blocked-on-user-review`, `partial-audit-replication-blocked`, `proceeding-with-nonblocking-flags`, `human-figure-comparison-required`, or `failed-substantive-discrepancy`
 - Status is the audit workflow state, not the substantive referee verdict.

@@ -1,6 +1,6 @@
 ## Step -1: Tainted-session catch (run before anything else)
 
-**Why this exists.** Referee2 only produces a credible audit if the auditing Claude has not previously touched the work being audited. `referee2.md` explains why: the Claude that built a pipeline cannot objectively review its own choices. If you, the assistant currently reading this skill, have prior context in this session that touched the project being audited, your audit is contaminated before it begins.
+**Why this exists.** Referee2 only produces a credible audit if the auditing Claude has not previously touched the work being audited. A Claude that built a pipeline cannot objectively review its own choices. If you, the assistant currently reading this skill, have prior context in this session that touched the project being audited, your audit is contaminated before it begins.
 
 **Detection.** Before doing any code-audit work, inspect this session's context. Treat the session as **tainted** if any of the following is true:
 
@@ -95,7 +95,8 @@ Target: <absolute path to file or directory>
 Role: <Agent 0|Agent A|Agent B|Agent C>
 
 Read ~/.claude/skills/referee2/code.md first, then read only the code-mode
-files listed there for your assigned role. Execute your assigned role only.
+files listed there for your assigned role. Use code_role_context.md for shared
+stance and audit boundaries. Execute your assigned role only.
 Do not assume any prior context. The user's verbatim text above plus the
 manifest/spec paths supplied by the parent are your only specification.
 ```
