@@ -59,10 +59,11 @@ Preserve first-run artifacts if you make diagnostic revisions.
 
 ## Artifact Names
 
-Use `code/replication/referee2_<language>_first_run*` for first-run scripts,
-outputs, and figures. Use `code/replication/referee2_<language>_revised*` plus
-`code/replication/referee2_<language>_revision_log.md` for diagnostic revisions.
-Numeric backing outputs use `_data.csv` or `_data.json`.
+Use `code/replication/referee2_replicate_<language>_first_run.<ext>` for
+scripts and `code/replication/referee2_<language>_first_run_outputs.<csv|json>`
+for outputs. Revised artifacts use the same pattern with `_revised`; revision
+logs use `code/replication/referee2_<language>_revision_log.md`. Figures append
+`_<figure_slug>.<ext>`; numeric backing outputs use `_data.csv` or `_data.json`.
 
 ## Compare
 

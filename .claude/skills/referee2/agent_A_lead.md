@@ -73,6 +73,11 @@ For table-like outputs, use columns where applicable:
 output_id,model,term,statistic,value,unit,source_artifact,source_location,notes
 ```
 
+The notes file must document source artifact(s), provenance, extraction choices,
+stale-output concerns, and sealed-output instructions for B/C. Provenance should
+state whether the existing artifact is treated as source of truth, whether rerun
+was not requested, or whether a user-requested rerun matched/differed.
+
 For figures with no stable numeric target, create a
 `REFEREE2_FLAG[FIG-YYYY-MM-DD-###]` with tier `figure-human-comparison`.
 

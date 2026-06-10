@@ -34,16 +34,20 @@ When the user picks subagents, you (the parent) do not delegate the whole refere
 5. Spawn Agent 0 and wait for the gate result.
 6. Gate only on material blockers. If Agent 0 finds uncovered blockers, stop for user review and use the blocking menu below. If it finds only nonblocking clarifications or documentation nits, proceed and pass relevant flag artifact paths to Agent A.
 7. Choose the Agent A path from cheap structural signals only, then spawn Agent A and wait for `ready_for_BC=yes`:
-   - `independent-units`: if filenames, folder layout, or the user's wording make separate analysis units obvious, spawn one `agent_A_spec.md` per unit. No lead Agent A is needed.
+   - `independent-units`: if filenames, folder layout, or the user's wording make separate analysis units obvious, spawn one `agent_A_spec.md` per unit. No lead Agent A is needed. Shared path/config boilerplate such as `config.do`, `config.R`, `config.py`, `requirements.txt`, globals, output directories, or relative-path setup does not by itself imply integration.
    - `integrated-pipeline`: otherwise spawn `agent_A_lead.md`. For large integrated pipelines, the parent may first fan out bounded `agent_A_extract.md` workers, then pass their artifact paths to `agent_A_lead.md`.
-   Parent must not read substantive code to infer dependency graphs. If an `agent_A_spec.md` worker returns `requires_lead_A=yes`, stop B/C handoff and escalate that unit or bundle to `integrated-pipeline`.
-8. Write the restricted B/C manifest at `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`, listing allowed pre-first-run files, sealed target paths, and prohibited files.
+   Parent must not read substantive code to infer dependency graphs. If visible metadata shows shared analysis helpers, staged intermediate data, runner/helper structure, or unclear dependency status, default to `integrated-pipeline`. If an `agent_A_spec.md` worker returns `requires_lead_A=yes`, stop B/C handoff and escalate that unit or bundle to `integrated-pipeline`.
+8. Write restricted B/C manifest(s), listing allowed pre-first-run files, sealed target paths, and prohibited files. Integrated mode uses `correspondence/referee2/YYYY-MM-DD_roundN_restricted_manifest.md`. Independent-units mode uses one manifest per unit, `correspondence/referee2/YYYY-MM-DD_roundN_<unit>_restricted_manifest.md`, and each unit receives its own B and C replication.
 9. Verify B/C handoff availability. If B and C cannot run as separate isolated subagents, stop with `Status: partial-audit-replication-blocked` and preserve Agent A artifacts for later resume.
-10. Spawn Agents B and C and wait for their triage results. If Agent A was fanned out, B/C should be fanned out on the same script or script-group units: each Agent A extraction unit gets one B replicator and one C replicator in the assigned replication languages.
+10. Spawn Agents B and C and wait for their triage results. Integrated mode gets one B and one C for the integrated spec unless the parent explicitly chose same-unit fanout. Independent-units mode gets one B and one C per standalone spec. Each B/C subagent receives only artifact paths for its assigned unit/scope.
 11. Run output automation checks only if the user explicitly requested rerun/reproducibility checking. This is parent-owned diagnostic evidence, not Agent A work.
 12. Aggregate role-subagent outputs and write the final report.
 
 The discipline is still **transcription, not interpretation**. Quote verbatim. Do not paraphrase substantive project behavior in any role prompt.
+
+The parent must not read spec content, summarize it, or paraphrase it into B/C
+prompts. The parent passes only paths: restricted manifest, spec, input data,
+and sealed expected/source outputs. B/C read the files directly.
 
 #### Blocking menu and override ledger
 
