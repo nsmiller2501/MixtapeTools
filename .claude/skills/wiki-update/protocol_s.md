@@ -18,7 +18,7 @@ After all splits are read, write `references/raw/<basename>_text.md` from the ac
 
 For the bib metadata block: scan the first split for the DOI regex `10\.\d{4,}/\S+`. Extract authors, title, year, and venue from the first-split text. Record null for any field not found.
 
-`notes.md` is permanent — do not delete it after writing `_text.md`.
+`notes.md` is permanent — do not delete it after writing `_text.md`. On successful ingest the main session removes the regenerable split PDFs from the splits directory (via `clean_fanout.py`) but preserves `notes.md` as the audit trail.
 
 ## Step 3: Write wiki pages
 

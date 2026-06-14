@@ -10,7 +10,7 @@ Use this prompt after a project-neutral `_text.md` exists.
 - project root `CLAUDE.md`
 - current `references/wiki/index.md`
 - relevant existing wiki page paths
-- optional `references/raw/raw_build/<basename>_citation_overlap.json`
+- optional `references/raw/raw_build/<basename>_fanout/citation_overlap.json`
 - optional cache `markdown.md` path, cache figure directory, absolute project `references/wiki/figures` directory, and `copy_marker_figure.py` path for Protocol M figure copies
 
 Do not read worker notes, marker chunks, or the full marker `markdown.md`. If `_text.md` explicitly marks a gap that blocks wiki writing, return the gap to the main session instead of reopening fanout internals.

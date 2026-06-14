@@ -8,6 +8,8 @@ Protocol M reads only `manifest.json`, its chunk files, worker notes, cache-loca
 
 The main session spawns one worker agent per `manifest.worker_bundles` entry, sequentially. Each worker receives its bundle excerpt, reads the assigned chunk paths only, follows `~/.claude/skills/read-pdf/fanout_worker.md`, and writes one durable note file under `references/raw/raw_build/<basename>_fanout/worker_notes/`.
 
+All Protocol M scratch for a paper lives under the single directory `references/raw/raw_build/<basename>_fanout/` — worker notes in `worker_notes/`, the citation-overlap scan as `citation_overlap.json`. Never write worker notes flat in `raw_build/` or under any other sub-folder name; this directory is the only correct location. It is scratch: the main session removes it after the paper ingests successfully (see SKILL.md), so nothing here needs to be copied or committed.
+
 If interrupted, completed worker notes are salvageable and should not be deleted.
 
 ## Step 2: Synthesize `_text.md`
@@ -35,7 +37,7 @@ After `_text.md` exists, the main session spawns one wiki synthesis agent. It re
 - project root `CLAUDE.md`
 - current `references/wiki/index.md`
 - relevant existing wiki pages
-- `references/raw/raw_build/<basename>_citation_overlap.json`, if produced
+- `references/raw/raw_build/<basename>_fanout/citation_overlap.json`, if produced
 - `~/.claude/skills/wiki-update/wiki_synthesis.md`
 - `~/.claude/skills/wiki-update/common.md`
 

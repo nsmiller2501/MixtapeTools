@@ -144,12 +144,13 @@ For each new paper (using its post-rename canonical name), determine its ingest 
 
    Capture the printed `manifest.json` path. Protocol M workers consume this manifest and chunk files; they must not read the whole `markdown.md`.
 
-   If `references/references.bib` exists, also run the mechanical citation-overlap scan:
+   If `references/references.bib` exists, also run the mechanical citation-overlap scan. All Protocol M scratch for a paper lives under the single directory `references/raw/raw_build/<basename>_fanout/`, so create it first:
 
    ```bash
+   mkdir -p "references/raw/raw_build/<basename>_fanout"
    python3 ~/.claude/skills/wiki-update/scripts/citation_overlap.py \
      "<markdown.md path>" references/references.bib \
-     --output "references/raw/raw_build/<basename>_citation_overlap.json"
+     --output "references/raw/raw_build/<basename>_fanout/citation_overlap.json"
    ```
 
    Pass the output JSON path to the Protocol M subagent. These are candidate overlaps only; the subagent decides whether any are substantively useful for wiki links.
@@ -240,9 +241,17 @@ Record a snapshot of every wiki page the subagent intends to touch — pages to 
 2. If there are disambiguation questions, ask the user; pass answers back via a follow-up SendMessage to the same agent (or apply decisions directly if simple).
 3. Apply all non-destructive edits.
 4. If there are proposed destructive edits, present them to the user as a single batched approval request (one prompt per paper). User can approve all, reject all, or selectively approve. Apply approved edits.
-5. **Last:** append the log entry to `wiki/log.md`.
+5. Append the log entry to `wiki/log.md`.
+6. **Last:** clean the paper's `raw_build` scratch — it is regenerable and must not be left behind or committed:
 
-**On failure at any step 1–5:** roll back: restore each touched page to its journaled state (delete newly-created pages; restore original content for modified pages). Do not write the log entry. The next invocation will rediscover the paper as new and retry cleanly.
+   ```bash
+   python3 ~/.claude/skills/wiki-update/scripts/clean_fanout.py \
+     references/raw/raw_build --basename <basename>
+   ```
+
+   This removes the `<basename>_fanout/` directory and any Protocol S split PDFs, preserving only Protocol S's permanent `notes.md`. The neutral `_text.md` (in `references/raw/`) and copied figures (in `references/wiki/figures/`) are the durable, shareable artifacts and live outside `raw_build`.
+
+**On failure at any step 1–5:** roll back: restore each touched page to its journaled state (delete newly-created pages; restore original content for modified pages). Do not write the log entry, and do **not** clean the `raw_build` scratch — leaving it intact lets the next invocation resume. The next invocation will rediscover the paper as new and retry cleanly.
 
 Do not implement partial-resume logic. The journal guarantees retry is always safe.
 
@@ -281,7 +290,8 @@ After all papers are processed, report:
 
 ## Rules
 
-- **Never modify anything in `references/raw/`.** PDFs and their cached `_text.md` extracts are immutable. The converter cache at `~/.cache/claude-pdf-converter/` is scratch and may be overwritten.
+- **Treat PDFs and `_text.md` in `references/raw/` as immutable.** Never modify a source PDF or a `<basename>_text.md` extract. The converter cache at `~/.cache/claude-pdf-converter/` is scratch and may be overwritten.
+- **`references/raw/raw_build/` is scratch, not a deliverable.** It holds only regenerable per-paper intermediates under the canonical `<basename>_fanout/` directory (Protocol M) and `split_<basename>/` (Protocol S). The main session removes a paper's scratch via `clean_fanout.py` once that paper ingests successfully. Never copy bundles or worker notes elsewhere, never invent alternate sub-folder names, and do not commit `raw_build/` contents — a coauthor without the local cache regenerates them from the PDF.
 - **Never read PDF extracts, markdown, or splits in the main session.** Always delegate deep reading to subagents. The main session's job is orchestration and approval.
 - **Never write the log entry before wiki edits complete.** The log is the source of truth for "what's been ingested" — it must lag behind, not lead.
 - **Never invent project context.** If `CLAUDE.md` placeholders are unfilled, stop and ask. Do not guess the research question.
