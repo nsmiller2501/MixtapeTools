@@ -25,11 +25,12 @@ def caption_regex(figure_label: str) -> re.Pattern[str]:
     """Match common figure captions across the ``Figure N`` and Springer/ERE
     ``Fig. N`` conventions without confusing Figure 1.2 for Figure 1."""
     # Prefix accepts "Figure", "Fig.", or bare "Fig". Terminator requires the
-    # label to be followed by a colon, an end-of-token period, whitespace, a
-    # bold marker (``**Fig. N**``), or end of line -- so "Figure 1" never
-    # matches "Figure 1.2" or "Figure 14".
+    # label to be followed by a colon, an end-of-token period (incl. one closing
+    # a bold caption like ``**Figure 1.**``), whitespace, a bold marker
+    # (``**Fig. N**``), or end of line -- so "Figure 1" never matches
+    # "Figure 1.2" or "Figure 14".
     return re.compile(
-        rf"\bFig(?:ure|\.)?\s+{re.escape(figure_label)}(?::|\.(?=\s|$)|(?=[\s*])|$)",
+        rf"\bFig(?:ure|\.)?\s+{re.escape(figure_label)}(?::|\.(?=[\s*]|$)|(?=[\s*])|$)",
         re.IGNORECASE,
     )
 
