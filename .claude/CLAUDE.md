@@ -76,4 +76,5 @@ When writing code:
 
 All tools (Stata, LaTeX, poppler, R) resolve via PATH — call them bare.
 
+**Stata** use `stata-se`
 **Python:** use `python3` (→ `/usr/local/bin/python3`, the 3.10 framework where all research packages live). **Do not use** `/usr/bin/python3` — Apple's stuck-at-3.9.6 system Python with only stub packages; it will fail to find `pandas`, `torch`, etc. and waste a turn
