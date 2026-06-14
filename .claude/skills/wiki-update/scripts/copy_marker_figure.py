@@ -65,21 +65,40 @@ def find_source_ref(
 ) -> str:
     lines = markdown.splitlines()
     caption_re = caption_regex(figure_label)
+
+    # Collect image candidates from caption lines and inline prose mentions
+    # separately. A real caption begins with the figure label (after any
+    # markdown markup); an inline mention has it mid-sentence. Inline mentions
+    # typically precede the figure's image and sit close to a neighbouring
+    # figure's image, so they must never outrank a caption.
+    caption_candidates: list[tuple[int, int, int, str]] = []
+    mention_candidates: list[tuple[int, int, int, str]] = []
     for i, line in enumerate(lines):
         if not caption_re.search(line):
             continue
+        is_caption = bool(caption_re.match(line.lstrip(" \t*#>_")))
 
-        # Marker may emit figure images either before or after captions. Keep the
-        # nearest image, preferring the old backward behavior on equal distance.
         start = max(0, i - lookback_lines)
         stop = min(len(lines), i + lookahead_lines + 1)
-        candidates: list[tuple[int, int, int, str]] = []
         for line_number in range(start, stop):
             source_refs = IMAGE_RE.findall(lines[line_number])
             for ref_number, source_ref in enumerate(source_refs):
-                direction_priority = 0 if line_number <= i else 1
-                ref_priority = -ref_number if line_number <= i else ref_number
-                candidates.append((abs(line_number - i), direction_priority, ref_priority, source_ref))
+                distance = abs(line_number - i)
+                if is_caption:
+                    # Marker may emit a caption's image just before or after it;
+                    # keep the nearest, preferring backward on a tie (legacy).
+                    direction_priority = 0 if line_number <= i else 1
+                    ref_priority = -ref_number if line_number <= i else ref_number
+                    caption_candidates.append((distance, direction_priority, ref_priority, source_ref))
+                else:
+                    # A figure's image follows its first in-text mention; prefer
+                    # the forward image on a tie so a mention does not grab the
+                    # previous figure's image sitting just above it.
+                    direction_priority = 0 if line_number >= i else 1
+                    ref_priority = ref_number if line_number >= i else -ref_number
+                    mention_candidates.append((distance, direction_priority, ref_priority, source_ref))
+
+    for candidates in (caption_candidates, mention_candidates):
         if candidates:
             return min(candidates)[3]
     raise SystemExit(f"figure {figure_label} image reference not found")
