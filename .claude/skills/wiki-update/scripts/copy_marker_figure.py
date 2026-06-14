@@ -2,9 +2,10 @@
 """Copy a marker-extracted paper figure into a project's wiki figure folder.
 
 The caller supplies the paper's figure number, not a cache filename. The script
-finds the nearest markdown image around the matching ``Figure N:`` or
-``Figure N.`` caption,
-copies it to ``references/wiki/figures/``, and prints the wiki-relative link.
+finds the nearest markdown image around the matching caption -- both the
+``Figure N`` style and the Springer/ERE ``Fig. N`` style (including bold
+``**Fig. N**``) are recognized -- copies it to ``references/wiki/figures/``,
+and prints the wiki-relative link.
 """
 
 from __future__ import annotations
@@ -21,9 +22,14 @@ IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 
 
 def caption_regex(figure_label: str) -> re.Pattern[str]:
-    """Match common figure captions without confusing Figure 1.2 for Figure 1."""
+    """Match common figure captions across the ``Figure N`` and Springer/ERE
+    ``Fig. N`` conventions without confusing Figure 1.2 for Figure 1."""
+    # Prefix accepts "Figure", "Fig.", or bare "Fig". Terminator requires the
+    # label to be followed by a colon, an end-of-token period, whitespace, a
+    # bold marker (``**Fig. N**``), or end of line -- so "Figure 1" never
+    # matches "Figure 1.2" or "Figure 14".
     return re.compile(
-        rf"\bFigure\s+{re.escape(figure_label)}\s*(?::|\.(?=\s|$))",
+        rf"\bFig(?:ure|\.)?\s+{re.escape(figure_label)}(?::|\.(?=\s|$)|(?=[\s*])|$)",
         re.IGNORECASE,
     )
 
