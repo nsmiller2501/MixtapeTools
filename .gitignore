@@ -2,3 +2,5 @@
 **/.DS_Store
 progress_logs/
 agent_memory/tasklist.md
+__pycache__/
+*.pyc
