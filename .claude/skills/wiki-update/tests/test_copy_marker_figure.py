@@ -92,6 +92,29 @@ class CopyMarkerFigureTest(unittest.TestCase):
             "figures/figure-2.png",
         )
 
+    def test_ordinal_resolves_caption_less_figure_between_neighbors(self) -> None:
+        # Fig 3 has no caption; its image sits at the top of a long discussion,
+        # while Fig 4's image is nearer the inline "FIGURE 3" mention. Proximity
+        # (forward) would grab Fig 4's image, but ordinal bracketing between the
+        # captioned Fig 2 and Fig 4 resolves to Fig 3's image.
+        markdown = "\n".join(
+            [
+                "**Figure 2.** Prior estimate.",          # 0 caption 2
+                "![fig2](figures/figure-2.png)",          # 1 image 2
+                "![fig3](figures/figure-3.png)",          # 2 image 3 (early)
+                "filler",                                  # 3
+                "filler",                                  # 4
+                "estimates appear in **FIGURE 3** here.",  # 5 mention only
+                "![fig4](figures/figure-4.png)",          # 6 image 4 (near mention)
+                "**Figure 4.** Next estimate.",            # 7 caption 4
+            ]
+        )
+
+        self.assertEqual(
+            self.module.find_source_ref(markdown, "3", 6, 6),
+            "figures/figure-3.png",
+        )
+
     def test_mention_only_prefers_forward_image_on_tie(self) -> None:
         # JAMA Fig 3 shape: no caption line exists, only an inline mention that
         # is equidistant from the previous figure's image (above) and this

@@ -20,6 +20,14 @@ from PIL import Image
 
 IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 
+# A numeric figure caption anchored at the start of a line (after any markdown
+# markup), capturing the figure number. Used to build the document-order map of
+# captioned figures for ordinal matching. The terminator mirrors caption_regex.
+NUMERIC_CAPTION_RE = re.compile(
+    r"^[\s*#>_]*Fig(?:ure|\.)?\s+(\d+)(?::|\.(?=[\s*]|$)|(?=[\s*])|$)",
+    re.IGNORECASE,
+)
+
 
 def caption_regex(figure_label: str) -> re.Pattern[str]:
     """Match common figure captions across the ``Figure N`` and Springer/ERE
@@ -57,6 +65,84 @@ def canonical_suffix(path: Path) -> str:
     return path.suffix.lower()
 
 
+def image_positions(lines: list[str]) -> list[tuple[int, str]]:
+    """Every image reference in document order as ``(line_index, source_ref)``."""
+    return [
+        (line_number, source_ref)
+        for line_number, line in enumerate(lines)
+        for source_ref in IMAGE_RE.findall(line)
+    ]
+
+
+def captioned_figure_images(lines: list[str], images: list[tuple[int, str]]) -> dict[int, int]:
+    """Map each captioned numeric figure to the line of its adjacent image.
+
+    Only captions (label at line start) are used, so the map is reliable. The
+    image nearest each caption line is taken as that figure's image; on a tie the
+    earlier image wins (marker emits a caption's image close to it either side).
+    """
+    image_lines = [line_number for line_number, _ in images]
+    captioned: dict[int, int] = {}
+    for line_number, line in enumerate(lines):
+        match = NUMERIC_CAPTION_RE.match(line)
+        if not match:
+            continue
+        number = int(match.group(1))
+        if number in captioned or not image_lines:
+            continue
+        nearest = min(image_lines, key=lambda ln: (abs(ln - line_number), ln))
+        captioned[number] = nearest
+    return captioned
+
+
+def ordinal_source_ref(lines: list[str], images: list[tuple[int, str]], figure_label: str) -> str | None:
+    """Locate a caption-less figure's image by its ordinal position.
+
+    Figures are numbered in document order and marker emits images in document
+    order, so figure N's image must lie between the images of the nearest
+    captioned figures that bracket it numerically. This does not depend on
+    whether the image sits before or after any in-text mention. Returns ``None``
+    when the label is non-numeric or the bracketing is ambiguous (e.g. a gap of
+    several missing captions, or extra/multi-panel images between brackets), in
+    which case the caller falls back to mention proximity.
+    """
+    if not figure_label.isdigit() or not images:
+        return None
+    target = int(figure_label)
+    captioned = captioned_figure_images(lines, images)
+    if target in captioned or not captioned:
+        return None
+
+    lower = [number for number in captioned if number < target]
+    higher = [number for number in captioned if number > target]
+    lo = max(lower) if lower else None
+    hi = min(higher) if higher else None
+    lo_img = captioned[lo] if lo is not None else None
+    hi_img = captioned[hi] if hi is not None else None
+
+    # Images strictly between the bracketing figures' own images, in order.
+    between = [
+        source_ref
+        for line_number, source_ref in images
+        if (lo_img is None or line_number > lo_img)
+        and (hi_img is None or line_number < hi_img)
+    ]
+    if not between:
+        return None
+
+    if lo is not None and hi is not None:
+        # Confident only when the count of images matches the count of missing
+        # figures between the brackets (one image per figure, no extras).
+        if len(between) != hi - lo - 1:
+            return None
+        index = target - lo - 1
+    elif lo is not None:  # target sits above every captioned figure
+        index = target - lo - 1
+    else:                 # target sits below every captioned figure
+        index = target - 1
+    return between[index] if 0 <= index < len(between) else None
+
+
 def find_source_ref(
     markdown: str,
     figure_label: str,
@@ -65,12 +151,11 @@ def find_source_ref(
 ) -> str:
     lines = markdown.splitlines()
     caption_re = caption_regex(figure_label)
+    images = image_positions(lines)
 
-    # Collect image candidates from caption lines and inline prose mentions
-    # separately. A real caption begins with the figure label (after any
-    # markdown markup); an inline mention has it mid-sentence. Inline mentions
-    # typically precede the figure's image and sit close to a neighbouring
-    # figure's image, so they must never outrank a caption.
+    # Caption lines (label at line start, after markdown markup) are reliable
+    # anchors; inline prose mentions ("appear in Figure 3") are not. Collect the
+    # nearest image to each kind separately.
     caption_candidates: list[tuple[int, int, int, str]] = []
     mention_candidates: list[tuple[int, int, int, str]] = []
     for i, line in enumerate(lines):
@@ -91,16 +176,27 @@ def find_source_ref(
                     ref_priority = -ref_number if line_number <= i else ref_number
                     caption_candidates.append((distance, direction_priority, ref_priority, source_ref))
                 else:
-                    # A figure's image follows its first in-text mention; prefer
-                    # the forward image on a tie so a mention does not grab the
-                    # previous figure's image sitting just above it.
+                    # A figure's image usually follows its first in-text mention;
+                    # prefer the forward image on a tie. This is the last-resort
+                    # heuristic, used only when ordinal matching cannot resolve.
                     direction_priority = 0 if line_number >= i else 1
                     ref_priority = ref_number if line_number >= i else -ref_number
                     mention_candidates.append((distance, direction_priority, ref_priority, source_ref))
 
-    for candidates in (caption_candidates, mention_candidates):
-        if candidates:
-            return min(candidates)[3]
+    # 1. This figure has its own caption -> its adjacent image is the match.
+    if caption_candidates:
+        return min(caption_candidates)[3]
+
+    # 2. No caption for this figure -> place it ordinally between the images of
+    #    its captioned neighbours (robust to image-before/after-mention).
+    ordinal = ordinal_source_ref(lines, images, figure_label)
+    if ordinal is not None:
+        return ordinal
+
+    # 3. Last resort: nearest image to an inline mention.
+    if mention_candidates:
+        return min(mention_candidates)[3]
+
     raise SystemExit(f"figure {figure_label} image reference not found")
 
 
