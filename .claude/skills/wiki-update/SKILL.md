@@ -192,10 +192,10 @@ Process papers sequentially. The main session must not read PDF extracts, marker
 
 - **Tier E:** spawn one wiki synthesis agent that reads the local `_text.md` plus project/wiki context and writes wiki artifacts.
 - **Tier M-cache:** spawn one wiki synthesis agent that reads the copied local `_text.md`, cache `markdown.md`/figure paths, and project/wiki context, then writes wiki artifacts.
-- **Tier M:** run a split fanout sequence for the paper. Spawn one bounded worker agent per `manifest.worker_bundles` entry, sequentially. Then spawn one read-pdf synthesis agent that writes only the neutral `_text.md`. Cache the completed local `_text.md` with `python3 ~/.claude/skills/read-pdf/scripts/cache_text.py push "<markdown.md path>" "references/raw/<basename>_text.md"`. Then spawn one wiki synthesis agent that reads `_text.md` plus project/wiki context and writes wiki artifacts.
+- **Tier M:** run a split fanout sequence for the paper. Spawn one bounded worker agent per `manifest.worker_bundles` entry, sequentially. Then spawn one read-pdf synthesis agent that writes only the neutral `_text.md`, **atomically**: direct it to write to `references/raw/<basename>_text.md.tmp`, then the main session validates the temp file is complete (non-empty and contains the `## Bibliographic metadata` block) and only then `mv`s it to `references/raw/<basename>_text.md`. If validation fails, delete the temp file and treat the paper as failed (no `_text.md` is left behind, so the next run regenerates it). Only after the final `_text.md` is in place, cache it with `python3 ~/.claude/skills/read-pdf/scripts/cache_text.py push "<markdown.md path>" "references/raw/<basename>_text.md"`. Then spawn one wiki synthesis agent that reads `_text.md` plus project/wiki context and writes wiki artifacts.
 - **Tier S:** spawn one per-paper agent using Protocol S.
 
-**Before spawning each subagent, record the journal** (for rollback on failure): for every wiki page the subagent intends to touch, note whether it exists and its current content if so. This is the rollback snapshot. On failure at any step, restore journaled state and do not write the log entry. The next invocation rediscovers the paper as new and retries cleanly.
+**Before spawning each subagent, record the disk journal** (for rollback on failure): `cp` every pre-existing file the subagent will modify into `references/raw/raw_build/<basename>_fanout/_journal/` (see "Per-paper atomicity" below for the full mechanism). Files the paper will newly create are not snapshotted — their rollback is deletion. On failure at any step, restore from the journal / delete new files and do not write the log entry. The next invocation rediscovers the paper as new and retries cleanly.
 
 Each agent prompt must be self-contained — the agent has no memory of this conversation.
 
@@ -231,10 +231,22 @@ This keeps spawned prompts small while still making the protocol explicit throug
 
 ## Per-paper atomicity (main session)
 
-For each paper, the main session uses a **journal-and-rollback** pattern to guarantee the wiki is never left in an inconsistent state.
+For each paper, the main session uses a **disk-snapshot-and-rollback** pattern to guarantee the wiki is never left in an inconsistent state. The snapshot lives on disk (cheap file copies), not in the orchestrator's context — never read a page's full content into context purely to enable rollback.
 
-**Before spawning the subagent:**
-Record a snapshot of every wiki page the subagent intends to touch — pages to be created (note they don't exist yet); pages to be modified (read and save current content). This is the rollback journal.
+Distinguish three classes of file, each with its own safety mechanism:
+
+- **Write-once durable artifacts** — the neutral `_text.md` and any brand-new wiki page. There is no prior version to restore. Protect by **atomic write** (`_text.md`: write to `<basename>_text.md.tmp`, validate, then `mv` into place — see Tier M below) and **delete-on-failure** (new pages). A partial write never lands at the final name, so a later run never trusts a truncated file.
+- **Modified pre-existing files** — `index.md`, `log.md`, and existing pages gaining cross-links. These have a prior version worth restoring. Protect by **disk snapshot**: before editing, `cp` each into the paper's journal dir.
+- **`log.md`** — written **last** (step 5), so it never leads the page writes.
+
+**Before spawning the subagent — snapshot only the pre-existing files that will be modified:**
+Create the journal dir and copy each existing to-be-modified file into it. Pages that will be *created* are not copied (rollback for them is deletion); the `_text.md` is not copied (it is atomic-write/delete-on-fail, never overwritten).
+
+```bash
+mkdir -p references/raw/raw_build/<basename>_fanout/_journal
+# for each EXISTING file the paper will modify (index.md, log.md, existing pages):
+cp references/wiki/<existing-page>.md references/raw/raw_build/<basename>_fanout/_journal/
+```
 
 **Execute the write sequence:**
 1. Spawn the subagent and wait for its return summary.
@@ -251,9 +263,9 @@ Record a snapshot of every wiki page the subagent intends to touch — pages to 
 
    This removes the `<basename>_fanout/` directory and any Protocol S split PDFs, preserving only Protocol S's permanent `notes.md`. The neutral `_text.md` (in `references/raw/`) and copied figures (in `references/wiki/figures/`) are the durable, shareable artifacts and live outside `raw_build`.
 
-**On failure at any step 1–5:** roll back: restore each touched page to its journaled state (delete newly-created pages; restore original content for modified pages). Do not write the log entry, and do **not** clean the `raw_build` scratch — leaving it intact lets the next invocation resume. The next invocation will rediscover the paper as new and retry cleanly.
+**On failure at any step 1–5:** roll back: **delete** every file the paper newly created (new wiki pages, and the `_text.md` if this run produced it), and **restore** every modified pre-existing file by copying its snapshot back from `_journal/` (`cp references/raw/raw_build/<basename>_fanout/_journal/<file> references/wiki/<file>`). Do not write the log entry, and do **not** clean the `raw_build` scratch — leaving the journal intact lets the next invocation resume. The next invocation will rediscover the paper as new and retry cleanly.
 
-Do not implement partial-resume logic. The journal guarantees retry is always safe.
+The journal dir is removed along with the rest of the paper's `raw_build` scratch by `clean_fanout.py` on success (step 6). Do not implement partial-resume logic. The disk snapshot guarantees retry is always safe.
 
 After each paper finishes, move to the next. Do not batch papers.
 
