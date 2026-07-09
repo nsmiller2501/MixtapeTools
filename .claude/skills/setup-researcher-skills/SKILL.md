@@ -40,7 +40,7 @@ Show the user the exact edits before writing:
 - The `## Agent skills` block for `CLAUDE.md`.
 - The complete `agent_memory/research-tracker.md` body.
 
-Use the bundled [github-research-tracker.md](./agent_memory/templates/github-research-tracker.md) template when GitHub Issues is the substrate. Use the bundled [local-research-tracker.md](./agent_memory/templates/local-research-tracker.md) template for local or hybrid markdown.
+Use the bundled [github-research-tracker.md](./agent_memory/templates/github-research-tracker.md) template when GitHub Issues is the substrate. Use the bundled [local-research-tracker.md](./agent_memory/templates/local-research-tracker.md) template for local or hybrid markdown. Start from the template and make only repo-evidence-driven edits.
 
 Do not summarize the tracker doc in place of showing it. Stop after the draft and ask for explicit permission to write.
 
@@ -64,6 +64,7 @@ Check:
 
 - `CLAUDE.md` points to `agent_memory/research-tracker.md`.
 - The tracker doc names the substrate, artifact boundaries, labels/types, lifecycle, and markdown task bridge.
+- The tracker doc preserves every required template heading unless the user explicitly approved removing one.
 - No task migration happened unless explicitly requested.
 
 Report the created/updated paths and the chosen substrate.
