@@ -50,7 +50,7 @@ Use `## Decision` when the user has committed. Use `## Note` when they haven't, 
 
 ## Optional references
 
-A `## Decision` may end with a one-line reference to a related top-level ADR:
+A `## Decision` may end with a one-line reference to a related project-wide ADR:
 
 ```
 Refs: [ADR-0003](../../../docs/adr/0003-instrument-strategy.md)

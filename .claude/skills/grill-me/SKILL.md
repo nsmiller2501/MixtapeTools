@@ -3,8 +3,8 @@ name: grill-me
 description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me".
 ---
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+# Grill Me
 
-Ask the questions one at a time.
+Use [`grilling`](../grilling/SKILL.md) as the interview loop.
 
-If a question can be answered by exploring the codebase, explore the codebase instead.
+This wrapper is for plain plan/design stress tests that do not need scoped `agent_memory/` writes. If the user wants the project glossary, notes, ADRs, or tracker updated as decisions crystallise, switch to `grill-with-docs`.

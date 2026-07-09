@@ -5,11 +5,9 @@ description: Grilling session that challenges your plan against the existing dom
 
 <what-to-do>
 
-Interview the user relentlessly about every aspect of the plan until you reach shared understanding. Walk down each branch of the design tree, resolving dependencies one decision at a time. For each question, propose your recommended answer.
+Use [`grilling`](../grilling/SKILL.md) as the interview loop.
 
-Ask one question at a time. Wait for feedback before continuing.
-
-If a question can be answered by exploring the codebase or reading existing docs, do that instead of asking.
+This skill adds scoped project-memory writes: glossary terms, methodology notes, ADR offers, context-map refreshes, and optional handoff to specs/tickets/maps.
 
 </what-to-do>
 
@@ -19,9 +17,9 @@ This skill orchestrates four phases. Each phase delegates to a helper file for t
 
 ### Phase 1 — Resolve scope (entry)
 
-Before the first question, determine the scope of this session. See [SCOPE-RESOLUTION.md](./SCOPE-RESOLUTION.md).
+Before the first question, read `CLAUDE.md` and `agent_memory/research-tracker.md` if present, then determine the scope of this session. See [SCOPE-RESOLUTION.md](./SCOPE-RESOLUTION.md).
 
-Outcome: a scope path (e.g. `acquire/firm_registry`, or `root` for single-purpose mode), confirmed with the user.
+Outcome: a scope path (e.g. `acquire/firm_registry`, or `root` for single-purpose mode), confirmed with the user, plus the tracker substrate and artifact boundaries if configured.
 
 ### Phase 2 — Load merged glossary + scan cross-cutting (entry, continued)
 
@@ -31,7 +29,7 @@ Scan top-level `agent_memory/*.md` for cross-cutting files (e.g. `sample_restric
 
 ### Phase 3 — Grill, write inline
 
-Drive the interview. When a term is resolved, write it to the appropriate scope's `CONTEXT.md` immediately per [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md). When a methodology decision crystallises, write it to that scope's `NOTES.md` per [NOTES-FORMAT.md](./NOTES-FORMAT.md). Offer an ADR only for project-wide, hard-to-reverse, surprising decisions per [ADR-FORMAT.md](./ADR-FORMAT.md).
+Drive the `grilling` loop. When a term is resolved, write it to the appropriate scope's `CONTEXT.md` immediately per [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md). When a methodology decision crystallises, write it to that scope's `NOTES.md` per [NOTES-FORMAT.md](./NOTES-FORMAT.md). Offer an ADR only for project-wide, hard-to-reverse, surprising decisions per [ADR-FORMAT.md](./ADR-FORMAT.md).
 
 When the user signals interest in a deeper sub-scope, ask explicitly before nesting — never descend on your own. See SCOPE-RESOLUTION.md for the descent protocol.
 
@@ -57,7 +55,7 @@ At resolution:
 
 1. Walk back through scope `NOTES.md` entries written this session. For any that look genuinely cross-cutting (apply outside the current scope), nominate them for promotion to a top-level cross-cutting file per [CROSS-CUTTING.md](./CROSS-CUTTING.md). User confirms each promotion individually.
 2. Refresh CONTEXT-MAP.md via the helper script.
-3. Offer the natural next action: "shall we write the spec, plan the implementation, or hand off?"
+3. Offer the natural next action using the tracker contract: "shall we write the spec, break this into tickets, chart a wayfinder map, or hand off?"
 
 </orchestration>
 
@@ -76,8 +74,8 @@ agent_memory/
 ├── dropped_analyses.md
 ├── docs/
 │   └── adr/                         ← project-wide hard-to-reverse decisions only
-│       ├── 0001-event-sourced-orders.md
-│       └── 0002-postgres-for-write-model.md
+│       ├── 0001-identification-strategy.md
+│       └── 0002-canonical-trade-source.md
 ├── acquire/                         ← stage scope (lazy)
 │   ├── CONTEXT.md                   ← stage-level glossary
 │   ├── NOTES.md                     ← stage-level methodology notes

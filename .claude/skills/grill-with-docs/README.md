@@ -4,7 +4,7 @@ Like `/grill-me`, but domain-aware and scope-aware.
 
 Before the interview begins, the skill resolves the **scope** of the session — project-wide, a specific pipeline stage, a sub-module within a stage, or single-purpose mode for one-shot repos. With scope locked, it reads the merged glossary across the scope tree (root → stage → module) and any registered cross-cutting files, then grills with that context in mind.
 
-When a term gets resolved during grilling, the skill writes it to the appropriate scope's `CONTEXT.md` immediately. When a methodology decision crystallises, it writes a `## Decision` entry to that scope's `NOTES.md`. Project-wide, hard-to-reverse decisions still go to top-level ADRs. Cross-cutting decisions (sample restrictions, codebook entries, etc.) are nominated for promotion to top-level files at grilling resolution — never written silently mid-session.
+When a term gets resolved during grilling, the skill writes it to the appropriate scope's `CONTEXT.md` immediately. When a methodology decision crystallises, it writes a `## Decision` entry to that scope's `NOTES.md`. Project-wide, hard-to-reverse decisions go to `agent_memory/docs/adr/`. Cross-cutting decisions (sample restrictions, codebook entries, etc.) are nominated for promotion to top-level files at grilling resolution — never written silently mid-session.
 
 ## Why scope-aware
 

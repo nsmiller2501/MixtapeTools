@@ -1,6 +1,6 @@
 # CONTEXT.md Format
 
-`CONTEXT.md` is a glossary. It defines the precise meaning of terms inside a given scope — nothing more. Methodology decisions go in `NOTES.md`. Project-wide architectural decisions go in `docs/adr/`. This file is for **language**.
+`CONTEXT.md` is a glossary. It defines the precise meaning of terms inside a given scope — nothing more. Methodology decisions go in `NOTES.md`. Project-wide hard-to-reverse decisions go in `agent_memory/docs/adr/`. This file is for **language**.
 
 ## Structure
 
@@ -11,31 +11,31 @@
 
 ## Language
 
-**Order**:
-A concise description of the term.
-_Avoid_: Purchase, transaction
+**Analytic universe**:
+The full set of units eligible to enter the main estimating sample before outcome availability or model-specific filters.
+_Avoid_: sample, population
 
-**Invoice**:
-A request for payment sent to a customer after delivery.
-_Avoid_: Bill, payment request
+**Registry firm**:
+A legal entity observed in the firm registry snapshot.
+_Avoid_: company, establishment
 
-**Customer**:
-A person or organization that places orders.
-_Avoid_: Client, buyer, account
+**Exposure**:
+The pre-period industry-share-weighted shock assigned to a firm.
+_Avoid_: treatment, shock
 
 ## Relationships
 
-- An **Order** produces one or more **Invoices**
-- An **Invoice** belongs to exactly one **Customer**
+- The **Analytic universe** contains zero or more **Registry firms**.
+- Each **Registry firm** has at most one baseline **Exposure** in the main design.
 
 ## Example dialogue
 
-> **Dev:** "When a **Customer** places an **Order**, do we create the **Invoice** immediately?"
-> **Domain expert:** "No — an **Invoice** is only generated once a **Fulfillment** is confirmed."
+> **Agent:** "Does **Exposure** mean observed firm imports or the shift-share measure?"
+> **Researcher:** "Use **Exposure** only for the shift-share measure; observed imports are **trade flows**."
 
 ## Flagged ambiguities
 
-- "account" was used to mean both **Customer** and **User** — resolved: these are distinct concepts.
+- "sample" was used for both **Analytic universe** and the final estimating sample — resolved: these are distinct concepts.
 ```
 
 ## Rules for entries

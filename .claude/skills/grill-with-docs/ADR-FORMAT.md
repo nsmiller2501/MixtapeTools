@@ -44,17 +44,7 @@ Plus a fourth criterion specific to multi-scope projects:
 
 If a scope-local decision later turns out to apply project-wide, it can be promoted to an ADR at the grilling-resolution promotion step.
 
-### What qualifies (software projects)
-
-- **Architectural shape.** "We're using a monorepo." "The write model is event-sourced, the read model is projected into Postgres."
-- **Integration patterns between contexts.** "Ordering and Billing communicate via domain events, not synchronous HTTP."
-- **Technology choices that carry lock-in.** Database, message bus, auth provider, deployment target. Not every library — just the ones that would take a quarter to swap out.
-- **Boundary and scope decisions.** "Customer data is owned by the Customer context; other contexts reference it by ID only." The explicit no-s are as valuable as the yes-s.
-- **Deliberate deviations from the obvious path.** "We're using manual SQL instead of an ORM because X."
-- **Constraints not visible in the code.** "We can't use AWS because of compliance requirements." "Response times must be under 200ms because of the partner API contract."
-- **Rejected alternatives when the rejection is non-obvious.**
-
-### What qualifies (research projects)
+### What qualifies
 
 - **Identification strategy** that governs the whole paper. "We use a Bartik-style shift-share instrument, not direct trade exposure."
 - **Sample frame** at the project level. "The analytic universe is Chinese manufacturing firms with > 100 employees in the 2010 registry." (Specific cuts on top of this may be `NOTES.md` Decisions or `sample_restrictions.md` entries instead.)
