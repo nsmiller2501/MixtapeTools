@@ -1,0 +1,4 @@
+interface:
+  display_name: "Setup Researcher Skills"
+  short_description: "Configure tracker and research-agent conventions"
+  default_prompt: "Set up this research repo for researcher-oriented planning skills."
