@@ -37,3 +37,6 @@ plans/analysis_plan.md:55-80
 
 ## Optional sections (agent's discretion)
 Work Done, Decisions, Open Questions, etc. — add as needed.
+
+### Tracker Updates
+Use when the session touched GitHub Issues or another configured tracker. Link the issue, summarize the update posted or drafted, and include any remaining blocker.
