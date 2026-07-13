@@ -34,7 +34,7 @@ Hard cap: ~200 words. No jargon. Cover the research question, why it matters, wh
 8. **Contributions** — What is learned from this exercise that we didn't know before?
 9. **Replication feasibility** — Is the data publicly available? Is there a replication archive? A data appendix? URLs for the underlying data?
 10. **Tables** — Inventory tables, extracting machine-readable tables when central to understanding or replication.
-11. **Figures** — Inventory figures, captions, and key visual claims.
+11. **Figures** — Inventory figures, captions, and key visual claims. In split mode, when the text view cannot support the visual claim, mark the item `CLIP REQUIRED` with its figure number, caption, page, and a one-line description; downstream projects choose the destination path.
 12. **Equations / formal objects** — Inventory equations, formal models, propositions, algorithms, and labeled specifications.
 
 ## Tone

@@ -158,7 +158,7 @@ If a `_text.md` already exists alongside the PDF, default mode asks whether to o
 
 ### Agent isolation protocol
 
-When another skill calls `/read-pdf`, heavy reading runs inside a subagent. The mode-specific protocols live in:
+When another skill calls `/read-pdf`, heavy reading uses one reader context per paper. Marker bundles stay in that reader unless the manifest projects more than 100,000 working tokens, in which case bounded bundle workers protect against context rot. The mode-specific protocols live in:
 
 - `isolation_read.md` for marker mode.
 - `isolation_split.md` for `--split` mode.

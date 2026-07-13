@@ -1,7 +1,7 @@
 ---
 name: wiki-update
-description: Ingests new PDFs from a project's `references/raw/` folder into the project's wiki, summarizing each through the lens of the project's research focus and auto-detecting the best conversion path (local `_text.md` → cached neutral `text.md` → marker fanout → split-pdf fallback). Scaffolds `references/raw/`, `references/wiki/`, and `references/CLAUDE.md` on first run, and calls `/bib-update` at the end to refresh `references/references.bib`. Use when the user adds new PDFs to `references/raw/` and says "ingest new references", "update the wiki", or similar.
-allowed-tools: Read, Edit, Write, Glob, Grep, Bash(ls*), Bash(pdftotext:*), Bash(python3:*), Bash(mv:*), Bash(cp:*), Bash(mkdir:*), Bash(touch:*), Agent
+description: Ingests new PDFs from `references/raw/` into a project wiki and refreshes its bibliography. Use when the user asks to ingest references or update the wiki.
+allowed-tools: Read, Edit, Write, Glob, Grep, Bash(ls*), Bash(pdftotext:*), Bash(python3:*), Bash(mv:*), Bash(cp:*), Bash(mkdir:*), Bash(rm:*), Bash(touch:*), Agent
 argument-hint: [optional focus or theme for this batch]
 ---
 
@@ -9,7 +9,7 @@ argument-hint: [optional focus or theme for this batch]
 
 Maintains a project's reference wiki by ingesting newly-added PDFs from `references/raw/`, summarizing each through the lens of the project's research focus, and updating the wiki atomically per-paper.
 
-**Ingest path is auto-detected per paper.** Use a local `references/raw/<basename>_text.md` when present (Protocol E). Otherwise, run the read-pdf converter: if `cache_text.py check` finds cached `text.md`, use `cache_text.py pull` to copy it locally and proceed to wiki synthesis (Tier M-cache); if not, run marker fanout extraction and cache the resulting neutral extract with `cache_text.py push` (Protocol M). If marker conversion fails, use the split-PDF pipeline (Protocol S). All paths produce the same wiki output — the difference is how the neutral extract is obtained and whether cache figures are available.
+**Ingest path is auto-detected per paper.** Use a local `references/raw/<basename>_text.md` when present (Protocol E). Otherwise, reuse a cached neutral extract (Tier M-cache), run bounded marker extraction (Protocol M), or use split-PDF extraction after converter failure (Protocol S). Every extraction path follows `read-pdf/extraction_schema.md`; project relevance enters only after the neutral extract exists.
 
 **`pdftotext` is not an ingest source.** It is allowed only for narrow pre-flight tasks: first-page filename proposals when the converter is unavailable, metadata checks needed for `/bib-update`, and other explicit bootstrap/diagnostic checks that do not synthesize wiki content. Once a paper is assigned to Protocol M, M-cache, or E, do not use `pdftotext` to read, summarize, validate, or supplement substantive content. Wait for the selected input (`manifest.json` plus bounded chunks, or `_text.md`) and read that source only.
 
@@ -84,7 +84,7 @@ For each non-conforming file, extract enough text to propose a name. Choose the 
   ```bash
   python3 ~/.claude/skills/read-pdf/convert.py "<pdf-path>"
   ```
-  Capture the printed path to `markdown.md`. Read the first ~2000 characters of `markdown.md` — this covers title, authors, year, and venue. This also primes the converter cache for the ingest step that follows (the cache is SHA-keyed, so renaming the PDF after this point does not invalidate it).
+  Capture and retain the printed path to `markdown.md`. Read the first ~2000 characters of `markdown.md` — this covers title, authors, year, and venue. This also primes the converter cache for the ingest step that follows (the cache is SHA-keyed, so renaming the PDF after this point does not invalidate it).
 
 - **Otherwise:** run `pdftotext -l 1 "<pdf-path>" -` and read the output.
 
@@ -126,7 +126,7 @@ For each new paper (using its post-rename canonical name), determine its ingest 
 
 1. **Tier E — Local cached extract:** `references/raw/<basename>_text.md` exists. No conversion needed.
 
-2. **Tier M-cache — Cached neutral extract in converter cache:** `~/.claude/skills/read-pdf/convert.py` exists, running it for this PDF succeeds, and:
+2. **Tier M-cache — Cached neutral extract in converter cache:** `~/.claude/skills/read-pdf/convert.py` exists. Reuse the `markdown.md` path retained during filename normalization; if none was produced, run `convert.py` once. If conversion succeeds and:
    ```bash
    python3 ~/.claude/skills/read-pdf/scripts/cache_text.py check "<markdown.md path>"
    ```
@@ -136,13 +136,13 @@ For each new paper (using its post-rename canonical name), determine its ingest 
    ```
    Then proceed directly to wiki synthesis. No worker fanout or read-pdf synthesis is needed.
 
-3. **Tier M — Converted markdown substrate / fanout extract:** `~/.claude/skills/read-pdf/convert.py` exists, **and** running it for this PDF succeeds (cache hit is instant; a miss triggers the full conversion here). Capture the returned `markdown.md` path and cache directory. If `convert.py` was already run during step 4 for this paper, it was cached — re-running is a no-op. Then prepare the read-pdf extraction substrate:
+3. **Tier M — Converted markdown substrate / bounded extract:** conversion succeeded and no neutral extract was cached. Reuse the retained `markdown.md` path and prepare the read-pdf extraction substrate:
 
    ```bash
    python3 ~/.claude/skills/read-pdf/scripts/prepare_substrate.py "<markdown.md path>"
    ```
 
-   Capture the printed `manifest.json` path. Protocol M workers consume this manifest and chunk files; they must not read the whole `markdown.md`.
+   Capture the printed `manifest.json` path. Its `execution_mode` selects one sequential paper reader by default or bounded fanout only above 100,000 projected working tokens. Readers consume chunk files rather than the whole `markdown.md`.
 
    If `references/references.bib` exists, also run the mechanical citation-overlap scan. All Protocol M scratch for a paper lives under the single directory `references/raw/raw_build/<basename>_fanout/`, so create it first:
 
@@ -153,7 +153,7 @@ For each new paper (using its post-rename canonical name), determine its ingest 
      --output "references/raw/raw_build/<basename>_fanout/citation_overlap.json"
    ```
 
-   Pass the output JSON path to the Protocol M subagent. These are candidate overlaps only; the subagent decides whether any are substantively useful for wiki links.
+   Pass the output JSON path to Protocol M wiki synthesis. These are candidate overlaps only; the wiki agent decides whether any are substantively useful for links.
 
    If `convert.py` exists but fails for a specific paper (conversion error), report the error, skip marker tiers for that paper, and fall through to tier S. Do not use `pdftotext` as a temporary or parallel substitute while conversion is running or after conversion fails.
 
@@ -165,9 +165,9 @@ For each new paper (using its post-rename canonical name), determine its ingest 
      --output-dir references/raw/raw_build/split_<basename>
    ```
 
-   `split.py` is the pypdf splitter for tier-S ingestion. It is idempotent at the chunk-file level: if the output directory already contains the expected `<basename>_pp<X>-<Y>.pdf` files from a prior interrupted run, re-running rewrites them with identical content. Do not invoke `/split-pdf` or `/read-pdf --split` as a skill — the interactive pause-and-confirm flow cannot be answered from a subagent context. Call the script only.
+   `split.py` is the pypdf splitter for tier-S ingestion. It is idempotent at the chunk-file level: if the output directory already contains the expected `<basename>_pp<X>-<Y>.pdf` files from a prior interrupted run, re-running rewrites them with identical content. Call the script directly so the populated split directory can be passed to the paper reader.
 
-**Report tier breakdown once, before spawning subagents:**
+**Report tier breakdown once, before starting per-paper agents:**
 
 ```
 Ingest tiers for this batch:
@@ -180,39 +180,40 @@ Ingest tiers for this batch:
   ⚠ Converter failed for: <filenames> — falling back to E or S
 ```
 
-### 6. Read the wiki index
+### 6. Locate the wiki index
 
-Load `./references/wiki/index.md` once. Pass it into each per-paper subagent so it can match new concepts against existing pages and avoid creating duplicates.
+Retain the absolute path to `./references/wiki/index.md`. Each wiki agent reads the current file immediately before synthesis so earlier papers in the batch are visible.
 
 ---
 
-## Per-paper ingest (agents)
+## Per-paper ingest
 
-Process papers sequentially. The main session must not read PDF extracts, marker chunks, or split contents directly — delegate deep reading to agents to bound context.
+Process papers sequentially. Use one extraction context per paper so a completed paper's source does not accumulate in the batch context.
 
-- **Tier E:** spawn one wiki synthesis agent that reads the local `_text.md` plus project/wiki context and writes wiki artifacts.
-- **Tier M-cache:** spawn one wiki synthesis agent that reads the copied local `_text.md`, cache `markdown.md`/figure paths, and project/wiki context, then writes wiki artifacts.
-- **Tier M:** run a split fanout sequence for the paper. Spawn one bounded worker agent per `manifest.worker_bundles` entry, sequentially. Then spawn one read-pdf synthesis agent that writes only the neutral `_text.md`, **atomically**: direct it to write to `references/raw/<basename>_text.md.tmp`, then the main session validates the temp file is complete (non-empty and contains the `## Bibliographic metadata` block) and only then `mv`s it to `references/raw/<basename>_text.md`. If validation fails, delete the temp file and treat the paper as failed (no `_text.md` is left behind, so the next run regenerates it). Only after the final `_text.md` is in place, cache it with `python3 ~/.claude/skills/read-pdf/scripts/cache_text.py push "<markdown.md path>" "references/raw/<basename>_text.md"`. Then spawn one wiki synthesis agent that reads `_text.md` plus project/wiki context and writes wiki artifacts.
-- **Tier S:** spawn one per-paper agent using Protocol S.
+- **Tier E:** start one wiki synthesis agent from the local `_text.md`.
+- **Tier M-cache:** start one wiki synthesis agent from the copied `_text.md`, with cache figure paths available.
+- **Tier M:** start one paper extraction agent. For `single_reader`, it reads bundles sequentially and writes a durable note after each; for `fanout`, it launches one bounded worker per bundle. It then synthesizes `references/raw/<basename>_text.md.tmp` using `read-pdf/extraction_schema.md`. The main session validates the temp file is non-empty and contains the bibliographic block, plain-English synthesis, and all 12 dimensions before moving it to the final path. Cache the validated neutral extract, then start one fresh wiki synthesis agent.
+- **Tier S:** start one split reader agent that follows `read-pdf/isolation_split.md` and `read-pdf/extraction_schema.md`, validates and installs the neutral extract atomically, then start one fresh wiki synthesis agent using Protocol S.
 
-**Before spawning each subagent, record the disk journal** (for rollback on failure): `cp` every pre-existing file the subagent will modify into `references/raw/raw_build/<basename>_fanout/_journal/` (see "Per-paper atomicity" below for the full mechanism). Files the paper will newly create are not snapshotted — their rollback is deletion. On failure at any step, restore from the journal / delete new files and do not write the log entry. The next invocation rediscovers the paper as new and retries cleanly.
+Extraction agents write only neutral extraction scratch and `_text.md.tmp`; they do not receive project context or wiki paths. Wiki agents use the plan-then-apply journal protocol below.
 
 Each agent prompt must be self-contained — the agent has no memory of this conversation.
 
 All per-paper wiki-writing prompts include:
 
-- Absolute paths: PDF, input source (`_text.md` for Tier M, M-cache, and E, or populated splits directory for Tier S), `references/raw/`, `references/wiki/`, `references/wiki/figures/`, `references/CLAUDE.md`
+- Absolute paths: PDF, validated `_text.md`, `references/raw/`, `references/wiki/`, `references/wiki/figures/`, and `references/CLAUDE.md`
 - The tier (M, M-cache, E, or S)
-- Current `wiki/index.md` contents (for disambiguation)
-- Project context block: research question, data sources, identification strategy (from `./CLAUDE.md`)
+- Absolute path to the current `wiki/index.md`
+- Absolute path to project root `CLAUDE.md`
 - Optional batch focus string (if provided as the skill argument)
-- Absolute path to exactly one protocol file: `~/.claude/skills/wiki-update/protocol_m.md`, `protocol_e.md`, or `protocol_s.md` depending on the tier. Do not include paths to the other two.
+- Absolute path to exactly one protocol file: `protocol_m.md` for M and M-cache, `protocol_e.md` for E, or `protocol_s.md` for S.
 - Absolute path to `~/.claude/skills/wiki-update/common.md`.
-- For Tier M and M-cache wiki synthesis only: absolute path to `~/.claude/skills/wiki-update/wiki_synthesis.md`, cache `markdown.md` path, absolute cache figure directory, absolute project `references/wiki/figures` directory, absolute path to `~/.claude/skills/wiki-update/scripts/copy_marker_figure.py`, and citation-overlap JSON path if one was produced.
+- Absolute path to `~/.claude/skills/wiki-update/wiki_synthesis.md`.
+- For Tier M and M-cache only: cache `markdown.md` path, absolute cache figure directory, absolute project `references/wiki/figures` directory, `copy_marker_figure.py`, and citation-overlap JSON path if one was produced.
 
-Tier M worker prompts include only `fanout_worker.md`, the bundle excerpt, assigned chunk paths, and output note path.
+Tier M paper-reader prompts include `manifest.json`, `fanout_worker.md`, `fanout_synthesis.md`, `extraction_schema.md`, and output paths. For `single_reader`, the same agent processes every bundle. For `fanout`, bundle workers receive only `fanout_worker.md`, their bundle excerpt, assigned chunk paths, and output note path.
 
-Tier M read-pdf synthesis prompts include only `fanout_synthesis.md`, `extraction_schema.md`, `manifest.json`, worker note paths, and output `_text.md` path. They do not include PDF path, wiki paths, project context, protocol_m.md, common.md, or citation-overlap JSON.
+Tier M synthesis reads only `fanout_synthesis.md`, `extraction_schema.md`, `manifest.json`, worker note paths, and the temp `_text.md` path. It does not receive wiki paths, project context, protocol files, or citation-overlap JSON.
 
 Do not embed the protocol or common files verbatim. Instead, the first instruction in each wiki-writing prompt must be:
 
@@ -223,7 +224,7 @@ Before doing any paper work:
 3. Follow those instructions exactly for this paper.
 ```
 
-Tier M worker prompts use `fanout_worker.md` and should include only the bundle excerpt for that worker, not the full manifest unless needed. Tier M read-pdf synthesis prompts use `fanout_synthesis.md`, `extraction_schema.md`, the manifest path, and all worker note paths; they must not include wiki paths or project context. Tier M wiki synthesis prompts use `protocol_m.md`, `common.md`, `wiki_synthesis.md`, `_text.md`, citation-overlap JSON if present, and wiki context; they must not include worker note paths or marker chunk paths unless gap recovery is explicitly approved.
+Wiki prompts pass paths rather than embedding index or project-context contents. Protocol M wiki synthesis uses `protocol_m.md`, `common.md`, `wiki_synthesis.md`, `_text.md`, citation-overlap JSON if present, and current wiki paths. It does not receive worker notes or marker chunks unless a specific extraction gap is approved for recovery.
 
 This keeps spawned prompts small while still making the protocol explicit through normal file reads.
 
@@ -231,30 +232,38 @@ This keeps spawned prompts small while still making the protocol explicit throug
 
 ## Per-paper atomicity (main session)
 
-For each paper, the main session uses a **disk-snapshot-and-rollback** pattern to guarantee the wiki is never left in an inconsistent state. The snapshot lives on disk (cheap file copies), not in the orchestrator's context — never read a page's full content into context purely to enable rollback.
+For each paper, the main session uses a **plan-snapshot-apply** pattern. The wiki agent identifies every target before writing, the main session snapshots existing targets, and the same agent then applies the plan. The snapshot lives on disk rather than in orchestration context.
 
 Distinguish three classes of file, each with its own safety mechanism:
 
-- **Write-once durable artifacts** — the neutral `_text.md` and any brand-new wiki page. There is no prior version to restore. Protect by **atomic write** (`_text.md`: write to `<basename>_text.md.tmp`, validate, then `mv` into place — see Tier M below) and **delete-on-failure** (new pages). A partial write never lands at the final name, so a later run never trusts a truncated file.
+- **Write-once durable artifacts** — the neutral `_text.md` and any brand-new wiki page. Protect `_text.md` by validated temp-file rename and record new wiki targets for deletion on failure.
 - **Modified pre-existing files** — `index.md`, `log.md`, and existing pages gaining cross-links. These have a prior version worth restoring. Protect by **disk snapshot**: before editing, `cp` each into the paper's journal dir.
 - **`log.md`** — written **last** (step 5), so it never leads the page writes.
 
-**Before spawning the subagent — snapshot only the pre-existing files that will be modified:**
-Create the journal dir and copy each existing to-be-modified file into it. Pages that will be *created* are not copied (rollback for them is deletion); the `_text.md` is not copied (it is atomic-write/delete-on-fail, never overwritten).
+**Phase 1 — plan:** The wiki agent reads the current index and relevant pages, resolves its intended edits, and returns:
+
+```text
+Existing targets to modify: [absolute paths]
+New targets to create: [absolute paths]
+Disambiguation questions: [...]
+Proposed destructive edits: [...]
+```
+
+It does not write during this phase. Resolve disambiguation and destructive-edit approvals before continuing. Add `wiki/log.md` to the existing targets because the main session appends it after validation.
+
+**Phase 2 — snapshot:** Create the journal and copy every existing target from the approved plan. Record new targets in `_new_files.txt`; their rollback is deletion. `_text.md` is outside this journal because extraction installed it atomically before wiki planning.
 
 ```bash
 mkdir -p references/raw/raw_build/<basename>_fanout/_journal
-# for each EXISTING file the paper will modify (index.md, log.md, existing pages):
-cp references/wiki/<existing-page>.md references/raw/raw_build/<basename>_fanout/_journal/
+# for each existing target, preserve its path relative to references/wiki:
+mkdir -p references/raw/raw_build/<basename>_fanout/_journal/<relative-parent>
+cp references/wiki/<relative-target> \
+  references/raw/raw_build/<basename>_fanout/_journal/<relative-target>
+# write each approved new target path to:
+references/raw/raw_build/<basename>_fanout/_journal/_new_files.txt
 ```
 
-**Execute the write sequence:**
-1. Spawn the subagent and wait for its return summary.
-2. If there are disambiguation questions, ask the user; pass answers back via a follow-up SendMessage to the same agent (or apply decisions directly if simple).
-3. Apply all non-destructive edits.
-4. If there are proposed destructive edits, present them to the user as a single batched approval request (one prompt per paper). User can approve all, reject all, or selectively approve. Apply approved edits.
-5. Append the log entry to `wiki/log.md`.
-6. **Last:** clean the paper's `raw_build` scratch — it is regenerable and must not be left behind or committed:
+**Phase 3 — apply and validate:** Send the approved plan back to the same agent. It applies only those targets and returns the normal summary. The main session verifies every planned target, appends the log entry, then cleans scratch:
 
    ```bash
    python3 ~/.claude/skills/wiki-update/scripts/clean_fanout.py \
@@ -263,11 +272,11 @@ cp references/wiki/<existing-page>.md references/raw/raw_build/<basename>_fanout
 
    This removes the `<basename>_fanout/` directory and any Protocol S split PDFs, preserving only Protocol S's permanent `notes.md`. The neutral `_text.md` (in `references/raw/`) and copied figures (in `references/wiki/figures/`) are the durable, shareable artifacts and live outside `raw_build`.
 
-**On failure at any step 1–5:** roll back: **delete** every file the paper newly created (new wiki pages, and the `_text.md` if this run produced it), and **restore** every modified pre-existing file by copying its snapshot back from `_journal/` (`cp references/raw/raw_build/<basename>_fanout/_journal/<file> references/wiki/<file>`). Do not write the log entry, and do **not** clean the `raw_build` scratch — leaving the journal intact lets the next invocation resume. The next invocation will rediscover the paper as new and retry cleanly.
+**On failure before logging:** delete every path in `_new_files.txt`, restore every snapshotted file, and delete the `_text.md` only if this run created it. Leave the journal intact and omit the log entry so the next invocation retries cleanly.
 
-The journal dir is removed along with the rest of the paper's `raw_build` scratch by `clean_fanout.py` on success (step 6). Do not implement partial-resume logic. The disk snapshot guarantees retry is always safe.
+The journal is removed with the rest of the paper's scratch after success. Retry starts from restored durable state rather than partially resuming wiki writes.
 
-After each paper finishes, move to the next. Do not batch papers.
+Finish and log each paper before starting the next.
 
 ---
 
@@ -302,9 +311,9 @@ After all papers are processed, report:
 
 ## Rules
 
-- **Treat PDFs and `_text.md` in `references/raw/` as immutable.** Never modify a source PDF or a `<basename>_text.md` extract. The converter cache at `~/.cache/claude-pdf-converter/` is scratch and may be overwritten.
+- **Treat source PDFs and completed `_text.md` extracts as immutable.** New extraction writes go through a validated temp file; existing extracts are reused. The converter cache at `~/.cache/claude-pdf-converter/` is scratch and may be overwritten.
 - **`references/raw/raw_build/` is scratch, not a deliverable.** It holds only regenerable per-paper intermediates under the canonical `<basename>_fanout/` directory (Protocol M) and `split_<basename>/` (Protocol S). The main session removes a paper's scratch via `clean_fanout.py` once that paper ingests successfully. Never copy bundles or worker notes elsewhere, never invent alternate sub-folder names, and do not commit `raw_build/` contents — a coauthor without the local cache regenerates them from the PDF.
-- **Never read PDF extracts, markdown, or splits in the main session.** Always delegate deep reading to subagents. The main session's job is orchestration and approval.
+- **Use one bounded reader context per paper.** The batch context handles orchestration and approval; bundle-level fanout occurs only when the manifest projects more than 100,000 working tokens.
 - **Never write the log entry before wiki edits complete.** The log is the source of truth for "what's been ingested" — it must lag behind, not lead.
 - **Never invent project context.** If `CLAUDE.md` placeholders are unfilled, stop and ask. Do not guess the research question.
 - **Project conventions in `references/CLAUDE.md` override this skill** if they conflict on format/naming/citation. This skill owns workflow only.

@@ -299,10 +299,15 @@ def main() -> int:
     md_path = out_dir / "markdown.md"
     if md_path.is_file():
         normalize_cached_figures(out_dir)
+        print(
+            "read-pdf cache hit: SHA-256 match; skipping conversion",
+            file=sys.stderr,
+        )
         print(str(md_path))
         return 0
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    print("read-pdf cache miss: converting PDF", file=sys.stderr)
     started = time.time()
     info = convert_with_marker(pdf_path, out_dir)
     info.update(

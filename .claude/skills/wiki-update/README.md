@@ -28,16 +28,16 @@ On first run, the skill can scaffold the references wiki structure. It will not 
 ## What It Does
 
 - Finds new PDFs and proposes filename normalization.
-- Reads each paper in isolated subagents to avoid PDF image bloat and whole-file markdown reads in the main session.
+- Uses one reader context per paper; bundle-level fanout activates only above 100,000 projected working tokens.
 - Reuses existing `_text.md` extracts or PDF splits when available.
 - For marker-converted PDFs, writes a neutral `_text.md` first, then runs a separate project-wiki synthesis pass.
 - Applies a project-context relevance filter so important material receives full treatment and less relevant material gets concise page-referenced notes.
-- Writes wiki pages atomically per paper, then logs completion only after edits succeed.
+- Plans wiki targets, snapshots existing files, applies the approved plan, then logs completion.
 - Runs the BibTeX update cascade after ingestion.
 
 ## Boundaries
 
-`/wiki-update` owns the project-wiki lifecycle. `/read-pdf` owns standalone paper reading, including the `/read-pdf --split` fallback. The two skills share the same batching idea, but `/wiki-update` uses a non-interactive subagent flow because a per-batch confirmation gate would deadlock inside an ingest subagent.
+`/wiki-update` owns the project-wiki lifecycle. `/read-pdf` owns standalone paper reading, including the `/read-pdf --split` fallback. Both use bounded reads; batch ingestion additionally isolates each paper so prior source material does not accumulate in the main context.
 
 For exact tier rules, destructive-edit handling, filename checks, log format, and BibTeX behavior, read [`SKILL.md`](SKILL.md).
 

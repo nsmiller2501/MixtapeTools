@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,6 +21,14 @@ from typing import Iterable
 DEFAULT_CHUNK_CHAR_LIMIT = 24000
 DEFAULT_TINY_CHUNK_CHAR_LIMIT = 4000
 DEFAULT_WORKER_SOURCE_CHAR_LIMIT = 50000
+
+# Route extraction by projected working context, not paper length alone. The
+# conservative character ratio covers equation- and table-heavy markdown;
+# notes and fixed context account for material retained alongside the source.
+ESTIMATED_CHARS_PER_TOKEN = 3
+FIXED_CONTEXT_TOKEN_ALLOWANCE = 15000
+EXPECTED_NOTES_SOURCE_RATIO = 0.15
+FANOUT_PROJECTED_TOKEN_THRESHOLD = 100000
 
 # Heading hygiene: marker sometimes promotes long paragraphs to `#` lines and
 # mangles section numbers like `1.6` into `1.[^6]`. We sanitize and guard so
@@ -340,6 +349,32 @@ def bundle_chunks(chunks: list[Chunk], source_limit: int) -> list[dict[str, obje
     return bundles
 
 
+def estimate_execution_mode(source_char_count: int) -> dict[str, int | str]:
+    """Estimate whether one reader context can safely hold the paper."""
+    estimated_source_tokens = math.ceil(source_char_count / ESTIMATED_CHARS_PER_TOKEN)
+    estimated_notes_tokens = math.ceil(
+        estimated_source_tokens * EXPECTED_NOTES_SOURCE_RATIO
+    )
+    projected_working_tokens = (
+        estimated_source_tokens
+        + estimated_notes_tokens
+        + FIXED_CONTEXT_TOKEN_ALLOWANCE
+    )
+    execution_mode = (
+        "fanout"
+        if projected_working_tokens > FANOUT_PROJECTED_TOKEN_THRESHOLD
+        else "single_reader"
+    )
+    return {
+        "estimated_source_tokens": estimated_source_tokens,
+        "estimated_notes_tokens": estimated_notes_tokens,
+        "fixed_context_token_allowance": FIXED_CONTEXT_TOKEN_ALLOWANCE,
+        "projected_working_tokens": projected_working_tokens,
+        "fanout_projected_token_threshold": FANOUT_PROJECTED_TOKEN_THRESHOLD,
+        "execution_mode": execution_mode,
+    }
+
+
 def main() -> int:
     args = parse_args()
     markdown_path = args.markdown.expanduser().resolve()
@@ -370,12 +405,14 @@ def main() -> int:
     chunks = write_chunks(bounded_sections, chunks_dir, page_markers)
     bundles = bundle_chunks(chunks, args.worker_source_char_limit)
 
+    execution_estimate = estimate_execution_mode(len(text))
     manifest = {
         "schema_version": 1,
         "source_markdown": str(markdown_path),
         "source_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
         "source_line_count": len(lines),
         "source_char_count": len(text),
+        **execution_estimate,
         "chunk_char_limit": args.chunk_char_limit,
         "worker_source_char_limit": args.worker_source_char_limit,
         "chunks_dir": str(chunks_dir),

@@ -17,7 +17,7 @@ Do not read worker notes, marker chunks, or the full marker `markdown.md`. If `_
 
 ## Task
 
-Use the neutral `_text.md`, project context, current index, and relevant existing pages to write project-specific wiki artifacts. Preserve the source paper's factual content, but interpret relevance through the project research question, data, and identification strategy.
+Read the current index from disk immediately before planning. Use the neutral `_text.md`, project context, index, and relevant existing pages to plan project-specific wiki artifacts. Return every existing target to modify and new target to create without writing. After the main session snapshots the approved plan, apply only that plan and return the summary required by `common.md`.
 
 ## Source Page Naming
 
@@ -39,23 +39,10 @@ Do not expand `_etal` into all author names. Examples:
 - If a near-match exists but fit is ambiguous, return a disambiguation question.
 - New concept pages need short, stable slugs that name concepts, not paper-specific prose.
 
-## Project Interpretation Checks
-
-When the project context concerns pollution, health, warning systems, or fiscal externalities, preserve details that often decide interpretation:
-
-- sign conventions for health outcomes versus pollution production
-- formal gap expressions such as `\beta^S - \beta^N`
-- county-month norm definitions and any estimating equation window, including 5-year norms where used
-- wind-IV extensions and alert/forecast identification threats
-- payer decomposition such as Medicare/government versus out-of-pocket spending
-- welfare bounds such as `\beta_A^{gov} \le \Delta W \le \beta_A^{gov} + \beta_A^{OOP}`
-- conservative standard-error wording: when sources conflict, use the larger SE or smaller absolute t-stat
-
-These are not mandatory claims. Include them only when supported by `_text.md` or existing wiki context.
-
 ## Outputs
 
-- source page and concept/wiki pages
+- write plan listing existing and new targets
+- source page and concept/wiki pages after snapshot approval
 - non-destructive index updates
 - proposed destructive diffs, if needed
 - copied Protocol M figures, if relevant and available

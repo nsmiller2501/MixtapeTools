@@ -1,7 +1,7 @@
 ---
 name: read-pdf
-description: Canonical academic-PDF reading skill. By default, downloads or uses a local PDF, converts it to clean markdown via a local layout-aware converter, then writes structured `_text.md` notes. Use `--split` to force the split-PDF vision path: split into 4-page chunks and read 3 chunks at a time. Use default mode for tables, equations, figures, repeated processing, and batch ingest; use `--split` for triage, converter failures, or environments where marker setup is not available.
-allowed-tools: Bash(python3:*), Bash(curl:*), Bash(wget:*), Bash(mkdir:*), Bash(rm:*), Read, Write, WebSearch, WebFetch, Agent
+description: Reads academic PDFs into reusable, project-neutral `_text.md` extracts. Use for paper reading; default to layout-aware conversion and use `--split` for triage or converter failure.
+allowed-tools: Bash(python3:*), Bash(curl:*), Bash(wget:*), Bash(mkdir:*), Bash(mv:*), Bash(rm:*), Read, Write, WebSearch, WebFetch, Agent
 argument-hint: [--split] [pdf-path-or-search-query]
 ---
 
@@ -9,7 +9,7 @@ argument-hint: [--split] [pdf-path-or-search-query]
 
 Takes a PDF (local or searched) and produces a structured `_text.md` extraction with a bibliographic metadata block, a plain-English synthesis, and 12-dimension research notes.
 
-Default mode converts the PDF to markdown locally using python:marker, prepares bounded source chunks, then reads those chunks through a fanout-first extraction workflow. This preserves equation fidelity, table structure, and figure references without image-based context bloat or whole-file `Read` failures.
+Default mode converts the PDF to markdown locally using python:marker, prepares bounded source chunks, then reads them through bounded extraction. This preserves equation fidelity, table structure, and figure references without image-based context bloat or whole-file `Read` failures.
 
 `--split` mode splits into 4-page chunks, reads exactly 3 chunks at a time, updates running notes, then writes the same `_text.md` contract.
 
@@ -70,28 +70,13 @@ Surface the "First run" message to the user verbatim if it appears — they shou
 
 ### Step 3: Convert
 
-**Before converting, check for a cached conversion.** Compute the SHA-256 hash of the PDF and check whether `markdown.md` already exists in the cache:
+Run the cache-aware converter once:
 
-```python
-import hashlib, os, sys
-
-pdf_path = "<absolute-pdf-path>"
-
-with open(pdf_path, 'rb') as f:
-    pdf_hash = hashlib.sha256(f.read()).hexdigest()
-
-markdown_path = os.path.expanduser(
-    f'~/.cache/claude-pdf-converter/cache/marker/{pdf_hash}/markdown.md'
-)
-print(markdown_path if os.path.exists(markdown_path) else "NOT_CACHED")
+```bash
+python3 ~/.claude/skills/read-pdf/convert.py "<pdf-path>"
 ```
 
-- **If cached:** tell the user "Using cached markdown conversion (SHA-256 match), skipping re-conversion." Use the printed path as `markdown_path`.
-- **If not cached:** run:
-  ```bash
-  python3 ~/.claude/skills/read-pdf/convert.py "<pdf-path>"
-  ```
-  It prints the absolute path to `markdown.md` on success and exits 0. For born-digital PDFs with a usable embedded text layer, `convert.py` uses that text layer and disables marker's full-document OCR path while preserving marker's layout/table processing. **Do not fall back to pdftotext or any other tool on failure** — surface the error and stop. The whole point of this skill is the layout-aware conversion; a degraded fallback produces silently-wrong output.
+It reports a SHA-256 cache hit or miss on stderr, prints the absolute `markdown.md` path on stdout, and exits 0 on success. For born-digital PDFs with a usable embedded text layer, it disables marker's full-document OCR path while preserving marker's layout/table processing. **Do not fall back to pdftotext or any other tool on failure** — surface the error and stop. The whole point of this skill is the layout-aware conversion; a degraded fallback produces silently-wrong output.
 
 ### Step 4: Check for existing `_text.md`
 
@@ -129,11 +114,14 @@ It writes bounded chunk files and `manifest.json` beside the marker cache. The s
 
 ### Step 6: Structured Extraction
 
-Use `fanout_worker.md` and `fanout_synthesis.md` with the generated manifest. Run worker bundles sequentially by default. Each worker reads only its assigned chunk paths and writes durable local notes. The synthesis step reads the manifest and worker notes, performs gap-directed rereads of specific chunk files only when needed, and writes the final structured extraction to `<basename>_text.md`.
+Use `fanout_worker.md` and `fanout_synthesis.md` with the generated manifest. The manifest selects the execution mode from projected working context:
 
-The final extraction follows `extraction_schema.md`: a `## Bibliographic metadata` block from the title section, then the research dimensions. Read `extraction_schema.md` before synthesis so the output contract is explicit.
+- **`single_reader` (default):** one reader processes `worker_bundles` sequentially and writes one durable note file after each bundle.
+- **`fanout`:** one bounded worker reads each bundle and writes its note file. Use this only when `projected_working_tokens` exceeds the manifest's 100,000-token threshold.
 
-Write the final structured extraction to `<basename>_text.md` (or `_text2.md` if chosen in Step 4) in the same folder as the source PDF, with the `## Bibliographic metadata` block first. Then cache the same neutral extract:
+After every expected note file exists, synthesis reads the manifest and worker notes, performs gap-directed rereads of specific chunk files only when needed, and writes the final extraction to `<local_text_path>.tmp`. Validate that the temp file is non-empty and contains `## Bibliographic metadata`, `## Plain-English synthesis`, and all 12 numbered research dimensions; then rename it to `<local_text_path>`. A failed validation leaves no final extract.
+
+The final extraction follows `extraction_schema.md`: a `## Bibliographic metadata` block from the title section, then the research dimensions. Read `extraction_schema.md` before synthesis so the output contract is explicit. After installing the validated `<basename>_text.md` (or `_text2.md` chosen in Step 4), cache the same neutral extract:
 
 ```bash
 python3 ~/.claude/skills/read-pdf/scripts/cache_text.py push "<markdown_path>" "<local_text_path>"
@@ -178,23 +166,22 @@ Read exactly 3 split files at a time. After each batch:
 
 1. Read the 3 split PDFs using the Read tool.
 2. Update `notes.md` in the split directory.
-3. Pause and tell the user: *"I have finished reading splits [X-Y] and updated the notes. I have [N] more splits remaining. Would you like me to continue with the next 3?"*
-4. Wait for confirmation before reading the next batch.
+3. Continue with the next batch until all splits are read.
 
-Do not read ahead.
+If the user explicitly requests paced triage, report progress and wait for confirmation after each batch. Do not read ahead while paced triage is active.
 
 ### Step S4: Structured extraction
 
-As you read, collect notes into `notes.md` following `extraction_schema.md`. After all batches are complete, write the final notes to `<basename>_text.md` next to the source PDF, with the `## Bibliographic metadata` block first. Keep both `notes.md` and `_text.md`.
+As you read, collect notes into `notes.md` following `extraction_schema.md`. After all batches are complete, synthesize `<basename>_text.md.tmp`, validate the same required blocks and 12 dimensions as default mode, then rename it to `<basename>_text.md`. Keep both `notes.md` and `_text.md`.
 
 ## Agent Isolation
 
-When `/read-pdf` is invoked by another skill or workflow, the heavy reading step must run in a subagent. See `agent_isolation.md` for the mode router and `isolation_read.md` / `isolation_split.md` for branch-specific launch patterns.
+When `/read-pdf` is invoked by another skill or batch workflow, use one reader context per paper. Bundle-level subagents are reserved for manifests whose `execution_mode` is `fanout`. See `agent_isolation.md` for the mode router and `isolation_read.md` / `isolation_split.md` for branch-specific launch patterns.
 
 ## Files in this skill
 
 - `SKILL.md` — this file (acquire → default marker mode or `--split` mode → extract workflow)
-- `extraction_schema.md` — bibliographic metadata block + 8 research dimensions
+- `extraction_schema.md` — bibliographic metadata block + 12 research dimensions
 - `fanout_worker.md` — bounded worker-note prompt for marker chunks
 - `fanout_synthesis.md` — synthesis prompt for worker notes and final `_text.md`
 - `agent_isolation.md` — isolation mode router
@@ -206,4 +193,5 @@ When `/read-pdf` is invoked by another skill or workflow, the heavy reading step
 - `scripts/prepare_substrate.py` — marker markdown → bounded chunks + manifest
 - `scripts/cache_text.py` — check/pull/push project-neutral `text.md` extracts in the converter cache
 - `scripts/split.py` — pypdf 4-page splitter used by `--split` mode and downstream fallbacks
+- `tests/test_prepare_substrate.py` — execution-mode threshold tests
 - `README.md` — backend details, cache management, GPU notes

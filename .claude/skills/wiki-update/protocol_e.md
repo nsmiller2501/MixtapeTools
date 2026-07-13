@@ -8,9 +8,9 @@ Read `_text.md` in full. Extract the `## Bibliographic metadata` block for the r
 
 Protocol E reads only the cached `_text.md` and any figure files it references. Do not re-read the PDF with `pdftotext` to expand or validate the extract.
 
-## Step 2: Write wiki pages
+## Step 2: Plan and write wiki pages
 
-Use the substantive-change rule and relevance filtering in `common.md`.
+Use the plan-snapshot-apply contract and relevance filtering in `common.md`.
 
 For figures: if `_text.md` references wiki figure paths that already exist on disk, embed them in wiki pages using the same lightweight format as Protocol M. If `_text.md` contains CLIP placeholders, pass them through to the wiki and aggregate them into the Pending CLIPs return field.
 
