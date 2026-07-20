@@ -1,31 +1,33 @@
 ---
 name: session
-description: Manages start-of-session and end-of-session lifecycle for research and coding projects. On `start`, orients by reading the latest progress log and key files; on `end`, writes a dated progress log and updates `agent_memory/` files. Use when the user says `/session start`, `/session end`, "start a session", "wrap up the session", or similar — pass `start` or `end` as the sub-command.
+description: Manages start-of-session orientation and end-of-session closeout for tracker-backed research and coding projects. Use when the user says `/session start`, `/session end`, "start a session", or "wrap up the session" — pass `start` or `end` as the sub-command.
 ---
 
 ## Args
-- `start` — orient for a new session
-- `start --tasks` — orient as above, then also summarize the task list
-- `start --issues` — orient as above, then also summarize assigned/open tracker work
-- `end` — close out the session with a progress log
 
----
+- `start` — orient from the configured tracker and durable project memory
+- `start --issues` — compatibility alias for tracker-first orientation
+- `start --tasks` — orient as above, then summarize the legacy markdown task list
+- `end` — close out tracker state and durable project memory; write a progress log only when warranted
+
+## Tracker contract
+
+Read the tracker contract named by the project instructions. If none is named, check `agent_memory/research-tracker.md`, then `agent_memory/tracker.md`.
+
+The configured tracker is the authoritative work queue. Issues hold actionable work and remaining steps; PRs and commits hold implementation evidence; `agent_memory/` holds durable project knowledge. Progress logs are supplementary context, not another queue.
 
 ## start
 
-1. Read `CLAUDE.md` and `agent_memory/research-tracker.md` if present.
-2. Run `~/.claude/skills/session/scripts/latest_progress_log.sh` to find the most recent file in `progress_logs/`.
-3. Read it. Then read every file (at the line ranges) listed under `## Key Files` in that log.
-4. If `--tasks` was passed: read `agent_memory/tasklist.md` and append a **Task list** section summarizing every item.
-5. If `--issues` was passed, or the tracker contract names GitHub Issues as the substrate, summarize relevant open work from the tracker: assigned issues first, then issues labelled ready/blocked by the contract's vocabulary. Keep the query narrow and report the query used.
-6. Report in 3–5 bullets: current state, blockers, next priorities, and the issue or local task that looks like the natural session target.
-
----
+1. Read the project instructions, tracker contract, and relevant durable files in `agent_memory/`. Completion: you know the substrate, lifecycle vocabulary, artifact boundaries, and durable constraints.
+2. If the substrate is GitHub Issues, query relevant open work using the contract's vocabulary: an explicitly named or assigned issue first, then assigned issues, ready work, and blocked work. Keep the query narrow and report it. Completion: every reported work item came from current tracker state.
+3. Read the latest progress log only when the project has no configured tracker, the user requests log context, or the tracker contract makes logs part of startup. Treat issue references in a log as pointers back to current tracker state. Read relevant `## Key Files` ranges from that log. Completion: stale log text has not overridden the tracker.
+4. If `--tasks` was passed, read `agent_memory/tasklist.md` and label its contents as legacy intake or local work according to the tracker contract. Completion: markdown tasks are not presented as a second authoritative queue.
+5. Report in 3–5 bullets: current state, blockers, next priorities, and the issue or local task that is the natural session target. Completion: the recommended target is ready under the configured lifecycle.
 
 ## end
 
-1. Determine filename: `YYYY-MM-DD_<session_slug>.md` using today's date. Append `_2`, `_3` on collision.
-2. Write progress log — see [FORMAT.md](./FORMAT.md). Use Obsidian task boxes exactly for all task items: `- [ ]` for outstanding tasks and `- [x]` for completed tasks.
-3. Scan `agent_memory/` for files needing updates based on this session (decisions made, terms defined, plans changed, tasks completed). Update them. Treat `agent_memory/tasklist.md` as read-only except for marking existing completed task boxes from `- [ ]` to `- [x]`.
-4. If the session worked on GitHub Issues, draft the issue update before posting. Include outputs, validation, blockers, next steps, and links to the progress log or artifacts. Ask before closing issues unless the user explicitly requested closure.
-5. Confirm: log written at `progress_logs/<filename>`, files updated, tracker updates posted or left as drafts.
+1. Read the tracker contract and classify the session as issue-scoped or exploratory/integration. Completion: every actionable next step has one authoritative destination.
+2. Update tracked `agent_memory/` files for durable decisions, terminology, constraints, or plans changed during the session. Treat `agent_memory/tasklist.md` as read-only except for marking an existing task complete. Completion: durable knowledge needed outside the current issue or worktree will merge with the project.
+3. For issue-scoped work, draft the tracker or PR update with outputs, validation, blockers, remaining steps, and artifact or commit links. Post updates according to the tracker contract; ask before closing an issue unless the user explicitly requested closure. Completion: another agent can continue from the issue or PR without the worktree or chat.
+4. Write a progress log only for exploratory work, integration/orchestration work, a user request, or material context that the tracker and durable files cannot represent. Use [FORMAT.md](./FORMAT.md). Completion: any log adds context without creating a parallel task queue.
+5. Confirm tracker/PR updates, durable files changed, and whether a progress log was written or intentionally skipped.

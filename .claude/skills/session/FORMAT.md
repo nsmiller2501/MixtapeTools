@@ -1,42 +1,47 @@
 # Progress Log Format
 
-## Required sections (session-start relies on these)
+Use this format only when `/session end` determines that a progress log is warranted. The configured tracker remains the authoritative work queue.
+
+## Required sections
 
 ### Summary
-Concise current project state after this session.
+
+Concise context that cannot be reconstructed from the tracker, PRs, commits, or durable project memory.
 
 ### Next Steps
-Outstanding tasks for the next session. Use Obsidian markdown task boxes exactly:
+
+Use Obsidian task boxes exactly. For tracker-backed work, each actionable task must reference its authoritative issue:
 
 ```markdown
-- [ ] Finish the remaining validation pass
-- [ ] Re-run the full pipeline after fixing the input file
+- [ ] Continue #42 after the restricted extract arrives
+- [ ] Triage the untracked robustness idea from `notes/meeting.md`
 ```
 
-Do not use numbered lists, bare bullets, GitHub issue syntax, or prose paragraphs for task items here. Background task aggregation depends on the literal `- [ ]` prefix.
+An untracked item is intake, not ready work. Do not restate issue acceptance criteria or build an independent queue.
 
 ### Completed Tasks
-Tasks completed during this session, when useful to record. Use Obsidian checked task boxes exactly:
+
+When useful, record completed tasks with checked Obsidian boxes and issue or PR references:
 
 ```markdown
-- [x] Added cached extract handling
-- [x] Verified wiki-update pulls `text.md` from cache
+- [x] Implemented and validated #41 in PR #57
 ```
 
-Use `- [x]` only for completed task items. Do not use "done:", strikethrough, or prose-only completion notes.
-
-If `agent_memory/tasklist.md` exists, treat it as read-only except for marking already-listed completed tasks from `- [ ]` to `- [x]`. Do not append new tasks there during session end; put newly discovered outstanding tasks in the progress log's `Next Steps` section instead.
+If `agent_memory/tasklist.md` exists, treat it as read-only except for marking an already-listed task complete.
 
 ### Key Files
-Files session-start should re-read to get oriented. Use `path:start-end` line ranges to keep reads targeted. One per line.
 
-```
+List only files needed to recover the supplementary context, using `path:start-end` line ranges:
+
+```text
 agent_memory/key_decisions.md:1-40
 plans/analysis_plan.md:55-80
 ```
 
-## Optional sections (agent's discretion)
-Work Done, Decisions, Open Questions, etc. — add as needed.
+## Optional sections
+
+Add Decisions, Open Questions, or other context only when useful.
 
 ### Tracker Updates
-Use when the session touched GitHub Issues or another configured tracker. Link the issue, summarize the update posted or drafted, and include any remaining blocker.
+
+Link each issue or PR updated or drafted, and record any remaining blocker. Tracker state overrides this snapshot.
